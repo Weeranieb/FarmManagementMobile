@@ -8,6 +8,7 @@ import { Pill } from '@/components/ui';
 import { Icon, type IconName } from '@/components/icons';
 import { HomeScreen } from '@/screens/home';
 import { FarmsScreen } from '@/screens/FarmsScreen';
+import { FarmPondsScreen } from '@/screens/FarmPondsScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
 import { PondDetailScreen } from '@/screens/PondDetailScreen';
 import { DailyLogScreen } from '@/screens/DailyLogScreen';
@@ -21,6 +22,7 @@ export function TabletLayout() {
   const router = useRouter();
   const [pane, setPane] = useState<Pane>('home');
   const [selectedPondId, setSelectedPondId] = useState<number>(14);
+  const [selectedFarmId, setSelectedFarmId] = useState<number | null>(null);
   const [detailMode, setDetailMode] = useState<'pond' | 'daily'>('pond');
 
   return (
@@ -31,6 +33,7 @@ export function TabletLayout() {
           onChange={(p) => {
             setPane(p);
             setDetailMode('pond');
+            setSelectedFarmId(null);
           }}
         />
 
@@ -43,14 +46,25 @@ export function TabletLayout() {
                 setDetailMode('pond');
               }}
             />
-          ) : pane === 'farms' ? (
+          ) : pane === 'farms' && selectedFarmId == null ? (
             <FarmsScreen
               onOpenFarm={(id) => {
-                const firstPond = ponds.find((p) => p.farmId === id);
-                if (firstPond) {
-                  setSelectedPondId(firstPond.id);
-                  setDetailMode('pond');
-                }
+                setSelectedFarmId(id);
+                setDetailMode('pond');
+                setSelectedPondId((prev) => {
+                  const inFarm = ponds.filter((p) => p.farmId === id);
+                  if (inFarm.some((p) => p.id === prev)) return prev;
+                  return inFarm[0]?.id ?? prev;
+                });
+              }}
+            />
+          ) : pane === 'farms' && selectedFarmId != null ? (
+            <FarmPondsScreen
+              farmId={selectedFarmId}
+              onBack={() => setSelectedFarmId(null)}
+              onOpenPond={(pondId) => {
+                setSelectedPondId(pondId);
+                setDetailMode('pond');
               }}
             />
           ) : (
@@ -72,12 +86,18 @@ export function TabletLayout() {
               showHeader
               onBack={() => setDetailMode('pond')}
             />
-          ) : pane === 'farms' ? (
+          ) : pane === 'farms' && detailMode === 'pond' ? (
             <PondDetailScreen
               pondId={selectedPondId}
               showHeader
               onAction={(kind) => router.push(`/(app)/flows/${kind}?pondId=${selectedPondId}`)}
               onOpenDailyLog={() => setDetailMode('daily')}
+            />
+          ) : pane === 'farms' && detailMode === 'daily' ? (
+            <DailyLogScreen
+              pondId={selectedPondId}
+              showHeader
+              onBack={() => setDetailMode('pond')}
             />
           ) : (
             <HomeScreen showHeader={false} />

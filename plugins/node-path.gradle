@@ -1,0 +1,25 @@
+// Resolves the Node.js binary for Gradle. Android Studio does not load nvm/fnm PATH,
+// so bare `node` often fails with "Cannot run program node".
+// Priority: NODE_BINARY env → local.properties `node.executable` → Homebrew installs → `node`.
+
+ext.resolveNodeExecutable = { File androidDir ->
+    def fromEnv = System.getenv("NODE_BINARY")
+    if (fromEnv != null && !fromEnv.trim().isEmpty()) {
+        return fromEnv.trim()
+    }
+    def propsFile = new File(androidDir, "local.properties")
+    if (propsFile.exists()) {
+        def props = new Properties()
+        propsFile.withInputStream { stream -> props.load(stream) }
+        def p = props.getProperty("node.executable")
+        if (p != null && !p.trim().isEmpty()) {
+            return p.trim()
+        }
+    }
+    for (def candidate : ["/opt/homebrew/bin/node", "/usr/local/bin/node"]) {
+        if (new File(candidate as String).exists()) {
+            return candidate
+        }
+    }
+    return "node"
+}

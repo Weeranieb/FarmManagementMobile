@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -16,28 +16,54 @@ const DEFAULT_POND_ID = 11;
 const FAB_BOTTOM = space[5]; // 20 px above the tab bar
 const FAB_RIGHT = space[5]; // 20 px from the right edge
 
+// Filter logs in dev: `npx react-native log-ios | grep \\[Home\\]`
+const log = (...args: unknown[]) => console.log('[Home]', ...args);
+
 export default function HomeRoute() {
   const router = useRouter();
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
   const [quickOpen, setQuickOpen] = useState(false);
 
+  useEffect(() => {
+    log('mount HomeRoute', { defaultPondId: DEFAULT_POND_ID, insetsTop: insets.top });
+    return () => log('unmount HomeRoute');
+  }, [insets.top]);
+
+  useEffect(() => {
+    log('quickActions', quickOpen ? 'open' : 'closed');
+  }, [quickOpen]);
+
   function navigateQuick(id: QuickActionId) {
+    log('quickAction picked', id);
     setQuickOpen(false);
     switch (id) {
-      case 'logFeed':
-        router.push(`/(app)/pond/${DEFAULT_POND_ID}/daily-log`);
+      case 'logFeed': {
+        const path = `/(app)/pond/${DEFAULT_POND_ID}/daily-log`;
+        log('router.push', path);
+        router.push(path);
         break;
-      case 'fill':
-        router.push(`/(app)/flows/fill?pondId=${DEFAULT_POND_ID}`);
+      }
+      case 'fill': {
+        const path = `/(app)/flows/fill?pondId=${DEFAULT_POND_ID}`;
+        log('router.push', path);
+        router.push(path);
         break;
-      case 'move':
-        router.push(`/(app)/flows/move?pondId=${DEFAULT_POND_ID}`);
+      }
+      case 'move': {
+        const path = `/(app)/flows/move?pondId=${DEFAULT_POND_ID}`;
+        log('router.push', path);
+        router.push(path);
         break;
-      case 'sell':
-        router.push(`/(app)/flows/sell?pondId=${DEFAULT_POND_ID}`);
+      }
+      case 'sell': {
+        const path = `/(app)/flows/sell?pondId=${DEFAULT_POND_ID}`;
+        log('router.push', path);
+        router.push(path);
         break;
+      }
       default:
+        log('quickAction unhandled', id);
         break;
     }
   }
@@ -50,18 +76,28 @@ export default function HomeRoute() {
       <HomeScreen
         // Reserve scroll padding so the last activity row isn't hidden
         // behind the FAB. FAB diameter + bottom offset + breathing room.
-        fabClearance={FAB_BOTTOM + FAB_SIZE + space[5]}
-        onOpenPond={(id) => router.push(`/(app)/pond/${id ?? DEFAULT_POND_ID}`)}
+        fabClearance={FAB_BOTTOM + FAB_SIZE}
+        onOpenPond={(id) => {
+          const target = id ?? DEFAULT_POND_ID;
+          log('openPond', { id, resolved: target });
+          router.push(`/(app)/pond/${target}`);
+        }}
       />
       <FAB
         open={quickOpen}
-        onPress={() => setQuickOpen((v) => !v)}
+        onPress={() => {
+          log('FAB pressed');
+          setQuickOpen((v) => !v);
+        }}
         bottom={FAB_BOTTOM}
         right={FAB_RIGHT}
       />
       <QuickActionsSheet
         visible={quickOpen}
-        onClose={() => setQuickOpen(false)}
+        onClose={() => {
+          log('QuickActionsSheet closed by backdrop/dismiss');
+          setQuickOpen(false);
+        }}
         onPick={navigateQuick}
       />
     </View>

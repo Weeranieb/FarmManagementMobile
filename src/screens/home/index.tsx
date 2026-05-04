@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -96,6 +97,9 @@ const HOME_ACTIVITY: ActivityItem[] = [
 
 const GRID_GAP = space[3]; // 12 px — keeps 8 pt grid
 
+// Filter logs in dev: `npx react-native log-ios | grep \[Home\]`
+const log = (...args: unknown[]) => console.log('[Home]', ...args);
+
 type Props = {
   showHeader?: boolean;
   onOpenPond?: (pondId?: number) => void;
@@ -120,6 +124,25 @@ export function HomeScreen({
   const displayInitial = greetingName.trim().slice(0, 1);
 
   const bottomPad = fabClearance ?? space[10] + space[8];
+
+  useEffect(() => {
+    log('HomeScreen mount', {
+      isLoading,
+      showHeader,
+      fabClearance,
+      authUser: authUser ? { id: authUser.id, firstName: authUser.firstName } : null,
+      greetingName,
+      counts: {
+        alerts: HOME_ALERTS.length,
+        activity: HOME_ACTIVITY.length,
+        taskPending: HOME_TASK.pending,
+        taskLate: HOME_TASK.late,
+      },
+    });
+    return () => log('HomeScreen unmount');
+    // Run once per mount + when loading flag flips so we can see state
+    // transitions during dev (skeleton -> real data).
+  }, [isLoading, showHeader, fabClearance, authUser, greetingName]);
 
   return (
     <ScrollView
@@ -150,16 +173,13 @@ export function HomeScreen({
             {isLoading ? (
               <>
                 <Skeleton width={140} height={11} radius={4} />
-                <Skeleton
-                  width={180}
-                  height={20}
-                  radius={5}
-                  style={{ marginTop: space[1] }}
-                />
+                <Skeleton width={180} height={20} radius={5} style={{ marginTop: space[1] }} />
               </>
             ) : (
               <>
-                <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family }}>
+                <Text
+                  style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family }}
+                >
                   {thaiDate.long(today)}
                 </Text>
                 <Text
@@ -189,7 +209,11 @@ export function HomeScreen({
               }}
             >
               <Text
-                style={{ color: t.brandInk, fontFamily: type.familyBold, fontSize: type.sizes.base }}
+                style={{
+                  color: t.brandInk,
+                  fontFamily: type.familyBold,
+                  fontSize: type.sizes.base,
+                }}
               >
                 {displayInitial}
               </Text>
@@ -203,6 +227,7 @@ export function HomeScreen({
           <Skeleton width={120} height={32} radius={radii.pill} />
         ) : (
           <Pressable
+            onPress={() => log('farm filter chip pressed (no handler wired yet)')}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
@@ -297,18 +322,35 @@ export function HomeScreen({
             title={tx('home.task.stripPending')}
             subtitle={`${HOME_TASK.pending} / ${HOME_TASK.total} บ่อ`}
             emphasis={HOME_TASK.late > 0 ? `เลยกำหนด ${HOME_TASK.late} บ่อ` : undefined}
-            onPress={HOME_TASK.pending > 0 ? () => onOpenPond?.(11) : undefined}
+            onPress={
+              HOME_TASK.pending > 0
+                ? () => {
+                    log('alert strip pressed', { task: HOME_TASK });
+                    onOpenPond?.(11);
+                  }
+                : undefined
+            }
           />
         )}
       </View>
 
       {/* สิ่งที่ต้องดู */}
-      <SectionHeading title={tx('home.alerts')} count={isLoading ? undefined : HOME_ALERTS.length} />
+      <SectionHeading
+        title={tx('home.alerts')}
+        count={isLoading ? undefined : HOME_ALERTS.length}
+      />
       <View style={{ paddingHorizontal: space[5], gap: space[2] }}>
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => <AlertRowSkeleton key={`alert-sk-${i}`} />)
           : HOME_ALERTS.map((a) => (
-              <AlertRow key={a.id} a={a} onPress={() => onOpenPond?.()} />
+              <AlertRow
+                key={a.id}
+                a={a}
+                onPress={() => {
+                  log('alert row pressed', { id: a.id, kind: a.kind, title: a.title });
+                  onOpenPond?.();
+                }}
+              />
             ))}
       </View>
 
@@ -320,7 +362,10 @@ export function HomeScreen({
           : HOME_ACTIVITY.map((e) => <ActivityRow key={e.id} e={e} />)}
         {!isLoading && (
           <Pressable
-            onPress={() => onOpenPond?.()}
+            onPress={() => {
+              log('seeAllActivity pressed');
+              onOpenPond?.();
+            }}
             style={{
               flexDirection: 'row',
               alignItems: 'center',

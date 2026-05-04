@@ -1,7 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
-import { Card, Pill, TopBar } from '@/components/ui';
+import { Card, TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
@@ -78,21 +78,6 @@ function FarmCard({ farm, onPress }: { farm: FarmMock; onPress?: () => void }) {
           <Divider />
           <Stat label="ปลารวม" v={fmt.num(farm.totalStock)} sub="ตัว" />
         </Row>
-      </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          backgroundColor: t.surfaceAlt,
-          borderTopWidth: 1,
-          borderTopColor: t.border,
-          gap: 6,
-        }}
-      >
-        <Pill tone={farm.status === 'active' ? 'success' : 'maint'}>
-          {farm.status === 'active' ? 'ใช้งาน' : 'ปิด'}
-        </Pill>
       </View>
     </Card>
   );

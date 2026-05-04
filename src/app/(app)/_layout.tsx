@@ -12,6 +12,7 @@ export default function AppLayout() {
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="farm/[farmId]/index" />
       <Stack.Screen name="pond/[id]/index" />
       <Stack.Screen name="pond/[id]/daily-log" />
       <Stack.Screen name="flows/fill" options={{ presentation: 'modal' }} />

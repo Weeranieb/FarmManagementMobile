@@ -78,27 +78,67 @@ export function usePondsData(farmId?: number) {
 
 export function usePondData(id: number | undefined) {
   const enabled = useUseApi();
-  const q = usePond(id);
-  if (!enabled || q.isError || q.data == null) {
+  const q = usePond(enabled ? id : undefined);
+
+  if (!enabled) {
+    const found = id != null ? mockPonds.find((p) => p.id === id) : undefined;
     return {
-      data: mockPonds.find((p) => p.id === id) ?? mockPonds[0],
+      data: found ?? null,
       isLoading: false,
       isError: false,
       source: 'mock' as const,
     };
   }
+
+  if (id == null) {
+    return {
+      data: null,
+      isLoading: false,
+      isError: false,
+      source: 'api' as const,
+    };
+  }
+
+  if (q.isPending) {
+    return {
+      data: null,
+      isLoading: true,
+      isError: false,
+      source: 'api' as const,
+    };
+  }
+
+  if (q.isError) {
+    return {
+      data: null,
+      isLoading: false,
+      isError: true,
+      source: 'api' as const,
+    };
+  }
+
+  if (q.data != null) {
+    return {
+      data: adaptPond(q.data),
+      isLoading: false,
+      isError: false,
+      source: 'api' as const,
+    };
+  }
+
   return {
-    data: adaptPond(q.data),
-    isLoading: q.isLoading,
-    isError: q.isError,
+    data: null,
+    isLoading: false,
+    isError: false,
     source: 'api' as const,
   };
 }
 
 export function useDailyLogData(pondId: number | undefined, month: string) {
   const enabled = useUseApi();
-  const q = useDailyLog(pondId, month);
-  if (!enabled || q.isError || q.data == null) {
+  const q = useDailyLog(enabled && pondId != null ? pondId : undefined, month);
+
+  if (!enabled || pondId == null) {
     return {
       data: mockDailyLog as unknown as DailyLogResponse,
       isLoading: false,
@@ -106,5 +146,38 @@ export function useDailyLogData(pondId: number | undefined, month: string) {
       source: 'mock' as const,
     };
   }
-  return { data: q.data, isLoading: q.isLoading, isError: q.isError, source: 'api' as const };
+
+  if (q.isPending) {
+    return {
+      data: null,
+      isLoading: true,
+      isError: false,
+      source: 'api' as const,
+    };
+  }
+
+  if (q.isError) {
+    return {
+      data: null,
+      isLoading: false,
+      isError: true,
+      source: 'api' as const,
+    };
+  }
+
+  if (q.data != null) {
+    return {
+      data: q.data,
+      isLoading: false,
+      isError: false,
+      source: 'api' as const,
+    };
+  }
+
+  return {
+    data: null,
+    isLoading: false,
+    isError: false,
+    source: 'api' as const,
+  };
 }

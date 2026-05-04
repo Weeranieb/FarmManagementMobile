@@ -21,15 +21,23 @@ nvm use 22       # Expo SDK 54 needs Node >= 20
 npm install --legacy-peer-deps
 cp .env.example .env
 # Edit EXPO_PUBLIC_API_URL to point at your backend
-# - iOS simulator: http://localhost:8080
-# - Android emulator: http://10.0.2.2:8080
-# - LAN device: http://<your-ip>:8080
+# - iOS simulator / Android emulator: http://localhost:8080 (emulator → 10.0.2.2 at runtime)
+# - Physical device: http://<your-mac-lan-ip>:8080
 
 npm run prebuild          # first time (or after changing app.json native bits): generates ios/ + android/
 npm run start
 # press i for iOS simulator, a for Android, w for web
 # Or: npm run ios / npm run android (builds native app via Xcode / Gradle, then runs Metro)
 ```
+
+**Android Studio:** the Run button only installs/launches the native app — it does **not** start Metro. Either:
+
+1. **Two terminals:** `npm run start` in `mobile/` (leave it running), then press Run in Android Studio, **or**
+2. **One command from `mobile/`:** `npm run android` — Expo starts Metro and runs Gradle for you.
+
+If the JS bundle fails to load, Metro was not running or the device could not reach port 8081 (USB: `adb reverse tcp:8081 tcp:8081`; Wi‑Fi: set `REACT_NATIVE_PACKAGER_HOSTNAME` in `.env` to your Mac’s LAN IP).
+
+**Backend from Android:** use `EXPO_PUBLIC_API_URL=http://localhost:8080` for simulators/emulators (Android emulator is rewritten to `10.0.2.2` in code). For a **physical Android device**, set `EXPO_PUBLIC_API_URL` to `http://<your-mac-ip>:8080` — `localhost` on the phone is the phone itself, not your Mac.
 
 ## Native projects (Expo prebuild + CNG)
 
@@ -179,6 +187,7 @@ Splash background is set in `app.json` to the design's warm off-white
 
 ## Troubleshooting
 
+- **Android Studio / Gradle: `Cannot run program "node"`** — The IDE does not load nvm’s `PATH`. This project sets `node.executable` in `android/local.properties`, patches `settings.gradle` / `app/build.gradle`, and prepends `android/gradlew` so `PATH` and `NODE_BINARY` include that Node (needed for **Expo’s Kotlin autolinking**, which still invokes bare `node`). After changing this, run **`cd mobile/android && ./gradlew --stop`** then sync again so Gradle picks up the env. If it still fails, in Android Studio use **Gradle → Gradle wrapper** (not a standalone Gradle install), or add your nvm `bin` directory to **Gradle environment / PATH** in the IDE.
 - **Metro can't find `tokens.tailwind.cjs`** — run `npm run tokens:gen`
 - **Fonts look fallback-y** — first launch downloads them; check
   `useAppFonts()` returns `loaded: true`

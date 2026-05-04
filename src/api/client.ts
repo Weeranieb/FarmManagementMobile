@@ -1,13 +1,38 @@
 // Thin fetch wrapper for the FarmOS Go backend at /api/v1.
 // - Reads base URL from EXPO_PUBLIC_API_URL.
+// - On Android emulator, rewrites localhost/127.0.0.1 → 10.0.2.2 so the app can reach the host machine.
 // - Auto-attaches Authorization: Bearer <jwt> if the auth store has a token.
 // - Maps backend error envelopes ({ code, message }) to ApiError.
+
+import * as Device from 'expo-device';
+import { Platform } from 'react-native';
 
 import { useAuthStore } from '@/store/auth';
 import type { ApiError } from './types';
 
-const RAW_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080';
-const API_BASE = `${RAW_BASE.replace(/\/$/, '')}/api/v1`;
+function resolveBackendBaseUrl(raw: string): string {
+  const fallback = 'http://localhost:8080';
+  const s = raw.trim() || fallback;
+  let url: URL;
+  try {
+    url = new URL(s.includes('://') ? s : `http://${s}`);
+  } catch {
+    return s;
+  }
+
+  const local = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+
+  if (Platform.OS === 'android' && local && !Device.isDevice) {
+    url.hostname = '10.0.2.2';
+  }
+
+  let out = url.toString();
+  if (out.endsWith('/')) out = out.slice(0, -1);
+  return out;
+}
+
+const RAW_BASE = resolveBackendBaseUrl(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080');
+const API_BASE = `${RAW_BASE}/api/v1`;
 
 type FetchOptions = Omit<RequestInit, 'body'> & {
   body?: unknown;

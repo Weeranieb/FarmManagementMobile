@@ -46,6 +46,8 @@
       "bundler": "metro"
     },
     "plugins": [
+      "./plugins/with-android-node-path.js",
+      "./plugins/with-ios-metro-launcher.js",
       "expo-router",
       "expo-font",
       "expo-secure-store",

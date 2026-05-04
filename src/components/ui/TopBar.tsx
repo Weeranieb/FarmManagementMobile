@@ -18,8 +18,8 @@ export function TopBar({ title, subtitle, leading, trailing, dense, style }: Pro
       style={[
         {
           paddingHorizontal: 18,
-          paddingTop: dense ? 8 : 12,
-          paddingBottom: dense ? 10 : 14,
+          paddingTop: dense ? 8 : 16,
+          paddingBottom: dense ? 10 : 16,
           borderBottomWidth: 1,
           borderBottomColor: t.border,
           backgroundColor: t.bg,
@@ -33,10 +33,11 @@ export function TopBar({ title, subtitle, leading, trailing, dense, style }: Pro
       {leading}
       <View style={{ flex: 1, minWidth: 0 }}>
         {title ? (
-          <Text style={{ fontSize: 18, fontFamily: type.familyBold, color: t.ink, lineHeight: 22 }}>
+          <Text style={{ fontSize: 18, fontFamily: type.familyBold, color: t.ink, lineHeight: 24 }}>
             {title}
           </Text>
         ) : null}
+
         {subtitle ? (
           <Text style={{ fontSize: 12, color: t.inkMute, marginTop: 2, fontFamily: type.family }}>
             {subtitle}

@@ -1,0 +1,40 @@
+env: load .env
+env: export EXPO_PUBLIC_API_URL
+Starting project at /Users/weerachaipanthueng/Projects/Business/Farm-Project/mobile
+Using src/app as the root directory for Expo Router.
+Starting Metro Bundler
+The following packages should be updated for best compatibility with the installed expo version:
+  babel-preset-expo@55.0.19 - expected version: ~54.0.10
+Your project may not work correctly until you install the expected versions of the packages.
+› Opening exp://192.168.1.124:8081 on Pixel_10_Pro_XL
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+ INFO  Launching DevTools...
+Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Android Bundled 282ms node_modules/expo-router/entry.js (1 module)
+ ERROR  [Error: Cannot find native module 'ExpoDevice'] 
+
+Code: client.ts
+[0m [90m  5 |[39m [90m// - Maps backend error envelopes ({ code, message }) to ApiError.[39m
+ [90m  6 |[39m
+[31m[1m>[22m[39m[90m  7 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mDevice[39m [36mfrom[39m [32m'expo-device'[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m
+ [90m  8 |[39m [36mimport[39m { [33mPlatform[39m } [36mfrom[39m [32m'react-native'[39m[33m;[39m
+ [90m  9 |[39m
+ [90m 10 |[39m [36mimport[39m { useAuthStore } [36mfrom[39m [32m'@/store/auth'[39m[33m;[39m[0m
+Call Stack
+  <global> (src/api/client.ts:7)
+ ERROR  [Error: Cannot find native module 'ExpoDevice'] 
+
+Code: client.ts
+[0m [90m  5 |[39m [90m// - Maps backend error envelopes ({ code, message }) to ApiError.[39m
+ [90m  6 |[39m
+[31m[1m>[22m[39m[90m  7 |[39m [36mimport[39m [33m*[39m [36mas[39m [33mDevice[39m [36mfrom[39m [32m'expo-device'[39m[33m;[39m
+ [90m    |[39m [31m[1m^[22m[39m
+ [90m  8 |[39m [36mimport[39m { [33mPlatform[39m } [36mfrom[39m [32m'react-native'[39m[33m;[39m
+ [90m  9 |[39m
+ [90m 10 |[39m [36mimport[39m { useAuthStore } [36mfrom[39m [32m'@/store/auth'[39m[33m;[39m[0m
+Call Stack
+  <global> (src/api/client.ts:7)
+Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Android Bundled 162ms node_modules/expo-router/entry.js (1 module)

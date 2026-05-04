@@ -1,0 +1,21 @@
+ext.resolveNodeExecutable = { projectRoot ->
+    def fromEnv = System.getenv("NODE_BINARY")
+    if (fromEnv != null && !fromEnv.trim().isEmpty()) {
+        return fromEnv.trim()
+    }
+    def propsFile = new File(projectRoot, "android/local.properties")
+    if (propsFile.exists()) {
+        def props = new Properties()
+        propsFile.withInputStream { stream -> props.load(stream) }
+        def p = props.getProperty("node.executable")
+        if (p != null && !p.trim().isEmpty()) {
+            return p.trim()
+        }
+    }
+    for (def candidate : ["/opt/homebrew/bin/node", "/usr/local/bin/node"]) {
+        if (new File(candidate as String).exists()) {
+            return candidate
+        }
+    }
+    return "node"
+}
