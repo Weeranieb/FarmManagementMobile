@@ -1,0 +1,106 @@
+{
+  "app": {
+    "name": "FarmOS",
+    "tagline": "จัดการบ่อปลาในมือคุณ"
+  },
+  "auth": {
+    "username": "ชื่อผู้ใช้",
+    "password": "รหัสผ่าน",
+    "login": "เข้าสู่ระบบ",
+    "forgot": "ลืมรหัสผ่าน?",
+    "showPassword": "แสดงรหัสผ่าน",
+    "hidePassword": "ซ่อนรหัสผ่าน",
+    "version": "เวอร์ชัน 1.0.0"
+  },
+  "tabs": {
+    "home": "หน้าหลัก",
+    "farms": "ฟาร์ม",
+    "profile": "โปรไฟล์"
+  },
+  "home": {
+    "greeting": "สวัสดี, คุณ{{name}}",
+    "allFarms": "ฟาร์มทั้งหมด",
+    "summary": {
+      "fish": "ปลาคงเหลือ",
+      "active": "บ่อใช้งาน",
+      "feed": "ค่าอาหารวันนี้",
+      "deaths": "ปลาตายวันนี้"
+    },
+    "task": {
+      "stripPending": "ยังไม่ได้บันทึกวันนี้",
+      "stripDone": "วันนี้บันทึกครบทุกบ่อแล้ว",
+      "subLine": "{{pending}} / {{total}} บ่อ",
+      "subLate": "เลยกำหนด {{count}} บ่อ",
+      "pending": "วันนี้ {{pending}} จาก {{total}} บ่อยังไม่บันทึก",
+      "late": "เลยกำหนด {{count}}",
+      "doneAll": "บันทึกครบ {{total}} บ่อแล้ว"
+    },
+    "quickActions": {
+      "title": "เลือกการดำเนินการ",
+      "sub": "เลือกบ่อในขั้นตอนถัดไป",
+      "logFeed": "บันทึกอาหาร",
+      "fillSub": "เริ่มหรือเติมรอบ",
+      "moveSub": "ย้ายไปบ่ออื่น",
+      "sellSub": "บันทึกการขาย",
+      "feedSub": "รายวัน"
+    },
+    "alerts": "สิ่งที่ต้องดู",
+    "activity": "กิจกรรมล่าสุด",
+    "seeAll": "ดูทั้งหมด",
+    "seeAllActivity": "ดูประวัติทั้งหมด"
+  },
+  "pond": {
+    "active": "ใช้งาน",
+    "maintenance": "ปิดบ่อ",
+    "ageDays": "อายุ {{days}} วัน",
+    "stockCount": "{{count}} ตัว",
+    "actions": {
+      "fill": "เติม",
+      "move": "ย้าย",
+      "sell": "ขาย"
+    }
+  },
+  "status": {
+    "saved": "บันทึกแล้ว",
+    "pending": "รอบันทึก",
+    "late": "เลยกำหนด"
+  },
+  "daily": {
+    "title": "บันทึกอาหารวันนี้",
+    "morning": "เช้า",
+    "evening": "เย็น",
+    "freshFeed": "เหยื่อสด",
+    "pelletFeed": "อาหารเม็ด",
+    "deaths": "ปลาตาย",
+    "touristCatch": "จับปลาเป็น",
+    "save": "บันทึก",
+    "saveAndNext": "บันทึกและไปบ่อถัดไป",
+    "saveAndNextDay": "บันทึกและไปวันถัดไป",
+    "monthSummary": "สรุปเดือน",
+    "summary": {
+      "freshTotal": "เหยื่อสดรวม",
+      "pelletTotal": "อาหารเม็ดรวม",
+      "feedCost": "ค่าอาหารโดยประมาณ",
+      "deathTotal": "ปลาตายสะสม",
+      "loggedDays": "วันที่บันทึกแล้ว"
+    }
+  },
+  "flow": {
+    "fill": "เติมปลา",
+    "move": "ย้ายปลา",
+    "sell": "ขายปลา",
+    "review": "ตรวจสอบ",
+    "confirm": "ยืนยัน",
+    "next": "ถัดไป",
+    "back": "ย้อนกลับ"
+  },
+  "common": {
+    "today": "วันนี้",
+    "yesterday": "เมื่อวาน",
+    "loading": "กำลังโหลด",
+    "retry": "ลองใหม่",
+    "cancel": "ยกเลิก",
+    "search": "ค้นหา",
+    "filter": "ตัวกรอง"
+  }
+}
