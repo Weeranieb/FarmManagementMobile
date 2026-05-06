@@ -21,9 +21,11 @@ function adaptFarm(f: FarmResponse) {
     name: f.name,
     clientId: f.clientId,
     status,
-    pondCount: 0,
-    activePonds: 0,
+    pondCount: f.pondCount ?? 0,
+    activePonds: f.activePonds ?? 0,
+    /** Filled in `FarmsScreen` from pond list when live `/farm` data is active. */
     totalStock: 0,
+    createdAt: f.createdAt,
   };
 }
 
@@ -32,13 +34,12 @@ export function useFarmsData() {
   const q = useFarms();
   const raw = q.data;
   if (!enabled || q.isError || raw == null || !Array.isArray(raw)) {
-    return { data: mockFarms, isLoading: false, isError: false, source: 'mock' as const };
+    return { data: mockFarms, isLoading: false, isError: false };
   }
   return {
     data: raw.map(adaptFarm),
     isLoading: q.isLoading,
     isError: q.isError,
-    source: 'api' as const,
   };
 }
 
@@ -49,7 +50,7 @@ function adaptPond(p: PondResponse) {
     farmName: '',
     name: p.name,
     status: (p.status === 'maintenance' ? 'maintenance' : 'active') as 'active' | 'maintenance',
-    totalFish: p.totalFish,
+    totalFish: p.totalFish ?? 0,
     fishTypes: p.fishTypes ?? [],
     ageDays: p.ageDays,
     startDate: p.startDate,
@@ -66,13 +67,12 @@ export function usePondsData(farmId?: number) {
   const raw = q.data;
   if (!enabled || q.isError || raw == null || !Array.isArray(raw)) {
     const list = farmId != null ? mockPonds.filter((p) => p.farmId === farmId) : mockPonds;
-    return { data: list, isLoading: false, isError: false, source: 'mock' as const };
+    return { data: list, isLoading: false, isError: false };
   }
   return {
     data: raw.map(adaptPond),
     isLoading: q.isLoading,
     isError: q.isError,
-    source: 'api' as const,
   };
 }
 
@@ -86,7 +86,6 @@ export function usePondData(id: number | undefined) {
       data: found ?? null,
       isLoading: false,
       isError: false,
-      source: 'mock' as const,
     };
   }
 
@@ -95,7 +94,6 @@ export function usePondData(id: number | undefined) {
       data: null,
       isLoading: false,
       isError: false,
-      source: 'api' as const,
     };
   }
 
@@ -104,7 +102,6 @@ export function usePondData(id: number | undefined) {
       data: null,
       isLoading: true,
       isError: false,
-      source: 'api' as const,
     };
   }
 
@@ -113,7 +110,6 @@ export function usePondData(id: number | undefined) {
       data: null,
       isLoading: false,
       isError: true,
-      source: 'api' as const,
     };
   }
 
@@ -122,7 +118,6 @@ export function usePondData(id: number | undefined) {
       data: adaptPond(q.data),
       isLoading: false,
       isError: false,
-      source: 'api' as const,
     };
   }
 
@@ -130,7 +125,6 @@ export function usePondData(id: number | undefined) {
     data: null,
     isLoading: false,
     isError: false,
-    source: 'api' as const,
   };
 }
 
@@ -143,7 +137,6 @@ export function useDailyLogData(pondId: number | undefined, month: string) {
       data: mockDailyLog as unknown as DailyLogResponse,
       isLoading: false,
       isError: false,
-      source: 'mock' as const,
     };
   }
 
@@ -152,7 +145,6 @@ export function useDailyLogData(pondId: number | undefined, month: string) {
       data: null,
       isLoading: true,
       isError: false,
-      source: 'api' as const,
     };
   }
 
@@ -161,7 +153,6 @@ export function useDailyLogData(pondId: number | undefined, month: string) {
       data: null,
       isLoading: false,
       isError: true,
-      source: 'api' as const,
     };
   }
 
@@ -170,7 +161,6 @@ export function useDailyLogData(pondId: number | undefined, month: string) {
       data: q.data,
       isLoading: false,
       isError: false,
-      source: 'api' as const,
     };
   }
 
@@ -178,6 +168,5 @@ export function useDailyLogData(pondId: number | undefined, month: string) {
     data: null,
     isLoading: false,
     isError: false,
-    source: 'api' as const,
   };
 }

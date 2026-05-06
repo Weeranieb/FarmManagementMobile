@@ -28,12 +28,46 @@ export type LoginResponse = {
   user: UserResponse;
 };
 
+/** Single row from GET /farm list (`FarmListResponse.farms`). */
 export type FarmResponse = {
   id: number;
   clientId: number;
   name: string;
-  address: string | null;
-  status: 'active' | 'inactive' | string;
+  status: string;
+  pondCount: number;
+  activePonds: number;
+  createdAt?: string;
+};
+
+/** GET /farm response body (`data` after unwrapSuccessBody). */
+export type FarmListResponse = {
+  farms: FarmResponse[];
+  total?: number;
+  totalActive?: number;
+};
+
+export type FarmDetailSummary = {
+  totalStock: number;
+  activePonds: number;
+  totalPonds: number;
+  maintenancePonds: number;
+};
+
+export type FarmDetailPondItem = {
+  id: number;
+  name: string;
+  status: string;
+};
+
+/** GET /farm/:id payload. */
+export type FarmDetailResponse = {
+  id: number;
+  clientId: number;
+  name: string;
+  status: string;
+  createdAt?: string;
+  summary: FarmDetailSummary;
+  ponds: FarmDetailPondItem[];
 };
 
 export type PondResponse = {
@@ -41,7 +75,7 @@ export type PondResponse = {
   farmId: number;
   name: string;
   status: 'active' | 'maintenance' | string;
-  totalFish: number;
+  totalFish?: number | null;
   fishTypes: string[];
   ageDays: number | null;
   startDate: string | null;

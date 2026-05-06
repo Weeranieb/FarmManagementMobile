@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radii, type } from '@/theme/tokens';
+import { radii, space, type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
-import { Btn, Card, Input, Pill } from '@/components/ui';
+import { Btn, Card, Pill } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { thaiDate, TH_WEEKDAYS_SHORT } from '@/locale/thaiDate';
 import { today } from '@/mock/data';
 import { useDailyLogData } from '@/data';
+import { useAuthStore } from '@/store/auth';
 import type { DailyLogResponse } from '@/api/types';
 
 function monthStrFromDate(d: Date): string {
@@ -37,6 +38,9 @@ function startOfCalendarMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
 
+/** Horizontal inset inside the activity card (prototype ~20px). */
+const CARD_PAD = space[5];
+
 type Props = {
   pondId: number;
   /** Extra bottom padding when embedded in an outer ScrollView (e.g. tab). */
@@ -51,7 +55,8 @@ export function PondDailyLogPanel({ pondId, contentPaddingBottom = 0 }: Props) {
     const m = monthStrFromDate(refNow);
     return Math.min(refNow.getDate(), daysInMonthFromStr(m));
   });
-  const { data, isLoading, isError, source } = useDailyLogData(pondId, month);
+  const hasToken = useAuthStore((s) => s.token != null);
+  const { data, isLoading, isError } = useDailyLogData(pondId, month);
 
   const monthDate = useMemo(() => monthStrToStartDate(month), [month]);
   const daysInMonth = useMemo(() => daysInMonthFromStr(month), [month]);
@@ -234,8 +239,14 @@ export function PondDailyLogPanel({ pondId, contentPaddingBottom = 0 }: Props) {
       ) : null}
 
       <View style={{ paddingHorizontal: 20 }}>
-        <Card padded={false}>
-          {isLoading && source === 'api' ? (
+        <Card
+          padded={false}
+          style={{
+            borderRadius: radii.xl,
+            borderColor: t.border,
+          }}
+        >
+          {isLoading && hasToken ? (
             <View style={{ padding: 28, alignItems: 'center' }}>
               <Text style={{ fontSize: 14, color: t.inkMute, fontFamily: type.family }}>
                 กำลังโหลดบันทึก…
@@ -243,9 +254,24 @@ export function PondDailyLogPanel({ pondId, contentPaddingBottom = 0 }: Props) {
             </View>
           ) : (
             <>
-              <View style={{ padding: 16, paddingBottom: 6 }}>
-                <Row justify="space-between">
-                  <Text style={{ fontSize: 15, fontFamily: type.familyBold, color: t.ink }}>
+              <View
+                style={{
+                  paddingHorizontal: CARD_PAD,
+                  paddingTop: 18,
+                  paddingBottom: space[2],
+                }}
+              >
+                <Row justify="space-between" align="flex-start">
+                  <Text
+                    style={{
+                      flex: 1,
+                      marginRight: space[3],
+                      fontSize: type.sizes.lg,
+                      fontFamily: type.familyBold,
+                      color: t.ink,
+                      lineHeight: 24,
+                    }}
+                  >
                     {thaiDate.long(selectedFullDate)}
                   </Text>
                   {entry ? (
@@ -299,10 +325,16 @@ export function PondDailyLogPanel({ pondId, contentPaddingBottom = 0 }: Props) {
                 onEveningChange={setPelletEvening}
               />
               <Sep />
-              <View style={{ padding: 16, gap: 10 }}>
+              <View
+                style={{
+                  paddingHorizontal: CARD_PAD,
+                  paddingVertical: space[3],
+                  gap: space[3],
+                }}
+              >
                 <Row gap={10}>
-                  <NumField label="ปลาตาย" unit="ตัว" value={deaths} onChange={setDeaths} />
-                  <NumField
+                  <AmountTile label="ปลาตาย" unit="ตัว" value={deaths} onChange={setDeaths} />
+                  <AmountTile
                     label="จับปลาเป็น"
                     optional
                     unit="ตัว"
@@ -353,27 +385,34 @@ function FeedSection({
 }) {
   const { t } = useTheme();
   return (
-    <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 6 }}>
-      <Row justify="space-between" style={{ marginBottom: 8 }}>
-        <Col gap={1}>
+    <View
+      style={{
+        paddingHorizontal: CARD_PAD,
+        paddingTop: space[3],
+        paddingBottom: space[3],
+      }}
+    >
+      <Row justify="space-between" style={{ marginBottom: space[3] }} align="flex-start">
+        <Col gap={2} style={{ flex: 1, marginRight: space[3] }}>
           <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.ink }}>{title}</Text>
           <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
             {subtitle}
           </Text>
         </Col>
-        <Pressable>
+        <Pressable hitSlop={8}>
           <Text style={{ color: t.brand, fontSize: 13, fontFamily: type.familySemi }}>เปลี่ยน</Text>
         </Pressable>
       </Row>
       <Row gap={10}>
-        <NumField label="เช้า" unit="กก." value={morning} onChange={onMorningChange} />
-        <NumField label="เย็น" unit="กก." value={evening} onChange={onEveningChange} />
+        <AmountTile label="เช้า" unit="กก." value={morning} onChange={onMorningChange} />
+        <AmountTile label="เย็น" unit="กก." value={evening} onChange={onEveningChange} />
       </Row>
     </View>
   );
 }
 
-function NumField({
+/** Bordered inner tile: label + unit on top row, centered numeric value (daily log prototype). */
+function AmountTile({
   label,
   unit,
   value,
@@ -387,10 +426,26 @@ function NumField({
   optional?: boolean;
 }) {
   const { t } = useTheme();
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={{ flex: 1 }}>
-      <Row justify="space-between" style={{ marginBottom: 4 }}>
-        <Text style={{ fontSize: 11, color: t.inkSoft, fontFamily: type.familySemi }}>
+    <View
+      style={{
+        flex: 1,
+        borderRadius: radii.md,
+        borderWidth: 1,
+        borderColor: focused ? t.brand : t.border,
+        backgroundColor: t.surface,
+        minHeight: 88,
+        paddingHorizontal: 12,
+        paddingTop: 10,
+        paddingBottom: 10,
+      }}
+    >
+      <Row justify="space-between" style={{ marginBottom: 6 }}>
+        <Text
+          style={{ fontSize: 11, color: t.inkSoft, fontFamily: type.familySemi }}
+          numberOfLines={2}
+        >
           {label}
           {optional ? (
             <Text style={{ color: t.inkMute, fontFamily: type.family }}> · ไม่บังคับ</Text>
@@ -398,12 +453,29 @@ function NumField({
         </Text>
         <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}>{unit}</Text>
       </Row>
-      <Input big value={value} onChangeText={onChange} keyboardType="numeric" placeholder="0" />
+      <View style={{ flex: 1, justifyContent: 'center', minHeight: 42 }}>
+        <TextInput
+          value={value}
+          onChangeText={onChange}
+          keyboardType="numeric"
+          placeholder="0"
+          placeholderTextColor={t.inkMute}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          style={{
+            textAlign: 'center',
+            fontSize: type.sizes.xl,
+            fontFamily: type.familyNumSemi,
+            color: t.ink,
+            paddingVertical: 4,
+          }}
+        />
+      </View>
     </View>
   );
 }
 
 function Sep() {
   const { t } = useTheme();
-  return <View style={{ height: 1, backgroundColor: t.border, marginHorizontal: 16 }} />;
+  return <View style={{ height: 1, backgroundColor: t.border, marginHorizontal: CARD_PAD }} />;
 }

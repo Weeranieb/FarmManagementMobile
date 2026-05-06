@@ -13,7 +13,7 @@ export default function PondDetailRoute() {
         pondId={pondId}
         onBack={() => router.back()}
         onAction={(kind) => router.push(`/(app)/flows/${kind}?pondId=${pondId}`)}
-        onOpenDailyLog={() => router.push(`/(app)/pond/${pondId}/daily-log`)}
+        onOpenDailyLog={() => router.push(`/(app)/(tabs)/pond/${pondId}/daily-log`)}
       />
     </ThemedSafeAreaView>
   );

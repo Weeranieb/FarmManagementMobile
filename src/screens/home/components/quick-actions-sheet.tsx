@@ -1,5 +1,15 @@
 import type { ReactElement } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -24,6 +34,8 @@ const ROW_RADIUS = 14;
 /** Vertical space between action rows (sheet background shows in the gap). */
 const ROW_GAP = space[3];
 const ROW_INNER_GAP = 14;
+
+const SCREEN_H = Dimensions.get('window').height;
 
 const ROW_SEMANTICS: Record<
   QuickActionId,
@@ -94,23 +106,83 @@ export function QuickActionsSheet({ visible, onClose, onPick }: Props) {
   const { t: tx } = useTranslation();
   const insets = useSafeAreaInsets();
 
+  const [renderModal, setRenderModal] = useState(false);
+  /** `null` on first run so mount with `visible={true}` still runs the open animation. */
+  const prevVisible = useRef<boolean | null>(null);
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const sheetTranslateY = useRef(new Animated.Value(SCREEN_H)).current;
+
   const rows: QuickActionId[] = ['fill', 'move', 'sell', 'logFeed'];
   /** Web prototype: `padding: 10px 16px 28px` + device safe area. */
   const sheetPaddingBottom = 28 + Math.max(insets.bottom, 0);
 
+  useEffect(() => {
+    const prev = prevVisible.current;
+    prevVisible.current = visible;
+
+    let anim: Animated.CompositeAnimation | null = null;
+
+    if (visible && prev !== true) {
+      backdropOpacity.setValue(0);
+      sheetTranslateY.setValue(SCREEN_H);
+      setRenderModal(true);
+      anim = Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sheetTranslateY, {
+          toValue: 0,
+          duration: 280,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]);
+      anim.start();
+    } else if (!visible && prev === true) {
+      anim = Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sheetTranslateY, {
+          toValue: SCREEN_H,
+          duration: 240,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]);
+      anim.start(({ finished }) => {
+        if (finished) setRenderModal(false);
+      });
+    }
+
+    return () => {
+      anim?.stop();
+    };
+  }, [visible, backdropOpacity, sheetTranslateY]);
+
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={renderModal} animationType="none" transparent onRequestClose={onClose}>
       <View style={{ flex: 1, width: '100%', justifyContent: 'flex-end' }}>
-        <Pressable
-          onPress={onClose}
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(10,15,25,0.45)' }]}
-          accessibilityRole="button"
-          accessibilityLabel={tx('common.cancel')}
-        />
-        <View
+        <Animated.View
+          pointerEvents="box-none"
+          style={[StyleSheet.absoluteFillObject, { opacity: backdropOpacity }]}
+        >
+          <Pressable
+            onPress={onClose}
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(10,15,25,0.45)' }]}
+            accessibilityRole="button"
+            accessibilityLabel={tx('common.cancel')}
+          />
+        </Animated.View>
+        <Animated.View
           style={{
             width: '100%',
             alignSelf: 'stretch',
+            transform: [{ translateY: sheetTranslateY }],
             paddingTop: 10,
             paddingHorizontal: 16,
             paddingBottom: sheetPaddingBottom,
@@ -217,7 +289,7 @@ export function QuickActionsSheet({ visible, onClose, onPick }: Props) {
               );
             })}
           </View>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );

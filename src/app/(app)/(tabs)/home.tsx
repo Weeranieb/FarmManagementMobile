@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
   QuickActionsSheet,
@@ -21,9 +22,38 @@ const log = (...args: unknown[]) => console.log('[Home]', ...args);
 
 export default function HomeRoute() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
   const [quickOpen, setQuickOpen] = useState(false);
+
+  const defaultTabBarStyle = useMemo(
+    () => ({
+      backgroundColor: t.surface,
+      borderTopColor: t.border,
+      height: 64,
+      paddingBottom: 10,
+      paddingTop: 8,
+    }),
+    [t.surface, t.border],
+  );
+
+  useLayoutEffect(() => {
+    const tabNav = navigation.getParent();
+    if (!tabNav?.setOptions) return;
+    tabNav.setOptions({
+      tabBarStyle: quickOpen ? { display: 'none', height: 0 } : defaultTabBarStyle,
+    });
+    return () => {
+      tabNav.setOptions({ tabBarStyle: defaultTabBarStyle });
+    };
+  }, [quickOpen, navigation, defaultTabBarStyle]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => setQuickOpen(false);
+    }, []),
+  );
 
   useEffect(() => {
     log('mount HomeRoute', { defaultPondId: DEFAULT_POND_ID, insetsTop: insets.top });
@@ -39,7 +69,7 @@ export default function HomeRoute() {
     setQuickOpen(false);
     switch (id) {
       case 'logFeed': {
-        const path = `/(app)/pond/${DEFAULT_POND_ID}/daily-log`;
+        const path = `/(app)/(tabs)/pond/${DEFAULT_POND_ID}/daily-log`;
         log('router.push', path);
         router.push(path);
         break;
@@ -80,7 +110,7 @@ export default function HomeRoute() {
         onOpenPond={(id) => {
           const target = id ?? DEFAULT_POND_ID;
           log('openPond', { id, resolved: target });
-          router.push(`/(app)/pond/${target}`);
+          router.push(`/(app)/(tabs)/pond/${target}`);
         }}
       />
       <FAB

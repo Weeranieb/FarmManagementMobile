@@ -9,6 +9,8 @@ export type FarmMock = {
   pondCount: number;
   activePonds: number;
   totalStock: number;
+  /** Set when hydrating from GET /farm (for subtitle). */
+  createdAt?: string;
 };
 
 export type PondMock = {
@@ -50,6 +52,7 @@ export const farms: FarmMock[] = [
     pondCount: 8,
     activePonds: 6,
     totalStock: 42500,
+    createdAt: '2022-01-09T06:30:00.000Z',
   },
   {
     id: 2,
@@ -59,6 +62,7 @@ export const farms: FarmMock[] = [
     pondCount: 4,
     activePonds: 3,
     totalStock: 18200,
+    createdAt: '2022-01-16T08:00:00.000Z',
   },
 ];
 

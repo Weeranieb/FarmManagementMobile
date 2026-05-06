@@ -1,4 +1,6 @@
-import { ScrollView, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Card, TopBar } from '@/components/ui';
@@ -6,23 +8,101 @@ import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
 import type { FarmMock } from '@/mock/data';
+import type { FarmResponse } from '@/api/types';
+import { pondsApi } from '@/api/ponds';
+import { qk, useFarms } from '@/api/queries';
+import { useAuthStore } from '@/store/auth';
 import { useFarmsData } from '@/data';
+import { thaiDate } from '@/locale/thaiDate';
 
 type Props = {
   showHeader?: boolean;
   onOpenFarm?: (id: number) => void;
 };
 
+function farmAddedSubtitle(iso?: string): string | null {
+  if (!iso?.trim()) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `เพิ่มเมื่อ ${thaiDate.monthYearShort(d)}`;
+}
+
 export function FarmsScreen({ showHeader = true, onOpenFarm }: Props) {
   const { t } = useTheme();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
   const { data: farmsRaw } = useFarmsData();
-  const farms = Array.isArray(farmsRaw) ? farmsRaw : [];
+  const farmsQuery = useFarms();
+  const hasToken = useAuthStore((s) => s.token != null);
+  /** Only merge `/pond` rollups when the farm list actually came back from API (not mock fallback). */
+  const useLivePondRollup = hasToken && farmsQuery.isSuccess && Array.isArray(farmsQuery.data);
+
+  const baseline = Array.isArray(farmsRaw) ? farmsRaw : [];
+
+  const pondQueries = useQueries({
+    queries: useLivePondRollup
+      ? baseline.map((f) => ({
+          queryKey: qk.ponds(f.id),
+          queryFn: () => pondsApi.list(f.id),
+          enabled: useLivePondRollup,
+          staleTime: 60_000,
+        }))
+      : [],
+  });
+
+  const farms = useMemo(() => {
+    if (!useLivePondRollup) return baseline;
+
+    return baseline.map((f, idx) => {
+      const ponds = pondQueries[idx]?.data;
+      if (!Array.isArray(ponds)) {
+        return f;
+      }
+
+      let totalStock = 0;
+      let activeFromPonds = 0;
+      for (const p of ponds) {
+        if (p.status === 'active') activeFromPonds++;
+        totalStock += p.totalFish ?? 0;
+      }
+
+      return {
+        ...f,
+        activePonds: activeFromPonds,
+        totalStock,
+      };
+    });
+  }, [baseline, pondQueries, useLivePondRollup]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.refetchQueries({ queryKey: qk.farms() });
+      const farmsList = queryClient.getQueryData<FarmResponse[]>(qk.farms());
+      if (Array.isArray(farmsList) && farmsList.length > 0) {
+        await Promise.all(
+          farmsList.map((f) => queryClient.refetchQueries({ queryKey: qk.ponds(f.id) })),
+        );
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
+
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       {showHeader ? <TopBar title="ฟาร์มของฉัน" subtitle={`${farms.length} ฟาร์ม`} /> : null}
       <ScrollView
         contentContainerStyle={{ paddingBottom: 96 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={t.brand}
+            {...(Platform.OS === 'android' ? { colors: [t.brand] } : {})}
+          />
+        }
       >
         <View style={{ padding: 20, paddingBottom: 8 }}>
           <View
@@ -47,7 +127,12 @@ export function FarmsScreen({ showHeader = true, onOpenFarm }: Props) {
 
         <Col gap={12} style={{ paddingHorizontal: 20 }}>
           {farms.map((fm) => (
-            <FarmCard key={fm.id} farm={fm} onPress={() => onOpenFarm?.(fm.id)} />
+            <FarmCard
+              key={fm.id}
+              farm={fm}
+              subtitle={farmAddedSubtitle(fm.createdAt)}
+              onPress={() => onOpenFarm?.(fm.id)}
+            />
           ))}
         </Col>
       </ScrollView>
@@ -55,7 +140,15 @@ export function FarmsScreen({ showHeader = true, onOpenFarm }: Props) {
   );
 }
 
-function FarmCard({ farm, onPress }: { farm: FarmMock; onPress?: () => void }) {
+function FarmCard({
+  farm,
+  subtitle,
+  onPress,
+}: {
+  farm: FarmMock;
+  subtitle?: string | null;
+  onPress?: () => void;
+}) {
   const { t } = useTheme();
   return (
     <Card padded={false} onPress={onPress} style={{ overflow: 'hidden' }}>
@@ -63,11 +156,13 @@ function FarmCard({ farm, onPress }: { farm: FarmMock; onPress?: () => void }) {
         <Row justify="space-between" style={{ marginBottom: 10 }}>
           <Col gap={2}>
             <Text style={{ fontSize: 17, fontFamily: type.familyBold, color: t.ink }}>
-              {farm.name}
+              ฟาร์ม {farm.name}
             </Text>
-            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-              เพิ่มเมื่อ ม.ค. 2565
-            </Text>
+            {subtitle ? (
+              <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+                {subtitle}
+              </Text>
+            ) : null}
           </Col>
           <Icon.chevR size={18} color={t.inkSoft} />
         </Row>

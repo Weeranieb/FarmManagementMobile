@@ -12,7 +12,7 @@ export default function FarmPondsRoute() {
       <FarmPondsScreen
         farmId={farmId}
         onBack={() => router.back()}
-        onOpenPond={(pondId) => router.push(`/(app)/pond/${pondId}`)}
+        onOpenPond={(pondId) => router.push(`/(app)/(tabs)/pond/${pondId}`)}
       />
     </ThemedSafeAreaView>
   );

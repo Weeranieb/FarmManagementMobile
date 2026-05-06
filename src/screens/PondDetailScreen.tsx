@@ -340,22 +340,31 @@ function ActionPill({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => ({
         flex: 1,
-        height: 56,
-        borderRadius: radii.md,
+        minHeight: 52,
+        paddingVertical: 12,
+        paddingHorizontal: 10,
+        borderRadius: radii.lg,
         backgroundColor: soft,
         borderWidth: 1.5,
-        borderColor: disabled ? t.border : accent + '30',
+        borderColor: disabled ? t.border : accent,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
-        gap: 8,
+        gap: 6,
         opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
       })}
     >
-      <Ico size={18} color={ink} />
-      <Text style={{ color: ink, fontFamily: type.familyBold, fontSize: 14 }}>{label}</Text>
+      <Ico size={18} color={ink} stroke={2.25} />
+      <Text
+        numberOfLines={1}
+        style={{ color: ink, fontFamily: type.familyBold, fontSize: 15 }}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }

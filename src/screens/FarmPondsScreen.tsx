@@ -1,4 +1,12 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Card, TopBar } from '@/components/ui';
@@ -7,6 +15,7 @@ import { Row, Col } from '@/components/layout/Row';
 import { FishChips } from '@/components/domain/FishChips';
 import { StatusBadge } from '@/components/domain/StatusPip';
 import { fmt } from '@/utils/fmt';
+import { thaiDate } from '@/locale/thaiDate';
 import { useFarmsData, usePondsData } from '@/data';
 import type { PondMock } from '@/mock/data';
 
@@ -63,8 +72,6 @@ export function FarmPondsScreen({ farmId, showHeader = true, onBack, onOpenPond 
               height: 48,
               borderRadius: radii.md,
               backgroundColor: t.surfaceAlt,
-              borderWidth: 1,
-              borderColor: t.border,
               flexDirection: 'row',
               alignItems: 'center',
               paddingHorizontal: 14,
@@ -99,29 +106,56 @@ function PondRowCard({ pond, onPress }: { pond: PondMock; onPress?: () => void }
   const isMaint = pond.status === 'maintenance';
 
   return (
-    <Card padded={false} onPress={onPress} style={{ overflow: 'hidden' }}>
+    <Card padded={false} onPress={onPress} style={{ overflow: 'hidden', borderWidth: 0 }}>
       <View style={{ padding: 16 }}>
-        <Row justify="space-between" style={{ marginBottom: 10 }}>
+        <Row justify="space-between" align="flex-start" style={{ marginBottom: 10 }}>
           <Col gap={6} style={{ flex: 1, minWidth: 0 }}>
-            <Text style={{ fontSize: 17, fontFamily: type.familyBold, color: t.ink }}>
-              {pond.name}
-            </Text>
-            <Row gap={6} style={{ flexWrap: 'wrap' }}>
-              <StatusBadge s={pond.status} />
-              {!isMaint ? <FishChips types={pond.fishTypes} /> : null}
+            <Row gap={8} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
+              <Text
+                style={{
+                  fontSize: 17,
+                  fontFamily: type.familyBold,
+                  color: t.ink,
+                  lineHeight: 24,
+                  ...Platform.select({ android: { includeFontPadding: false } }),
+                }}
+              >
+                {pond.name}
+              </Text>
+              {/* Pill uses alignSelf: 'flex-start' — wrap so Row alignItems:center applies */}
+              <View style={{ alignSelf: 'center' }}>
+                <StatusBadge s={pond.status} />
+              </View>
             </Row>
+            {!isMaint && pond.fishTypes.length > 0 ? (
+              <Row gap={6} style={{ flexWrap: 'wrap' }}>
+                <FishChips types={pond.fishTypes} />
+              </Row>
+            ) : null}
           </Col>
-          <Icon.chevR size={18} color={t.inkSoft} />
+          {!isMaint ? <PondStatusDot pond={pond} /> : null}
         </Row>
         {!isMaint ? (
-          <Row gap={0} style={{ borderTopWidth: 1, borderTopColor: t.border, paddingTop: 10 }}>
-            <PondMiniStat label="ปลาในบ่อ" v={fmt.num(pond.totalFish)} sub="ตัว" />
-            <PondDivider />
-            <PondMiniStat label="อายุรอบ" v={String(pond.ageDays ?? 0)} sub="วัน" />
-          </Row>
+          <>
+            <Row gap={20} style={{ paddingTop: 2 }}>
+              <PondMiniStat label="ปลาในบ่อ (ตัว)" v={fmt.num(pond.totalFish)} />
+              <PondMiniStat label="อายุรอบ" v={String(pond.ageDays ?? 0)} sub="วัน" />
+            </Row>
+            {pond.latestActivityDate ? (
+              <>
+                <PondHr style={{ marginTop: 12 }} />
+                <Row gap={6} align="center" style={{ paddingTop: 12 }}>
+                  <ActivityModePill mode={pond.latestActivityType} />
+                  <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+                    · {thaiDate.short(new Date(pond.latestActivityDate))}
+                  </Text>
+                </Row>
+              </>
+            ) : null}
+          </>
         ) : (
           <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-            บ่อปิด — ไม่มีรอบใช้งาน
+            บ่อปิดอยู่ — กดเพื่อเริ่มรอบใหม่
           </Text>
         )}
       </View>
@@ -129,12 +163,55 @@ function PondRowCard({ pond, onPress }: { pond: PondMock; onPress?: () => void }
   );
 }
 
+function PondStatusDot({ pond }: { pond: PondMock }) {
+  const { t } = useTheme();
+  const color = pond.loggedToday ? t.success : pond.lateDays > 0 ? t.danger : t.warn;
+  return (
+    <View
+      style={{
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: color,
+        marginTop: 4,
+      }}
+    />
+  );
+}
+
+function ActivityModePill({ mode }: { mode: 'fill' | 'move' | 'sell' }) {
+  const { t } = useTheme();
+  const map = {
+    fill: { bg: t.fillSoft, fg: t.fillInk, label: 'เติม' },
+    move: { bg: t.moveSoft, fg: t.moveInk, label: 'ย้าย' },
+    sell: { bg: t.sellSoft, fg: t.sellInk, label: 'ขาย' },
+  } as const;
+  const m = map[mode];
+  return (
+    <View
+      style={{
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: radii.xs,
+        backgroundColor: m.bg,
+      }}
+    >
+      <Text style={{ color: m.fg, fontFamily: type.familySemi, fontSize: 12 }}>{m.label}</Text>
+    </View>
+  );
+}
+
+function PondHr({ style }: { style?: StyleProp<ViewStyle> }) {
+  const { t } = useTheme();
+  return <View style={[{ height: 1, backgroundColor: t.border }, style]} />;
+}
+
 function PondMiniStat({ label, v, sub }: { label: string; v: string; sub?: string }) {
   const { t } = useTheme();
   return (
-    <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+    <View style={{ flex: 1, alignItems: 'flex-start', gap: 2 }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-        <Text style={{ fontFamily: type.familyNumBold, fontSize: 16, color: t.ink }}>{v}</Text>
+        <Text style={{ fontFamily: type.familyNumBold, fontSize: 20, color: t.ink }}>{v}</Text>
         {sub ? (
           <Text
             style={{ fontSize: 11, color: t.inkMute, marginLeft: 3, fontFamily: type.familyMedium }}
@@ -146,9 +223,4 @@ function PondMiniStat({ label, v, sub }: { label: string; v: string; sub?: strin
       <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>{label}</Text>
     </View>
   );
-}
-
-function PondDivider() {
-  const { t } = useTheme();
-  return <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: t.border }} />;
 }
