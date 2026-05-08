@@ -30,7 +30,7 @@ export function PondRowCard({ pond, onPress }: Props) {
                   ...Platform.select({ android: { includeFontPadding: false } }),
                 }}
               >
-                {pond.name}
+                {`บ่อ ${pond.name}`}
               </Text>
               {/* Pill uses alignSelf: 'flex-start' — wrap so Row alignItems:center applies */}
               <View style={{ alignSelf: 'center' }}>

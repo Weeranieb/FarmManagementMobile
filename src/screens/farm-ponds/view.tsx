@@ -53,7 +53,7 @@ export function FarmPondsView({
           />
         ) : (
           <TopBar
-            title={farmTitle}
+            title={`ฟาร์ม ${farmTitle}`}
             subtitle={countLabel}
             leading={
               onBack ? (
