@@ -7,12 +7,10 @@ import { Card, TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
-import type { FarmMock } from '@/mock/data';
-import type { FarmResponse } from '@/api/types';
-import { pondsApi } from '@/api/ponds';
-import { qk, useFarms } from '@/api/queries';
-import { useAuthStore } from '@/store/auth';
-import { useFarmsData } from '@/data';
+import type { FarmModel, FarmResponse } from '@/features/farm';
+import { farmKeys, useFarms, useFarmsData } from '@/features/farm';
+import { listPonds, pondKeys } from '@/features/pond';
+import { useAuthStore } from '@/features/auth';
 import { thaiDate } from '@/locale/thaiDate';
 
 type Props = {
@@ -37,13 +35,13 @@ export function FarmsScreen({ showHeader = true, onOpenFarm }: Props) {
   /** Only merge `/pond` rollups when the farm list actually came back from API (not mock fallback). */
   const useLivePondRollup = hasToken && farmsQuery.isSuccess && Array.isArray(farmsQuery.data);
 
-  const baseline = Array.isArray(farmsRaw) ? farmsRaw : [];
+  const baseline = useMemo(() => (Array.isArray(farmsRaw) ? farmsRaw : []), [farmsRaw]);
 
   const pondQueries = useQueries({
     queries: useLivePondRollup
       ? baseline.map((f) => ({
-          queryKey: qk.ponds(f.id),
-          queryFn: () => pondsApi.list(f.id),
+          queryKey: pondKeys.byFarm(f.id),
+          queryFn: () => listPonds(f.id),
           enabled: useLivePondRollup,
           staleTime: 60_000,
         }))
@@ -77,11 +75,11 @@ export function FarmsScreen({ showHeader = true, onOpenFarm }: Props) {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await queryClient.refetchQueries({ queryKey: qk.farms() });
-      const farmsList = queryClient.getQueryData<FarmResponse[]>(qk.farms());
+      await queryClient.refetchQueries({ queryKey: farmKeys.all() });
+      const farmsList = queryClient.getQueryData<FarmResponse[]>(farmKeys.all());
       if (Array.isArray(farmsList) && farmsList.length > 0) {
         await Promise.all(
-          farmsList.map((f) => queryClient.refetchQueries({ queryKey: qk.ponds(f.id) })),
+          farmsList.map((f) => queryClient.refetchQueries({ queryKey: pondKeys.byFarm(f.id) })),
         );
       }
     } finally {
@@ -145,7 +143,7 @@ function FarmCard({
   subtitle,
   onPress,
 }: {
-  farm: FarmMock;
+  farm: FarmModel;
   subtitle?: string | null;
   onPress?: () => void;
 }) {

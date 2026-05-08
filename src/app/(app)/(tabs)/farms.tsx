@@ -1,6 +1,6 @@
 import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
 import { useRouter } from 'expo-router';
-import { FarmsScreen } from '@/screens/FarmsScreen';
+import { FarmsScreen } from '@/screens/farms';
 
 export default function FarmsRoute() {
   const router = useRouter();

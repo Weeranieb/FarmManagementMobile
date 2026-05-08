@@ -15,7 +15,7 @@ import { View } from 'react-native';
 
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { useAppFonts } from '@/theme/useAppFonts';
-import { useAuthStore } from '@/store/auth';
+import { useAuthStore } from '@/features/auth';
 
 void SplashScreen.preventAutoHideAsync();
 

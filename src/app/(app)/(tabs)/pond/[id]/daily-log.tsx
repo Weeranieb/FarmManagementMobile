@@ -1,6 +1,6 @@
 import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { DailyLogScreen } from '@/screens/DailyLogScreen';
+import { DailyLogScreen } from '@/screens/daily-log';
 
 export default function DailyLogRoute() {
   const params = useLocalSearchParams<{ id?: string }>();

@@ -1,6 +1,6 @@
 import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { PondDetailScreen } from '@/screens/PondDetailScreen';
+import { PondDetailScreen } from '@/screens/pond-detail';
 
 export default function PondDetailRoute() {
   const params = useLocalSearchParams<{ id?: string }>();

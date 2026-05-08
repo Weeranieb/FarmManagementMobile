@@ -1,6 +1,6 @@
 import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MoveFlow } from '@/screens/flows/MoveFlow';
+import { MoveFlow } from '@/screens/flows/move';
 
 export default function MoveRoute() {
   const params = useLocalSearchParams<{ pondId?: string }>();

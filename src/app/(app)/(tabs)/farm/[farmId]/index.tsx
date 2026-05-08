@@ -1,5 +1,5 @@
 import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
-import { FarmPondsScreen } from '@/screens/FarmPondsScreen';
+import { FarmPondsScreen } from '@/screens/farm-ponds';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 export default function FarmPondsRoute() {

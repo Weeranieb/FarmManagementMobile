@@ -1,0 +1,73 @@
+import { useCallback, useMemo, useState } from 'react';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/features/auth';
+import {
+  farmKeys,
+  useFarms,
+  useFarmsData,
+  type FarmModel,
+  type FarmResponse,
+} from '@/features/farm';
+import { listPonds, pondKeys } from '@/features/pond';
+
+export function useFarmsScreen(): {
+  farms: FarmModel[];
+  refreshing: boolean;
+  onRefresh: () => Promise<void>;
+} {
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+  const { data: farmsRaw } = useFarmsData();
+  const farmsQuery = useFarms();
+  const hasToken = useAuthStore((s) => s.token != null);
+  /** Only merge `/pond` rollups when the farm list actually came back from API (not mock fallback). */
+  const useLivePondRollup = hasToken && farmsQuery.isSuccess && Array.isArray(farmsQuery.data);
+
+  const baseline = Array.isArray(farmsRaw) ? farmsRaw : [];
+
+  const pondQueries = useQueries({
+    queries: useLivePondRollup
+      ? baseline.map((f) => ({
+          queryKey: pondKeys.byFarm(f.id),
+          queryFn: () => listPonds(f.id),
+          enabled: useLivePondRollup,
+          staleTime: 60_000,
+        }))
+      : [],
+  });
+
+  const farms = useMemo(() => {
+    if (!useLivePondRollup) return baseline;
+
+    return baseline.map((f, idx) => {
+      const ponds = pondQueries[idx]?.data;
+      if (!Array.isArray(ponds)) return f;
+
+      let totalStock = 0;
+      let activeFromPonds = 0;
+      for (const p of ponds) {
+        if (p.status === 'active') activeFromPonds++;
+        totalStock += p.totalFish ?? 0;
+      }
+
+      return { ...f, activePonds: activeFromPonds, totalStock };
+    });
+  }, [baseline, pondQueries, useLivePondRollup]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.refetchQueries({ queryKey: farmKeys.all() });
+      const farmsList = queryClient.getQueryData<FarmResponse[]>(farmKeys.all());
+      if (Array.isArray(farmsList) && farmsList.length > 0) {
+        await Promise.all(
+          farmsList.map((f) => queryClient.refetchQueries({ queryKey: pondKeys.byFarm(f.id) })),
+        );
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
+
+  return { farms, refreshing, onRefresh };
+}

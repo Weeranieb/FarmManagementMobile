@@ -7,12 +7,12 @@ import { radii, type } from '@/theme/tokens';
 import { Pill } from '@/components/ui';
 import { Icon, type IconName } from '@/components/icons';
 import { HomeScreen } from '@/screens/home';
-import { FarmsScreen } from '@/screens/FarmsScreen';
-import { FarmPondsScreen } from '@/screens/FarmPondsScreen';
-import { ProfileScreen } from '@/screens/ProfileScreen';
-import { PondDetailScreen } from '@/screens/PondDetailScreen';
-import { DailyLogScreen } from '@/screens/DailyLogScreen';
-import { ponds } from '@/mock/data';
+import { FarmsScreen } from '@/screens/farms';
+import { FarmPondsScreen } from '@/screens/farm-ponds';
+import { ProfileScreen } from '@/screens/profile';
+import { PondDetailScreen } from '@/screens/pond-detail';
+import { DailyLogScreen } from '@/screens/daily-log';
+import { mockPonds } from '@/features/pond';
 import { fmt } from '@/utils/fmt';
 
 type Pane = 'home' | 'farms' | 'profile';
@@ -52,7 +52,7 @@ export function TabletLayout() {
                 setSelectedFarmId(id);
                 setDetailMode('pond');
                 setSelectedPondId((prev) => {
-                  const inFarm = ponds.filter((p) => p.farmId === id);
+                  const inFarm = mockPonds.filter((p) => p.farmId === id);
                   if (inFarm.some((p) => p.id === prev)) return prev;
                   return inFarm[0]?.id ?? prev;
                 });
@@ -173,7 +173,7 @@ function PondMaster({
   onSelect: (id: number) => void;
 }) {
   const { t } = useTheme();
-  const list = ponds.filter((p) => p.status === 'active');
+  const list = mockPonds.filter((p) => p.status === 'active');
   const pending = list.filter((p) => !p.loggedToday);
   return (
     <View style={{ flex: 1 }}>

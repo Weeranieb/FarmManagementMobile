@@ -16,8 +16,8 @@ import { FishChips } from '@/components/domain/FishChips';
 import { StatusBadge } from '@/components/domain/StatusPip';
 import { fmt } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
-import { useFarmsData, usePondsData } from '@/data';
-import type { PondMock } from '@/mock/data';
+import { useFarmsData } from '@/features/farm';
+import { usePondsData, type PondModel } from '@/features/pond';
 
 type Props = {
   farmId: number;
@@ -91,9 +91,7 @@ export function FarmPondsScreen({ farmId, showHeader = true, onBack, onOpenPond 
               ยังไม่มีบ่อในฟาร์มนี้
             </Text>
           ) : (
-            ponds.map((p) => (
-              <PondRowCard key={p.id} pond={p as PondMock} onPress={() => onOpenPond(p.id)} />
-            ))
+            ponds.map((p) => <PondRowCard key={p.id} pond={p} onPress={() => onOpenPond(p.id)} />)
           )}
         </Col>
       </ScrollView>
@@ -101,9 +99,9 @@ export function FarmPondsScreen({ farmId, showHeader = true, onBack, onOpenPond 
   );
 }
 
-function PondRowCard({ pond, onPress }: { pond: PondMock; onPress?: () => void }) {
+function PondRowCard({ pond, onPress }: { pond: PondModel; onPress?: () => void }) {
   const { t } = useTheme();
-  const isMaint = pond.status === 'maintenance';
+  const isMaintenance = pond.status === 'maintenance';
 
   return (
     <Card padded={false} onPress={onPress} style={{ overflow: 'hidden', borderWidth: 0 }}>
@@ -127,15 +125,15 @@ function PondRowCard({ pond, onPress }: { pond: PondMock; onPress?: () => void }
                 <StatusBadge s={pond.status} />
               </View>
             </Row>
-            {!isMaint && pond.fishTypes.length > 0 ? (
+            {!isMaintenance && pond.fishTypes.length > 0 ? (
               <Row gap={6} style={{ flexWrap: 'wrap' }}>
                 <FishChips types={pond.fishTypes} />
               </Row>
             ) : null}
           </Col>
-          {!isMaint ? <PondStatusDot pond={pond} /> : null}
+          {!isMaintenance ? <PondStatusDot pond={pond} /> : null}
         </Row>
-        {!isMaint ? (
+        {!isMaintenance ? (
           <>
             <Row gap={20} style={{ paddingTop: 2 }}>
               <PondMiniStat label="ปลาในบ่อ (ตัว)" v={fmt.num(pond.totalFish)} />
@@ -163,7 +161,7 @@ function PondRowCard({ pond, onPress }: { pond: PondMock; onPress?: () => void }
   );
 }
 
-function PondStatusDot({ pond }: { pond: PondMock }) {
+function PondStatusDot({ pond }: { pond: PondModel }) {
   const { t } = useTheme();
   const color = pond.loggedToday ? t.success : pond.lateDays > 0 ? t.danger : t.warn;
   return (

@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { ProfileScreen } from '@/screens/ProfileScreen';
+import { ProfileScreen } from '@/screens/profile';
 
 export default function ProfileRoute() {
   const { t } = useTheme();
