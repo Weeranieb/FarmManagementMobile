@@ -12,11 +12,19 @@ import { listPonds, pondKeys } from '@/features/pond';
 
 export function useFarmsScreen(): {
   farms: FarmModel[];
+  filteredFarms: FarmModel[];
   refreshing: boolean;
   onRefresh: () => Promise<void>;
+  searchOpen: boolean;
+  query: string;
+  onOpenSearch: () => void;
+  onCloseSearch: () => void;
+  onChangeQuery: (s: string) => void;
 } {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const { data: farmsRaw } = useFarmsData();
   const farmsQuery = useFarms();
   const hasToken = useAuthStore((s) => s.token != null);
@@ -54,6 +62,19 @@ export function useFarmsScreen(): {
     });
   }, [baseline, pondQueries, useLivePondRollup]);
 
+  const filteredFarms = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return farms;
+    return farms.filter((f) => f.name.toLowerCase().includes(q));
+  }, [farms, query]);
+
+  const onOpenSearch = useCallback(() => setSearchOpen(true), []);
+  const onCloseSearch = useCallback(() => {
+    setSearchOpen(false);
+    setQuery('');
+  }, []);
+  const onChangeQuery = useCallback((s: string) => setQuery(s), []);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -69,5 +90,15 @@ export function useFarmsScreen(): {
     }
   }, [queryClient]);
 
-  return { farms, refreshing, onRefresh };
+  return {
+    farms,
+    filteredFarms,
+    refreshing,
+    onRefresh,
+    searchOpen,
+    query,
+    onOpenSearch,
+    onCloseSearch,
+    onChangeQuery,
+  };
 }

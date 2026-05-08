@@ -1,10 +1,4 @@
-import {
-  Platform,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Platform, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Card } from '@/components/ui';
@@ -19,10 +13,10 @@ type Props = { pond: PondModel; onPress?: () => void };
 
 export function PondRowCard({ pond, onPress }: Props) {
   const { t } = useTheme();
-  const isMaint = pond.status === 'maintenance';
+  const isMaintenance = pond.status === 'maintenance';
 
   return (
-    <Card padded={false} onPress={onPress} style={{ overflow: 'hidden', borderWidth: 0 }}>
+    <Card padded={false} onPress={onPress} style={{ overflow: 'hidden' }}>
       <View style={{ padding: 16 }}>
         <Row justify="space-between" align="flex-start" style={{ marginBottom: 10 }}>
           <Col gap={6} style={{ flex: 1, minWidth: 0 }}>
@@ -36,22 +30,22 @@ export function PondRowCard({ pond, onPress }: Props) {
                   ...Platform.select({ android: { includeFontPadding: false } }),
                 }}
               >
-                {pond.name}
+                {`บ่อ ${pond.name}`}
               </Text>
               {/* Pill uses alignSelf: 'flex-start' — wrap so Row alignItems:center applies */}
               <View style={{ alignSelf: 'center' }}>
                 <StatusBadge s={pond.status} />
               </View>
             </Row>
-            {!isMaint && pond.fishTypes.length > 0 ? (
+            {!isMaintenance && pond.fishTypes.length > 0 ? (
               <Row gap={6} style={{ flexWrap: 'wrap' }}>
                 <FishChips types={pond.fishTypes} />
               </Row>
             ) : null}
           </Col>
-          {!isMaint ? <PondStatusDot pond={pond} /> : null}
+          {!isMaintenance ? <PondStatusDot pond={pond} /> : null}
         </Row>
-        {!isMaint ? (
+        {!isMaintenance ? (
           <>
             <Row gap={20} style={{ paddingTop: 2 }}>
               <PondMiniStat label="ปลาในบ่อ (ตัว)" v={fmt.num(pond.totalFish)} />
