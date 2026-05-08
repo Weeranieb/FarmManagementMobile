@@ -11,7 +11,7 @@ export default function FarmPondsRoute() {
     <ThemedSafeAreaView edges={['top']}>
       <FarmPondsScreen
         farmId={farmId}
-        onBack={() => router.back()}
+        onBack={() => router.replace('/(app)/(tabs)/farms')}
         onOpenPond={(pondId) => router.push(`/(app)/(tabs)/pond/${pondId}`)}
       />
     </ThemedSafeAreaView>
