@@ -35,7 +35,9 @@ export function FarmPondsView({
   onChangeQuery,
 }: Props) {
   const { t } = useTheme();
-  const countLabel = `${ponds.length} บ่อ`;
+  const activeCount = ponds.filter((pond) => pond.status === 'active').length;
+  const maintenanceCount = ponds.filter((pond) => pond.status === 'maintenance').length;
+  const countLabel = `${activeCount} ใช้งาน · ${maintenanceCount} ปิดบ่อ`;
   const trimmed = query.trim();
   const showEmptyState = searchOpen && trimmed.length > 0 && filteredPonds.length === 0;
 
