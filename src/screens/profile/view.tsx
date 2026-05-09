@@ -1,23 +1,44 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type, radii, type ThemeMode } from '@/theme/tokens';
 import { Card, TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
+import { LanguageSheet, type LanguageCode } from '@/screens/language';
 import { ListRow } from './components/ListRow';
 
 type Props = {
   showHeader?: boolean;
   profileName: string;
   handleLogout: () => void;
+  openAccount: () => void;
+  openLanguage: () => void;
+  closeLanguage: () => void;
+  showLanguageSheet: boolean;
+  language: LanguageCode;
+  handlePickLanguage: (code: LanguageCode) => void;
 };
 
-export function ProfileView({ showHeader = true, profileName, handleLogout }: Props) {
+export function ProfileView({
+  showHeader = true,
+  profileName,
+  handleLogout,
+  openAccount,
+  openLanguage,
+  closeLanguage,
+  showLanguageSheet,
+  language,
+  handlePickLanguage,
+}: Props) {
+  const { t: tx } = useTranslation();
   const { t, mode, setMode } = useTheme();
+
+  const langLabel = language === 'en' ? tx('profile.language.en') : tx('profile.language.th');
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      {showHeader ? <TopBar title="โปรไฟล์" /> : null}
+      {showHeader ? <TopBar title={tx('profile.title')} /> : null}
       <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
         <View style={{ padding: 20, alignItems: 'center', gap: 8 }}>
           <View
@@ -53,7 +74,7 @@ export function ProfileView({ showHeader = true, profileName, handleLogout }: Pr
               marginBottom: 8,
             }}
           >
-            โหมดแสดงผล
+            {tx('profile.displayMode')}
           </Text>
           <Card padded={false}>
             <Row gap={0} style={{ padding: 4 }}>
@@ -95,9 +116,14 @@ export function ProfileView({ showHeader = true, profileName, handleLogout }: Pr
 
         <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
           <Card padded={false}>
-            <ListRow icon="user" label="ข้อมูลบัญชี" />
-            <ListRow icon="globe" label="ภาษา" trailing="ไทย" />
-            <ListRow icon="doc" label="เกี่ยวกับ" trailing="v0.1.0" last />
+            <ListRow icon="user" label={tx('profile.rowAccount')} onPress={openAccount} />
+            <ListRow
+              icon="globe"
+              label={tx('profile.rowLanguage')}
+              trailing={langLabel}
+              onPress={openLanguage}
+            />
+            <ListRow icon="doc" label={tx('profile.rowAbout')} trailing="v0.1.0" last />
           </Card>
         </View>
 
@@ -116,12 +142,19 @@ export function ProfileView({ showHeader = true, profileName, handleLogout }: Pr
             <Row gap={8}>
               <Icon.logout size={16} color={t.danger} />
               <Text style={{ color: t.danger, fontFamily: type.familySemi, fontSize: 14 }}>
-                ออกจากระบบ
+                {tx('profile.logout')}
               </Text>
             </Row>
           </Pressable>
         </View>
       </ScrollView>
+
+      <LanguageSheet
+        visible={showLanguageSheet}
+        selected={language}
+        onPick={handlePickLanguage}
+        onClose={closeLanguage}
+      />
     </View>
   );
 }
