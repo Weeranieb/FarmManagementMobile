@@ -80,15 +80,14 @@ export function AccountInfoView({
         }
       />
 
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 96 }}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} keyboardShouldPersistTaps="handled">
         <View style={{ paddingTop: 24, paddingBottom: 8, alignItems: 'center' }}>
           <Avatar initial={initial} name={displayName} />
         </View>
         <View style={{ alignItems: 'center', marginBottom: 4 }}>
-          <Pill tone="brand">{tx('profile.ownerLabel')}</Pill>
+          <Pill tone="brand" style={{ alignSelf: 'center' }}>
+            {tx('profile.ownerLabel')}
+          </Pill>
         </View>
 
         <SectionLabel>{tx('profile.account.section.personal')}</SectionLabel>
@@ -172,7 +171,9 @@ export function AccountInfoView({
                 <Text style={{ fontFamily: type.familySemi, fontSize: 14, color: t.ink }}>
                   {tx('profile.account.changePassword')}
                 </Text>
-                <Text style={{ fontFamily: type.family, fontSize: 12, color: t.inkMute, marginTop: 2 }}>
+                <Text
+                  style={{ fontFamily: type.family, fontSize: 12, color: t.inkMute, marginTop: 2 }}
+                >
                   {tx('profile.account.changePasswordSub', { date: '12 ก.พ. 2569' })}
                 </Text>
               </View>

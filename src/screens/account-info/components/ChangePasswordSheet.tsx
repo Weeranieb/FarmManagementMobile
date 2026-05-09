@@ -7,6 +7,8 @@ import { type } from '@/theme/tokens';
 import { FormInput } from './FormInput';
 import { SheetShell } from './SheetShell';
 
+export const WRONG_CURRENT_PASSWORD = 'WRONG_CURRENT_PASSWORD';
+
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -20,6 +22,7 @@ export function ChangePasswordSheet({ visible, onClose, onSubmit }: Props) {
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [currentError, setCurrentError] = useState<string | undefined>();
 
   const tooShort = next.length > 0 && next.length < 8;
   const mismatch = confirm.length > 0 && confirm !== next;
@@ -32,10 +35,16 @@ export function ChangePasswordSheet({ visible, onClose, onSubmit }: Props) {
     [mismatch, tx],
   );
 
+  const onCurrentChange = (v: string) => {
+    setCurrent(v);
+    if (currentError) setCurrentError(undefined);
+  };
+
   const reset = () => {
     setCurrent('');
     setNext('');
     setConfirm('');
+    setCurrentError(undefined);
   };
 
   const handleClose = () => {
@@ -51,6 +60,12 @@ export function ChangePasswordSheet({ visible, onClose, onSubmit }: Props) {
       await onSubmit(current, next);
       reset();
       onClose();
+    } catch (err) {
+      const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: unknown }).code) : '';
+      if (code === WRONG_CURRENT_PASSWORD) {
+        setCurrentError(tx('profile.password.wrongCurrent'));
+      }
+      // Other errors: parent shows a toast/alert; keep the sheet open.
     } finally {
       setSubmitting(false);
     }
@@ -76,9 +91,10 @@ export function ChangePasswordSheet({ visible, onClose, onSubmit }: Props) {
           label={tx('profile.password.current')}
           placeholder={tx('profile.password.current')}
           value={current}
-          onChangeText={setCurrent}
+          onChangeText={onCurrentChange}
           passwordToggle
           autoCapitalize="none"
+          error={currentError}
         />
         <FormInput
           label={tx('profile.password.new')}

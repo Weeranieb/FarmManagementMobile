@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { getMe, updateMe, useAuthStore } from '@/features/auth';
+import { changeMyPassword, getMe, updateMe, useAuthStore } from '@/features/auth';
 import type { UserResponse } from '@/features/auth';
+import { WRONG_CURRENT_PASSWORD } from './components/ChangePasswordSheet';
+
+const WRONG_CURRENT_PASSWORD_CODE = '500021';
 
 type FormState = {
   firstName: string;
@@ -144,10 +147,28 @@ export function useAccountInfoForm() {
   }, [router]);
 
   const handleSubmitPassword = useCallback(
-    async (_current: string, _next: string) => {
-      // TODO: wire to PUT /user/{id}/password once the self-change-password
-      // endpoint exists. Today only AdminResetPassword is exposed.
-      Alert.alert(tx('profile.password.saved'));
+    async (current: string, next: string) => {
+      try {
+        await changeMyPassword(current, next);
+        Alert.alert(tx('profile.password.saved'));
+      } catch (err) {
+        const code =
+          err && typeof err === 'object' && 'code' in err
+            ? String((err as { code: unknown }).code)
+            : '';
+        if (code === WRONG_CURRENT_PASSWORD_CODE) {
+          // Re-throw with a stable code the sheet maps to inline field error.
+          throw Object.assign(new Error('wrong-current-password'), {
+            code: WRONG_CURRENT_PASSWORD,
+          });
+        }
+        const message =
+          err && typeof err === 'object' && 'message' in err
+            ? String((err as { message: unknown }).message)
+            : tx('profile.account.toast.error');
+        Alert.alert(tx('profile.password.title'), message);
+        throw err;
+      }
     },
     [tx],
   );
