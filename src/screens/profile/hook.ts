@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useRouter, type Href } from 'expo-router';
-import { mockProfile, useAuthStore } from '@/features/auth';
+import { useAuthStore } from '@/features/auth';
 import { useLanguage, type LanguageCode } from '@/screens/language';
 
 const ACCOUNT_INFO_ROUTE = '/account-info' as unknown as Href;
@@ -9,9 +9,9 @@ export function useProfileScreen() {
   const router = useRouter();
   const clearSession = useAuthStore((s) => s.clear);
   const user = useAuthStore((s) => s.user);
-  const firstName = user?.firstName ?? mockProfile.name.split(' ')[0] ?? '';
-  const lastName = user?.lastName ?? mockProfile.name.split(' ').slice(1).join(' ');
-  const username = user?.username ?? 'boonma_owner';
+  const firstName = user?.firstName ?? '';
+  const lastName = user?.lastName ?? '';
+  const username = user?.username ?? '';
   const { selected: language, pick: pickLanguage } = useLanguage();
   const [showLanguageSheet, setShowLanguageSheet] = useState(false);
 

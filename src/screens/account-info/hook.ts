@@ -18,22 +18,16 @@ type Errors = Partial<Record<keyof FormState, string>>;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_DIGITS_RE = /\d/g;
 
-const FALLBACK_USER: UserResponse = {
-  id: 0,
-  clientId: null,
-  username: 'farmos_owner',
-  email: 'owner@farmos.app',
-  firstName: 'อรรถพล',
-  lastName: 'แสงทอง',
-  userLevel: 1,
-  contactNumber: '081-234-5678',
-  createdAt: new Date().toISOString(),
-  createdBy: 'system',
-  updatedAt: new Date().toISOString(),
-  updatedBy: 'system',
+const EMPTY_FORM: FormState = {
+  firstName: '',
+  lastName: '',
+  username: '',
+  email: '',
+  contactNumber: '',
 };
 
-function toForm(user: UserResponse): FormState {
+function toForm(user: UserResponse | null): FormState {
+  if (!user) return EMPTY_FORM;
   return {
     firstName: user.firstName ?? '',
     lastName: user.lastName ?? '',
@@ -46,7 +40,7 @@ function toForm(user: UserResponse): FormState {
 export function useAccountInfoForm() {
   const router = useRouter();
   const { t: tx } = useTranslation();
-  const user = useAuthStore((s) => s.user) ?? FALLBACK_USER;
+  const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
   const updateUser = useAuthStore((s) => s.updateUser);
 
