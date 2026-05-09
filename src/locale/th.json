@@ -111,6 +111,13 @@
     "rowAccount": "ข้อมูลบัญชี",
     "rowLanguage": "ภาษา",
     "rowAbout": "เกี่ยวกับ",
+    "rowTheme": "ธีมแอป",
+    "themeNow": "ตอนนี้: {{mode}}",
+    "modes": {
+      "light": "สว่าง",
+      "dark": "มืด",
+      "outdoor": "แดดจัด"
+    },
     "ownerLabel": "เจ้าของฟาร์ม",
     "account": {
       "title": "ข้อมูลบัญชี",

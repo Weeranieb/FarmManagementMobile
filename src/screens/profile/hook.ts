@@ -8,7 +8,10 @@ const ACCOUNT_INFO_ROUTE = '/account-info' as unknown as Href;
 export function useProfileScreen() {
   const router = useRouter();
   const clearSession = useAuthStore((s) => s.clear);
-  const profileName = useAuthStore((s) => s.user?.firstName) ?? mockProfile.name;
+  const user = useAuthStore((s) => s.user);
+  const firstName = user?.firstName ?? mockProfile.name.split(' ')[0] ?? '';
+  const lastName = user?.lastName ?? mockProfile.name.split(' ').slice(1).join(' ');
+  const username = user?.username ?? 'boonma_owner';
   const { selected: language, pick: pickLanguage } = useLanguage();
   const [showLanguageSheet, setShowLanguageSheet] = useState(false);
 
@@ -37,7 +40,9 @@ export function useProfileScreen() {
   );
 
   return {
-    profileName,
+    firstName,
+    lastName,
+    username,
     handleLogout,
     openAccount,
     openLanguage,
