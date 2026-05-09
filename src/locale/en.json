@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "FarmOS",
-    "tagline": "Manage your fish ponds in your hand"
+    "tagline": "Manage your fish ponds in your hand",
+    "version": "Version {{version}}"
   },
   "auth": {
     "username": "Username",
@@ -9,8 +10,7 @@
     "login": "Sign in",
     "forgot": "Forgot password?",
     "showPassword": "Show password",
-    "hidePassword": "Hide password",
-    "version": "Version 1.0.0"
+    "hidePassword": "Hide password"
   },
   "tabs": {
     "home": "Home",
