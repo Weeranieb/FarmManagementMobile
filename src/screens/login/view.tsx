@@ -1,15 +1,11 @@
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Btn, Input } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
+import appJson from '../../../app.json';
+
+const APP_VERSION = appJson.expo.version;
 
 type Props = {
   username: string;
@@ -18,7 +14,6 @@ type Props = {
   setPassword: (v: string) => void;
   submitting: boolean;
   handleLogin: () => void;
-  openForgotPassword: () => void;
 };
 
 export function LoginView({
@@ -28,7 +23,6 @@ export function LoginView({
   setPassword,
   submitting,
   handleLogin,
-  openForgotPassword,
 }: Props) {
   const { t: tx } = useTranslation();
   const { t } = useTheme();
@@ -110,15 +104,6 @@ export function LoginView({
             <Btn tone="brand" size="lg" block onPress={handleLogin} disabled={submitting}>
               {submitting ? 'กำลังเข้าสู่ระบบ...' : tx('auth.login')}
             </Btn>
-            <Pressable
-              onPress={openForgotPassword}
-              hitSlop={8}
-              style={{ alignSelf: 'center', paddingVertical: 4 }}
-            >
-              <Text style={{ color: t.brand, fontSize: 13, fontFamily: type.familyMedium }}>
-                ลืมรหัสผ่าน? (เปิดเว็บ)
-              </Text>
-            </Pressable>
           </View>
         </View>
         <Text
@@ -130,7 +115,7 @@ export function LoginView({
             fontFamily: type.familyNum,
           }}
         >
-          {tx('auth.version')} · v.farmos.app
+          {tx('app.version', { version: APP_VERSION })}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

@@ -8,7 +8,13 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Slot, SplashScreen, useRouter, useSegments } from 'expo-router';
+import {
+  Slot,
+  SplashScreen,
+  useRootNavigationState,
+  useRouter,
+  useSegments,
+} from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { View } from 'react-native';
@@ -46,10 +52,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function AuthGate() {
   const router = useRouter();
   const segments = useSegments();
+  const navState = useRootNavigationState();
   const ready = useAuthStore((s) => s.ready);
   const token = useAuthStore((s) => s.token);
 
   useEffect(() => {
+    if (!navState?.key) return;
     if (!ready) return;
     const inAuthGroup = segments[0] === '(auth)';
     if (!token && !inAuthGroup) {
@@ -57,7 +65,7 @@ function AuthGate() {
     } else if (token && inAuthGroup) {
       router.replace('/(app)/(tabs)/home');
     }
-  }, [ready, token, segments, router]);
+  }, [navState?.key, ready, token, segments, router]);
 
   return <Slot />;
 }
@@ -75,10 +83,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded && ready) void SplashScreen.hideAsync();
   }, [fontsLoaded, ready]);
-
-  if (!fontsLoaded || !ready) {
-    return null;
-  }
 
   return (
     <SafeAreaProvider>

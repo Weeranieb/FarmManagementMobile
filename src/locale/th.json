@@ -1,7 +1,8 @@
 {
   "app": {
     "name": "FarmOS",
-    "tagline": "จัดการบ่อปลาในมือคุณ"
+    "tagline": "จัดการบ่อปลาในมือคุณ",
+    "version": "เวอร์ชัน {{version}}"
   },
   "auth": {
     "username": "ชื่อผู้ใช้",
@@ -9,8 +10,7 @@
     "login": "เข้าสู่ระบบ",
     "forgot": "ลืมรหัสผ่าน?",
     "showPassword": "แสดงรหัสผ่าน",
-    "hidePassword": "ซ่อนรหัสผ่าน",
-    "version": "เวอร์ชัน 1.0.0"
+    "hidePassword": "ซ่อนรหัสผ่าน"
   },
   "tabs": {
     "home": "หน้าหลัก",
