@@ -129,12 +129,16 @@ export function ChangePasswordSheet({ visible, onClose, onSubmit }: Props) {
           backgroundColor: t.bg,
         }}
       >
-        <Btn tone="neutral" variant="ghost" size="md" onPress={handleClose} block style={{ flex: 1 }}>
-          {tx('profile.account.discard.cancel')}
-        </Btn>
-        <Btn tone="brand" size="md" onPress={handleSubmit} disabled={!valid} block style={{ flex: 1.4 }}>
-          {submitting ? tx('profile.account.saving') : tx('profile.password.submit')}
-        </Btn>
+        <View style={{ flex: 1 }}>
+          <Btn tone="neutral" variant="ghost" size="md" onPress={handleClose} block>
+            {tx('profile.account.discard.cancel')}
+          </Btn>
+        </View>
+        <View style={{ flex: 1.4 }}>
+          <Btn tone="brand" size="md" onPress={handleSubmit} disabled={!valid} block>
+            {submitting ? tx('profile.account.saving') : tx('profile.password.submit')}
+          </Btn>
+        </View>
       </View>
     </SheetShell>
   );
