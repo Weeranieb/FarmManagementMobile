@@ -1,8 +1,8 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore } from '@/features/auth';
+import { getMe, updateMe, useAuthStore } from '@/features/auth';
 import type { UserResponse } from '@/features/auth';
 
 type FormState = {
@@ -47,6 +47,7 @@ export function useAccountInfoForm() {
   const router = useRouter();
   const { t: tx } = useTranslation();
   const user = useAuthStore((s) => s.user) ?? FALLBACK_USER;
+  const token = useAuthStore((s) => s.token);
   const updateUser = useAuthStore((s) => s.updateUser);
 
   const initial = useMemo(() => toForm(user), [user]);
@@ -55,9 +56,35 @@ export function useAccountInfoForm() {
   const [showPasswordSheet, setShowPasswordSheet] = useState(false);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
+  // Refresh user from backend on mount so fields like email reflect the
+  // server source-of-truth (SecureStore can hold a stale snapshot from a
+  // pre-email login).
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const fresh = await getMe();
+        if (cancelled) return;
+        await updateUser(fresh);
+      } catch {
+        // non-fatal: keep showing whatever's in the store
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, updateUser]);
+
+  // Re-seed the form whenever the underlying user changes (e.g. after the
+  // mount refresh above). Skip while saving so we don't clobber edits.
+  useEffect(() => {
+    if (saving) return;
+    setForm(initial);
+  }, [initial, saving]);
+
   const dirty = useMemo(
-    () =>
-      (Object.keys(form) as (keyof FormState)[]).some((k) => form[k] !== initial[k]),
+    () => (Object.keys(form) as (keyof FormState)[]).some((k) => form[k] !== initial[k]),
     [form, initial],
   );
 
@@ -87,13 +114,15 @@ export function useAccountInfoForm() {
     if (!canSave) return;
     setSaving(true);
     try {
-      await updateUser({
-        firstName: form.firstName.trim(),
-        lastName: form.lastName.trim() || null,
+      const body = {
         username: form.username.trim(),
         email: form.email.trim() || null,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim() || null,
         contactNumber: form.contactNumber.trim(),
-      });
+      };
+      const updated = await updateMe(body);
+      await updateUser(updated);
       Alert.alert(tx('profile.account.toast.saved'));
       router.back();
     } catch (err) {
@@ -122,7 +151,8 @@ export function useAccountInfoForm() {
 
   const handleSubmitPassword = useCallback(
     async (_current: string, _next: string) => {
-      // TODO: wire to PUT /user/{id}/password once backend route is available.
+      // TODO: wire to PUT /user/{id}/password once the self-change-password
+      // endpoint exists. Today only AdminResetPassword is exposed.
       Alert.alert(tx('profile.password.saved'));
     },
     [tx],
