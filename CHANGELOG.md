@@ -9,6 +9,25 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.0](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.1.0...v0.2.0) (2026-05-09)
+
+
+### Features
+
+* **account-info:** wire change password to PUT /user/password ([5554d63](https://github.com/Weeranieb/FarmManagementMobile/commit/5554d6359ab7cf08a83582952f25d8570dc965e9))
+* **farm-ponds:** localize pond and farm titles in UI ([adc1ac4](https://github.com/Weeranieb/FarmManagementMobile/commit/adc1ac442631eb8b1f35ad45d67689324ef453f2))
+* **farms:** move search UI from inline bar to header trailing icon ([11f8968](https://github.com/Weeranieb/FarmManagementMobile/commit/11f8968b91efbe0ddb7aecdfc3699d2f4642d93c))
+* **i18n:** add English translations and restore saved language ([d798518](https://github.com/Weeranieb/FarmManagementMobile/commit/d79851896d200348fa6f812fc6e17d6a3f0f4f5a))
+* **profile:** add account-info screen, change-password sheet, language picker ([2ee3fa2](https://github.com/Weeranieb/FarmManagementMobile/commit/2ee3fa2333fe742880caefec2ae43135e1b4ec87))
+
+
+### Bug Fixes
+
+* **account-info:** refresh user from backend on mount, wire real save ([27204ca](https://github.com/Weeranieb/FarmManagementMobile/commit/27204ca0646ffc426e35f5b6e5802630d20cfec0))
+* **account-info:** sheet entrance animation and overflowing buttons ([00d8021](https://github.com/Weeranieb/FarmManagementMobile/commit/00d8021357054e80fb1641613b00cfab301262cf))
+* **farm-ponds:** back button should return to farms tab, not home ([3249f39](https://github.com/Weeranieb/FarmManagementMobile/commit/3249f3992dfa21709e01d5934049e0a1d7c53c3d))
+* **profile:** move account-info route to src/app — actual app root ([dad834c](https://github.com/Weeranieb/FarmManagementMobile/commit/dad834c2cd0d8d30915fbd2ff34bcc1328df550e))
+
 ## [Unreleased]
 
 ### Added
