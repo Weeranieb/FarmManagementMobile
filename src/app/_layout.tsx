@@ -16,6 +16,7 @@ import { View } from 'react-native';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { useAppFonts } from '@/theme/useAppFonts';
 import { useAuthStore } from '@/features/auth';
+import { restoreSavedLanguage } from '@/screens/language';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -68,6 +69,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     void hydrate();
+    void restoreSavedLanguage();
   }, [hydrate]);
 
   useEffect(() => {

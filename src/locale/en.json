@@ -1,0 +1,185 @@
+{
+  "app": {
+    "name": "FarmOS",
+    "tagline": "Manage your fish ponds in your hand"
+  },
+  "auth": {
+    "username": "Username",
+    "password": "Password",
+    "login": "Sign in",
+    "forgot": "Forgot password?",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "version": "Version 1.0.0"
+  },
+  "tabs": {
+    "home": "Home",
+    "farms": "Farms",
+    "profile": "Profile"
+  },
+  "home": {
+    "greeting": "Hello, {{name}}",
+    "allFarms": "All farms",
+    "summary": {
+      "fish": "Fish remaining",
+      "active": "Active ponds",
+      "feed": "Feed cost today",
+      "deaths": "Deaths today"
+    },
+    "task": {
+      "stripPending": "Not logged today yet",
+      "stripDone": "All ponds logged today",
+      "subLine": "{{pending}} / {{total}} ponds",
+      "subLate": "{{count}} ponds overdue",
+      "pending": "{{pending}} of {{total}} ponds not logged today",
+      "late": "{{count}} overdue",
+      "doneAll": "All {{total}} ponds logged"
+    },
+    "quickActions": {
+      "title": "Choose an action",
+      "sub": "Pick a pond in the next step",
+      "logFeed": "Log feed",
+      "fillSub": "Start or top up a cycle",
+      "moveSub": "Move to another pond",
+      "sellSub": "Record a sale",
+      "feedSub": "Daily"
+    },
+    "alerts": "Things to watch",
+    "activity": "Recent activity",
+    "seeAll": "See all",
+    "seeAllActivity": "See full history"
+  },
+  "pond": {
+    "active": "Active",
+    "maintenance": "Closed",
+    "ageDays": "{{days}} days old",
+    "stockCount": "{{count}} fish",
+    "actions": {
+      "fill": "Fill",
+      "move": "Move",
+      "sell": "Sell"
+    }
+  },
+  "status": {
+    "saved": "Saved",
+    "pending": "Pending",
+    "late": "Overdue"
+  },
+  "daily": {
+    "title": "Today's feed log",
+    "morning": "Morning",
+    "evening": "Evening",
+    "freshFeed": "Fresh bait",
+    "pelletFeed": "Pellet feed",
+    "deaths": "Deaths",
+    "touristCatch": "Live catch",
+    "save": "Save",
+    "saveAndNext": "Save and next pond",
+    "saveAndNextDay": "Save and next day",
+    "monthSummary": "Monthly summary",
+    "summary": {
+      "freshTotal": "Total fresh bait",
+      "pelletTotal": "Total pellet feed",
+      "feedCost": "Estimated feed cost",
+      "deathTotal": "Cumulative deaths",
+      "loggedDays": "Days logged"
+    }
+  },
+  "flow": {
+    "fill": "Fill fish",
+    "move": "Move fish",
+    "sell": "Sell fish",
+    "review": "Review",
+    "confirm": "Confirm",
+    "next": "Next",
+    "back": "Back"
+  },
+  "common": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "loading": "Loading",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "search": "Search",
+    "filter": "Filter"
+  },
+  "profile": {
+    "title": "Profile",
+    "settings": "Settings",
+    "displayMode": "Display mode",
+    "logout": "Sign out",
+    "rowAccount": "Account info",
+    "rowLanguage": "Language",
+    "rowAbout": "About",
+    "rowTheme": "App theme",
+    "themeNow": "Currently: {{mode}}",
+    "modes": {
+      "light": "Light",
+      "dark": "Dark",
+      "outdoor": "Outdoor"
+    },
+    "ownerLabel": "Farm owner",
+    "account": {
+      "title": "Account info",
+      "save": "Save",
+      "saving": "Saving…",
+      "section": {
+        "personal": "Personal info",
+        "security": "Security"
+      },
+      "field": {
+        "firstName": "First name",
+        "lastName": "Last name",
+        "username": "Username",
+        "email": "Email",
+        "contact": "Phone number"
+      },
+      "placeholder": {
+        "firstName": "Enter first name",
+        "lastName": "Enter last name",
+        "username": "Username",
+        "email": "you@example.com",
+        "contact": "081-234-5678"
+      },
+      "error": {
+        "firstName": "Please enter your first name",
+        "username": "Please enter a username",
+        "email": "Email format is invalid",
+        "contact": "Phone number must be 10 digits"
+      },
+      "changePassword": "Change password",
+      "changePasswordSub": "Last updated {{date}}",
+      "discard": {
+        "title": "Discard changes?",
+        "body": "Unsaved changes will be lost.\nAre you sure?",
+        "cancel": "Cancel",
+        "confirm": "Discard"
+      },
+      "toast": {
+        "saved": "Saved",
+        "error": "Save failed"
+      }
+    },
+    "password": {
+      "title": "Change password",
+      "subtitle": "For security, please confirm your current password first",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "helper": "At least 8 characters · mix letters and numbers",
+      "tooShort": "At least 8 characters",
+      "mismatch": "Passwords don't match",
+      "wrongCurrent": "Current password is incorrect",
+      "submit": "Save password",
+      "saved": "Password changed"
+    },
+    "language": {
+      "title": "Language",
+      "subtitle": "Pick the language you want to use",
+      "th": "ไทย",
+      "thInOther": "Thai",
+      "en": "English",
+      "enInOther": "English"
+    }
+  }
+}

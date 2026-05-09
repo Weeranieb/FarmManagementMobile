@@ -227,6 +227,12 @@ export const Icon = {
       <Path d="M4 4l16 16" />
     </Frame>
   ),
+  lock: (p: IconProps) => (
+    <Frame {...p}>
+      <Rect x="4" y="11" width="16" height="10" rx="2" />
+      <Path d="M8 11V8a4 4 0 018 0v3" />
+    </Frame>
+  ),
 } satisfies Record<string, (p: IconProps) => React.ReactElement>;
 
 export type IconName = keyof typeof Icon;

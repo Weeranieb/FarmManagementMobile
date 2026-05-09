@@ -1,19 +1,43 @@
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon, type IconName } from '@/components/icons';
+import { dangerInk } from '@/theme/ink';
+
+export type ListRowTone = 'default' | 'danger';
 
 type Props = {
   icon: IconName;
   label: string;
-  trailing?: string;
+  trailing?: string | React.ReactNode;
+  sub?: string;
   last?: boolean;
+  tone?: ListRowTone;
   onPress?: () => void;
 };
 
-export function ListRow({ icon, label, trailing, last, onPress }: Props) {
-  const { t } = useTheme();
+export function ListRow({ icon, label, trailing, sub, last, tone = 'default', onPress }: Props) {
+  const { t, mode } = useTheme();
   const Ico = Icon[icon];
+  const danger = tone === 'danger';
+  const labelColor = danger ? dangerInk(mode, t) : t.ink;
+  const subColor = danger ? dangerInk(mode, t) : t.inkMute;
+  const iconBg = danger ? t.dangerSoft : t.surfaceAlt;
+  const iconColor = danger ? dangerInk(mode, t) : t.ink;
+  const chevColor = danger ? dangerInk(mode, t) : t.inkSoft;
+
+  const trailingNode =
+    typeof trailing === 'string' ? (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <Text style={{ color: t.inkSoft, fontSize: 14, fontFamily: type.family }}>{trailing}</Text>
+        {onPress ? <Icon.chevR size={16} color={chevColor} /> : null}
+      </View>
+    ) : trailing !== undefined ? (
+      trailing
+    ) : onPress ? (
+      <Icon.chevR size={16} color={chevColor} />
+    ) : null;
+
   return (
     <Pressable
       onPress={onPress}
@@ -22,18 +46,33 @@ export function ListRow({ icon, label, trailing, last, onPress }: Props) {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 16,
         borderBottomWidth: last ? 0 : 1,
         borderBottomColor: t.border,
       }}
     >
-      <Ico size={18} color={t.inkSoft} />
-      <Text style={{ flex: 1, fontSize: 14, color: t.ink, fontFamily: type.family }}>{label}</Text>
-      {trailing ? (
-        <Text style={{ color: t.inkSoft, fontSize: 13, fontFamily: type.family }}>{trailing}</Text>
-      ) : null}
-      <Icon.chevR size={16} color={t.inkSoft} />
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 10,
+          backgroundColor: iconBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Ico size={18} color={iconColor} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14, color: labelColor, fontFamily: type.familySemi }}>{label}</Text>
+        {sub ? (
+          <Text style={{ fontSize: 12, color: subColor, fontFamily: type.family, marginTop: 2 }}>
+            {sub}
+          </Text>
+        ) : null}
+      </View>
+      {trailingNode}
     </Pressable>
   );
 }

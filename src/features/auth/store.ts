@@ -11,6 +11,7 @@ type AuthState = {
   ready: boolean;
   hydrate: () => Promise<void>;
   setSession: (token: string, user: UserResponse) => Promise<void>;
+  updateUser: (patch: Partial<UserResponse>) => Promise<void>;
   clear: () => Promise<void>;
 };
 
@@ -37,6 +38,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       SecureStore.setItemAsync(KEY_USER, JSON.stringify(user)),
     ]);
     set({ token, user });
+  },
+  updateUser: async (patch) => {
+    const current = get().user;
+    if (!current) return;
+    const next = { ...current, ...patch };
+    await SecureStore.setItemAsync(KEY_USER, JSON.stringify(next));
+    set({ user: next });
   },
   clear: async () => {
     await Promise.all([
