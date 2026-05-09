@@ -73,13 +73,13 @@ export function ProfileView({
       {showHeader ? <TopBar title={tx('profile.title')} /> : null}
       <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
         <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4 }}>
-          <Card>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <Card style={{ paddingVertical: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
               <View
                 style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: 30,
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
                   backgroundColor: t.brandSoft,
                   borderWidth: 2,
                   borderColor: t.brand,
@@ -87,13 +87,13 @@ export function ProfileView({
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: t.brandInk, fontFamily: type.familyBold, fontSize: 22 }}>
+                <Text style={{ color: t.brandInk, fontFamily: type.familyBold, fontSize: 18 }}>
                   {initial}
                 </Text>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
-                  style={{ fontFamily: type.familyBold, fontSize: 17, color: t.ink }}
+                  style={{ fontFamily: type.familyBold, fontSize: 16, color: t.ink }}
                   numberOfLines={1}
                 >
                   {fullName || firstName}
@@ -101,7 +101,12 @@ export function ProfileView({
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
                   <Pill tone="brand">{tx('profile.ownerLabel')}</Pill>
                   <Text
-                    style={{ fontSize: 12, color: t.inkMute, fontFamily: type.familyNum }}
+                    style={{
+                      fontSize: 12,
+                      color: t.inkMute,
+                      fontFamily: type.familyNum,
+                      flexShrink: 1,
+                    }}
                     numberOfLines={1}
                   >
                     {username}
