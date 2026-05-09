@@ -72,7 +72,7 @@ export function ChangePasswordSheet({ visible, onClose, onSubmit }: Props) {
   };
 
   return (
-    <SheetShell visible={visible} onClose={handleClose} heightPct={0.78}>
+    <SheetShell visible={visible} onClose={handleClose} heightPct={0.6}>
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 }}>
         <Text style={{ fontFamily: type.familyBold, fontSize: 18, color: t.ink }}>
           {tx('profile.password.title')}
