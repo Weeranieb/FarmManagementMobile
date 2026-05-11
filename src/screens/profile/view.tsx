@@ -1,10 +1,13 @@
 import { ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import Constants from 'expo-constants';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type, type ThemeMode } from '@/theme/tokens';
 import { Card, Pill, TopBar } from '@/components/ui';
 import { LanguageSheet, type LanguageCode } from '@/screens/language';
 import { ListRow } from './components/ListRow';
+
+const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
 
 type Props = {
   showHeader?: boolean;
@@ -127,7 +130,7 @@ export function ProfileView({
               trailing={langLabel}
               onPress={openLanguage}
             />
-            <ListRow icon="doc" label={tx('profile.rowAbout')} trailing="v0.1.0" last />
+            <ListRow icon="doc" label={tx('profile.rowAbout')} trailing={`v${APP_VERSION}`} last />
           </Card>
         </View>
 
