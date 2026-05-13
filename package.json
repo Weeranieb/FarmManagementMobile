@@ -4,7 +4,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
+    "android": "expo run:android",
     "android:emu": "expo start --localhost --android",
     "android:dev": "expo start --dev-client --android",
     "android:build": "expo run:android",
