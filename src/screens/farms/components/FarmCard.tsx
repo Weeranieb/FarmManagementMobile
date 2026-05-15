@@ -3,32 +3,24 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Card } from '@/components/ui';
 import { Icon } from '@/components/icons';
-import { Row, Col } from '@/components/layout/Row';
+import { Row } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
 import type { FarmModel } from '@/features/farm';
 
 type Props = {
   farm: FarmModel;
-  subtitle?: string | null;
   onPress?: () => void;
 };
 
-export function FarmCard({ farm, subtitle, onPress }: Props) {
+export function FarmCard({ farm, onPress }: Props) {
   const { t } = useTheme();
   return (
     <Card padded={false} onPress={onPress} style={{ overflow: 'hidden' }}>
       <View style={{ padding: 16 }}>
         <Row justify="space-between" style={{ marginBottom: 10 }}>
-          <Col gap={2}>
-            <Text style={{ fontSize: 17, fontFamily: type.familyBold, color: t.ink }}>
-              ฟาร์ม {farm.name}
-            </Text>
-            {subtitle ? (
-              <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-                {subtitle}
-              </Text>
-            ) : null}
-          </Col>
+          <Text style={{ fontSize: 17, fontFamily: type.familyBold, color: t.ink }}>
+            ฟาร์ม {farm.name}
+          </Text>
           <Icon.chevR size={18} color={t.inkSoft} />
         </Row>
         <Row gap={0} style={{ borderTopWidth: 1, borderTopColor: t.border, paddingTop: 10 }}>

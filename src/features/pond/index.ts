@@ -1,6 +1,7 @@
 export {
   listPonds,
   getPond,
+  listPondActivities,
   fillPond,
   movePond,
   sellPond,
@@ -14,12 +15,15 @@ export {
   usePond,
   usePondsData,
   usePondData,
+  usePondActivities,
+  usePondActivitiesData,
   useFillPond,
   useMovePond,
   useSellPond,
 } from './queries';
-export { adaptPond, type PondModel } from './adapters';
+export { adaptPond, adaptActivity, type PondModel } from './adapters';
 export type {
+  ActivityResponse,
   PondResponse,
   FillPondRequest,
   MovePondRequest,

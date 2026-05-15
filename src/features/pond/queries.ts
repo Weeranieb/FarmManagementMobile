@@ -3,18 +3,20 @@ import { useIsAuthenticated } from '@/features/auth';
 import {
   fillPond,
   getPond,
+  listPondActivities,
   listPonds,
   movePond,
   sellPond,
 } from './service';
 import type { FillPondRequest, MovePondRequest, SellPondRequest } from './types';
-import { adaptPond, type PondModel } from './adapters';
-import { mockPonds } from './__mocks__/data';
+import { adaptActivity, adaptPond, type PondModel } from './adapters';
+import { mockActivitiesByPond, mockPonds, type ActivityMock } from './__mocks__/data';
 
 export const pondKeys = {
   all: () => ['ponds'] as const,
   byFarm: (farmId: number) => ['ponds', farmId] as const,
   detail: (id: number) => ['pond', id] as const,
+  activities: (pondId: number) => ['pond', pondId, 'activities'] as const,
 } as const;
 
 export function usePonds(farmId?: number) {
@@ -32,6 +34,14 @@ export function usePond(id: number | undefined) {
   });
 }
 
+export function usePondActivities(pondId: number | undefined) {
+  return useQuery({
+    queryKey: pondKeys.activities(pondId ?? 0),
+    queryFn: () => listPondActivities(pondId as number),
+    enabled: pondId != null,
+  });
+}
+
 type DataState<T> = { data: T; isLoading: boolean; isError: boolean };
 
 export function usePondsData(farmId?: number): DataState<PondModel[]> {
@@ -44,6 +54,32 @@ export function usePondsData(farmId?: number): DataState<PondModel[]> {
   }
   return {
     data: raw.map(adaptPond),
+    isLoading: q.isLoading,
+    isError: q.isError,
+  };
+}
+
+export function usePondActivitiesData(
+  pondId: number | undefined,
+): DataState<ActivityMock[]> {
+  const enabled = useIsAuthenticated();
+  const q = usePondActivities(enabled ? pondId : undefined);
+
+  if (!enabled || pondId == null) {
+    const list = pondId != null ? (mockActivitiesByPond[pondId] ?? []) : [];
+    return { data: list, isLoading: false, isError: false };
+  }
+
+  if (q.isError || !Array.isArray(q.data)) {
+    return {
+      data: mockActivitiesByPond[pondId] ?? [],
+      isLoading: q.isLoading,
+      isError: q.isError,
+    };
+  }
+
+  return {
+    data: q.data.map(adaptActivity),
     isLoading: q.isLoading,
     isError: q.isError,
   };
@@ -83,6 +119,7 @@ export function useFillPond(pondId: number) {
     mutationFn: (body: FillPondRequest) => fillPond(pondId, body),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: pondKeys.detail(pondId) });
+      void qc.invalidateQueries({ queryKey: pondKeys.activities(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
     },
   });
@@ -93,6 +130,7 @@ export function useMovePond(pondId: number) {
   return useMutation({
     mutationFn: (body: MovePondRequest) => movePond(pondId, body),
     onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: pondKeys.activities(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
     },
   });
@@ -104,6 +142,7 @@ export function useSellPond(pondId: number) {
     mutationFn: (body: SellPondRequest) => sellPond(pondId, body),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: pondKeys.detail(pondId) });
+      void qc.invalidateQueries({ queryKey: pondKeys.activities(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
     },
   });

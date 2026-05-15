@@ -4,7 +4,6 @@ import { radii, type } from '@/theme/tokens';
 import { SearchHeader, TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Col } from '@/components/layout/Row';
-import { thaiDate } from '@/locale/thaiDate';
 import type { FarmModel } from '@/features/farm';
 import { FarmCard } from './components/FarmCard';
 
@@ -21,13 +20,6 @@ type Props = {
   onCloseSearch: () => void;
   onChangeQuery: (s: string) => void;
 };
-
-function farmAddedSubtitle(iso?: string): string | null {
-  if (!iso?.trim()) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return `เพิ่มเมื่อ ${thaiDate.monthYearShort(d)}`;
-}
 
 export function FarmsView({
   farms,
@@ -103,12 +95,7 @@ export function FarmsView({
         ) : (
           <Col gap={12} style={{ paddingHorizontal: 20 }}>
             {filteredFarms.map((fm) => (
-              <FarmCard
-                key={fm.id}
-                farm={fm}
-                subtitle={farmAddedSubtitle(fm.createdAt)}
-                onPress={() => onOpenFarm?.(fm.id)}
-              />
+              <FarmCard key={fm.id} farm={fm} onPress={() => onOpenFarm?.(fm.id)} />
             ))}
           </Col>
         )}

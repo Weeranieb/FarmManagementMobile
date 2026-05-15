@@ -36,9 +36,15 @@ export function FeedSection({
       <Row justify="space-between" style={{ marginBottom: space[3] }} align="flex-start">
         <Col gap={2} style={{ flex: 1, marginRight: space[3] }}>
           <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.ink }}>{title}</Text>
-          <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-            {subtitle}
-          </Text>
+          {subtitle ? (
+            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+              {subtitle}
+            </Text>
+          ) : (
+            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+              ยังไม่ได้เลือกสินค้า
+            </Text>
+          )}
         </Col>
         <Pressable hitSlop={8}>
           <Text style={{ color: t.brand, fontSize: 13, fontFamily: type.familySemi }}>เปลี่ยน</Text>

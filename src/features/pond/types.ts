@@ -9,6 +9,8 @@ export type PondResponse = {
   fishTypes: string[];
   ageDays: number | null;
   startDate: string | null;
+  latestActivityDate?: string | null;
+  latestActivityType?: 'fill' | 'move' | 'sell' | string | null;
   loggedToday?: boolean;
   lateDays?: number;
 };
@@ -31,4 +33,17 @@ export type SellPondRequest = {
   pricePerKg: number;
   merchantId: number;
   sizeGradeId: number;
+};
+
+/** One row of the pond activity timeline returned by GET /pond/:pondId/activities. */
+export type ActivityResponse = {
+  id: number;
+  mode: 'fill' | 'move' | 'sell';
+  activityDate: string;
+  fishType: string;
+  amount: number;
+  pricePerUnit: number;
+  total: number;
+  merchant?: string;
+  toPondName?: string;
 };

@@ -35,6 +35,8 @@ const TH_DAYS_SHORT = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 export const thaiDate = {
   long: (d: Date): string =>
     `วัน${TH_DAYS[d.getDay()]}ที่ ${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`,
+  longNoYear: (d: Date): string =>
+    `วัน${TH_DAYS[d.getDay()]}ที่ ${d.getDate()} ${TH_MONTHS[d.getMonth()]}`,
   monthYear: (d: Date): string => `${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`,
   monthYearShort: (d: Date): string => `${TH_MONTHS_SHORT[d.getMonth()]} ${d.getFullYear() + 543}`,
   short: (d: Date): string =>
