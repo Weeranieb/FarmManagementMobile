@@ -10,10 +10,16 @@ import { fmt } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import { today } from '@/shared/time';
 import type { PondModel } from '@/features/pond';
-import { PondDailyLogPanel } from '@/screens/pond-daily-log';
 import { ActionPill } from './components/ActionPill';
+import { DailyFeedBody } from './components/DailyFeedBody';
 import { HistoryBody } from './components/HistoryBody';
 import type { PondDetailTab } from './hook';
+
+const LATEST_ACTIVITY_LABEL: Record<'fill' | 'move' | 'sell', string> = {
+  fill: 'เติม',
+  move: 'ย้าย',
+  sell: 'ขาย',
+};
 
 type Props = {
   pondId: number;
@@ -26,6 +32,7 @@ type Props = {
   onPondOverflow: () => void;
   onBack?: () => void;
   onAction?: (kind: 'fill' | 'move' | 'sell') => void;
+  onOpenDailyLog?: (pondId: number) => void;
   showHeader?: boolean;
 };
 
@@ -40,6 +47,7 @@ export function PondDetailView({
   onPondOverflow,
   onBack,
   onAction,
+  onOpenDailyLog,
   showHeader = true,
 }: Props) {
   const { t } = useTheme();
@@ -85,14 +93,14 @@ export function PondDetailView({
     );
   }
 
-  const isMaint = pond.status === 'maintenance';
+  const isMaintenance = pond.status === 'maintenance';
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       {showHeader ? (
         <TopBar
-          title={pond.name}
-          subtitle={farmSubtitle}
+          title={`บ่อ ${pond.name}`}
+          subtitle={farmSubtitle ? `ฟาร์ม ${farmSubtitle}` : ''}
           leading={onBack ? <BackBtn onBack={onBack} /> : null}
           trailing={
             <Pressable
@@ -115,39 +123,47 @@ export function PondDetailView({
         />
       ) : null}
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
-        <View style={{ padding: 20, paddingBottom: 12 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 96 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12 }}>
           <Card padded={false}>
-            <View style={{ padding: 16 }}>
+            <View style={{ paddingVertical: 14, paddingHorizontal: 16 }}>
               <Row justify="space-between" style={{ marginBottom: 10 }}>
                 <Row gap={6}>
                   <StatusBadge s={pond.status} />
-                  {!isMaint ? <FishChips types={pond.fishTypes} /> : null}
+                  {!isMaintenance ? <FishChips types={pond.fishTypes} /> : null}
                 </Row>
-                {!isMaint && pond.startDate ? (
+                {!isMaintenance && pond.startDate ? (
                   <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
                     เริ่มรอบ {thaiDate.short(new Date(pond.startDate))}
                   </Text>
                 ) : null}
               </Row>
-              {!isMaint ? (
+              {!isMaintenance ? (
                 <Row gap={0}>
                   <PondStat label="ปลาในบ่อ" v={fmt.num(pond.totalFish)} sub="ตัว" />
                   <Divider />
                   <PondStat label="อายุรอบ" v={String(pond.ageDays ?? 0)} sub="วัน" />
                   <Divider />
-                  <PondStat label="ต้นทุน" v="฿62K" />
+                  <PondStat label="ต้นทุน" v="฿62K" accent={t.inkSoft} />
                 </Row>
               ) : (
                 <Col gap={4}>
                   <Text style={{ fontSize: 14, color: t.inkSoft, fontFamily: type.family }}>
-                    บ่อพักอยู่
+                    บ่อนี้ปิดอยู่
                   </Text>
-                  <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-                    รอบล่าสุด: ขาย {thaiDate.ago(new Date(pond.latestActivityDate), today)} ·
-                    กำไรสุทธิ{' '}
-                    <Text style={{ color: t.success, fontFamily: type.familySemi }}>+฿84,200</Text>
-                  </Text>
+                  {pond.latestActivityDate && pond.latestActivityType ? (
+                    <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+                      รอบล่าสุด: {LATEST_ACTIVITY_LABEL[pond.latestActivityType]}{' '}
+                      {thaiDate.ago(new Date(pond.latestActivityDate), today)}
+                    </Text>
+                  ) : (
+                    <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+                      ยังไม่มีกิจกรรม
+                    </Text>
+                  )}
                 </Col>
               )}
             </View>
@@ -156,19 +172,24 @@ export function PondDetailView({
 
         <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
           <Row gap={8}>
-            <ActionPill tone="fill" icon="plus" label="เติมปลา" onPress={() => onAction?.('fill')} />
+            <ActionPill
+              tone="fill"
+              icon="plus"
+              label="เติมปลา"
+              onPress={() => onAction?.('fill')}
+            />
             <ActionPill
               tone="move"
               icon="swap"
               label="ย้ายปลา"
-              disabled={isMaint}
+              disabled={isMaintenance}
               onPress={() => onAction?.('move')}
             />
             <ActionPill
               tone="sell"
               icon="tag"
               label="ขายปลา"
-              disabled={isMaint}
+              disabled={isMaintenance}
               onPress={() => onAction?.('sell')}
             />
           </Row>
@@ -185,7 +206,7 @@ export function PondDetailView({
         >
           {(
             [
-              { id: 'feed', label: 'บันทึกอาหารรายวัน' },
+              { id: 'feed', label: 'ข้อมูลรายวัน' },
               { id: 'history', label: 'ประวัติกิจกรรม' },
             ] as const
           ).map((opt) => {
@@ -215,7 +236,14 @@ export function PondDetailView({
           })}
         </View>
 
-        {tab === 'feed' ? <PondDailyLogPanel pondId={pond.id} /> : <HistoryBody pondId={pond.id} />}
+        {tab === 'feed' ? (
+          <DailyFeedBody
+            pondId={pond.id}
+            onOpenDailyLog={() => onOpenDailyLog?.(pond.id)}
+          />
+        ) : (
+          <HistoryBody pondId={pond.id} />
+        )}
       </ScrollView>
     </View>
   );
@@ -241,12 +269,24 @@ function BackBtn({ onBack }: { onBack: () => void }) {
   );
 }
 
-function PondStat({ label, v, sub }: { label: string; v: string; sub?: string }) {
+function PondStat({
+  label,
+  v,
+  sub,
+  accent,
+}: {
+  label: string;
+  v: string;
+  sub?: string;
+  accent?: string;
+}) {
   const { t } = useTheme();
   return (
-    <View style={{ flex: 1, gap: 1 }}>
+    <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-        <Text style={{ fontFamily: type.familyNumBold, fontSize: 18, color: t.ink }}>{v}</Text>
+        <Text style={{ fontFamily: type.familyNumBold, fontSize: 18, color: accent ?? t.ink }}>
+          {v}
+        </Text>
         {sub ? (
           <Text
             style={{ fontSize: 11, color: t.inkMute, marginLeft: 3, fontFamily: type.familyMedium }}
@@ -262,9 +302,5 @@ function PondStat({ label, v, sub }: { label: string; v: string; sub?: string })
 
 function Divider() {
   const { t } = useTheme();
-  return (
-    <View
-      style={{ width: 1, alignSelf: 'stretch', backgroundColor: t.border, marginHorizontal: 8 }}
-    />
-  );
+  return <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: t.border }} />;
 }

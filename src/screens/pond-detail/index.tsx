@@ -5,16 +5,11 @@ type Props = {
   pondId: number;
   onBack?: () => void;
   onAction?: (kind: 'fill' | 'move' | 'sell') => void;
-  /** @deprecated Daily log is embedded in the feed tab; kept for call-site compatibility. */
-  onOpenDailyLog?: () => void;
+  onOpenDailyLog?: (pondId: number) => void;
   showHeader?: boolean;
 };
 
-export function PondDetailScreen({
-  pondId,
-  onOpenDailyLog: _onOpenDailyLog,
-  ...rest
-}: Props) {
+export function PondDetailScreen({ pondId, ...rest }: Props) {
   const state = usePondDetailScreen(pondId);
   return <PondDetailView pondId={pondId} {...state} {...rest} />;
 }
