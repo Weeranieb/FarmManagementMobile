@@ -1,4 +1,4 @@
-import { Platform, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Card } from '@/components/ui';
@@ -46,28 +46,25 @@ export function PondRowCard({ pond, onPress }: Props) {
           {!isMaintenance ? <PondStatusDot pond={pond} /> : null}
         </Row>
         {!isMaintenance ? (
-          <>
-            <Row gap={20} style={{ paddingTop: 2 }}>
-              <PondMiniStat label="ปลาในบ่อ (ตัว)" v={fmt.num(pond.totalFish)} />
-              <PondMiniStat label="อายุรอบ" v={String(pond.ageDays ?? 0)} sub="วัน" />
-            </Row>
-            {pond.latestActivityDate ? (
-              <>
-                <PondHr style={{ marginTop: 12 }} />
-                <Row gap={6} align="center" style={{ paddingTop: 12 }}>
-                  <ActivityModePill mode={pond.latestActivityType} />
-                  <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-                    · {thaiDate.short(new Date(pond.latestActivityDate))}
-                  </Text>
-                </Row>
-              </>
-            ) : null}
-          </>
+          <Row gap={20} style={{ paddingTop: 2, marginBottom: 8 }}>
+            <PondMiniStat label="ปลาในบ่อ (ตัว)" v={fmt.num(pond.totalFish)} />
+            <PondMiniStat label="อายุรอบ" v={String(pond.ageDays ?? 0)} sub="วัน" />
+          </Row>
         ) : (
-          <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+          <Text
+            style={{ fontSize: 13, color: t.inkSoft, fontFamily: type.family, marginBottom: 8 }}
+          >
             บ่อปิดอยู่ — กดเพื่อเริ่มรอบใหม่
           </Text>
         )}
+        {pond.latestActivityDate && pond.latestActivityType ? (
+          <Row gap={8} align="center" style={{ paddingTop: 8, borderTopWidth: 1, borderTopColor: t.border }}>
+            <ActivityModePill mode={pond.latestActivityType} />
+            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+              · {thaiDate.ago(new Date(pond.latestActivityDate))}
+            </Text>
+          </Row>
+        ) : null}
       </View>
     </Card>
   );
@@ -109,11 +106,6 @@ function ActivityModePill({ mode }: { mode: 'fill' | 'move' | 'sell' }) {
       <Text style={{ color: m.fg, fontFamily: type.familySemi, fontSize: 12 }}>{m.label}</Text>
     </View>
   );
-}
-
-function PondHr({ style }: { style?: StyleProp<ViewStyle> }) {
-  const { t } = useTheme();
-  return <View style={[{ height: 1, backgroundColor: t.border }, style]} />;
 }
 
 function PondMiniStat({ label, v, sub }: { label: string; v: string; sub?: string }) {

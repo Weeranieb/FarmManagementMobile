@@ -6,10 +6,19 @@ import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { fmt, FISH_TH } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
-import { mockActivitiesByPond, type ActivityMock } from '@/features/pond';
+import { usePondActivitiesData, type ActivityMock } from '@/features/pond';
 
 export function HistoryBody({ pondId }: { pondId: number }) {
-  const list = mockActivitiesByPond[pondId] ?? [];
+  const { data: list, isLoading } = usePondActivitiesData(pondId);
+
+  if (isLoading && list.length === 0) {
+    return (
+      <View style={{ padding: 32, alignItems: 'center' }}>
+        <LoadingState />
+      </View>
+    );
+  }
+
   if (list.length === 0) {
     return (
       <View style={{ padding: 32, alignItems: 'center' }}>
@@ -23,6 +32,15 @@ export function HistoryBody({ pondId }: { pondId: number }) {
         <ActivityHistoryCard key={a.id} a={a} />
       ))}
     </View>
+  );
+}
+
+function LoadingState() {
+  const { t } = useTheme();
+  return (
+    <Text style={{ color: t.inkMute, fontFamily: type.family, fontSize: 13 }}>
+      กำลังโหลดประวัติกิจกรรม…
+    </Text>
   );
 }
 
@@ -51,8 +69,20 @@ function ActivityHistoryCard({ a }: { a: ActivityMock }) {
     sell: { fg: t.sellInk, bg: t.sellSoft, border: t.sell },
   } as const;
   const { fg, bg, border } = accentMap[a.mode];
-  const amountRight =
-    a.mode === 'sell' && a.total > 0 ? `+${fmt.baht(a.total)}` : `${fmt.num(a.amount)} ตัว`;
+  const hasMoney = a.total > 0 && (a.mode === 'sell' || a.mode === 'fill');
+  const hasCount = a.amount > 0;
+  const amountRight = hasMoney
+    ? a.mode === 'sell'
+      ? `+${fmt.baht(a.total)}`
+      : fmt.baht(a.total)
+    : hasCount
+      ? `${fmt.num(a.amount)} ตัว`
+      : '';
+  const fishLabel = FISH_TH[a.fishType] ?? a.fishType;
+  const leadLabel = a.mode === 'sell' ? (a.merchant ?? '—') : fishLabel;
+  const detailLine = [leadLabel, hasCount ? `${fmt.num(a.amount)} ตัว` : null]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <Card padded={false} style={{ overflow: 'hidden', borderLeftWidth: 4, borderLeftColor: border }}>
@@ -77,9 +107,7 @@ function ActivityHistoryCard({ a }: { a: ActivityMock }) {
               </Text>
             </Row>
             <Text style={{ fontSize: 14, color: t.ink, fontFamily: type.family }}>
-              {FISH_TH[a.fishType] ?? a.fishType}
-              {a.merchant ? ` — ${a.merchant}` : ''}
-              {a.mode !== 'sell' && a.total > 0 ? ` · ${fmt.baht(a.total)}` : ''}
+              {detailLine}
             </Text>
             {a.remark ? (
               <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
@@ -87,16 +115,18 @@ function ActivityHistoryCard({ a }: { a: ActivityMock }) {
               </Text>
             ) : null}
           </Col>
-          <Text
-            style={{
-              fontFamily: type.familyNumBold,
-              fontSize: 16,
-              color: a.mode === 'sell' ? t.sellInk : t.ink,
-              marginLeft: 8,
-            }}
-          >
-            {amountRight}
-          </Text>
+          {amountRight ? (
+            <Text
+              style={{
+                fontFamily: type.familyNumBold,
+                fontSize: 16,
+                color: a.mode === 'sell' ? t.sellInk : t.ink,
+                marginLeft: 8,
+              }}
+            >
+              {amountRight}
+            </Text>
+          ) : null}
         </Row>
       </View>
     </Card>

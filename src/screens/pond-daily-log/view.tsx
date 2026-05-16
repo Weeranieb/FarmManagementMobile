@@ -193,18 +193,19 @@ export function PondDailyLogView({
                   paddingBottom: space[2],
                 }}
               >
-                <Row justify="space-between" align="flex-start">
+                <Row justify="space-between" align="center">
                   <Text
+                    numberOfLines={1}
                     style={{
                       flex: 1,
                       marginRight: space[3],
-                      fontSize: type.sizes.lg,
+                      fontSize: 16,
                       fontFamily: type.familyBold,
                       color: t.ink,
-                      lineHeight: 24,
+                      lineHeight: 22,
                     }}
                   >
-                    {thaiDate.long(selectedFullDate)}
+                    {thaiDate.longNoYear(selectedFullDate)}
                   </Text>
                   {entry ? (
                     <Pill tone="success">
@@ -282,18 +283,16 @@ export function PondDailyLogView({
 
       <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
         <Row gap={8}>
-          <Btn tone="brand" size="lg" style={{ flex: 1 }}>
-            บันทึก
-          </Btn>
-          <Btn
-            tone="brand"
-            variant="soft"
-            size="lg"
-            style={{ flex: 1 }}
-            onPress={goToNextDay}
-          >
-            บันทึก & วันถัดไป
-          </Btn>
+          <View style={{ flex: 1 }}>
+            <Btn tone="brand" size="lg" block>
+              บันทึก
+            </Btn>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Btn tone="brand" variant="soft" size="lg" block onPress={goToNextDay}>
+              บันทึก & วันถัดไป
+            </Btn>
+          </View>
         </Row>
       </View>
     </View>

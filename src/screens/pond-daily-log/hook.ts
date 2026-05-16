@@ -103,8 +103,8 @@ export function usePondDailyLog(pondId: number) {
     setSelectedDay((d) => Math.min(d + 1, maxSelectableDay));
   }, [maxSelectableDay]);
 
-  const freshSubtitle = logData ? `${logData.freshFeedCollectionName} · —/กก.` : '—';
-  const pelletSubtitle = logData ? `${logData.pelletFeedCollectionName} · —/กก.` : '—';
+  const freshSubtitle = logData?.freshFeedCollectionName?.trim() || '';
+  const pelletSubtitle = logData?.pelletFeedCollectionName?.trim() || '';
 
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
