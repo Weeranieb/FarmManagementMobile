@@ -53,3 +53,5 @@ export const thaiDate = {
 };
 
 export const TH_WEEKDAYS_SHORT = TH_DAYS_SHORT;
+export const TH_MONTH_NAMES = TH_MONTHS;
+export const TH_MONTH_NAMES_SHORT = TH_MONTHS_SHORT;

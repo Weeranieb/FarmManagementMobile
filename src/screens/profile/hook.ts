@@ -4,6 +4,7 @@ import { useAuthStore } from '@/features/auth';
 import { useLanguage, type LanguageCode } from '@/screens/language';
 
 const ACCOUNT_INFO_ROUTE = '/account-info' as unknown as Href;
+const FEED_COLLECTION_ROUTE = '/feed-collection' as unknown as Href;
 
 export function useProfileScreen() {
   const router = useRouter();
@@ -22,6 +23,10 @@ export function useProfileScreen() {
 
   const openAccount = useCallback(() => {
     router.push(ACCOUNT_INFO_ROUTE);
+  }, [router]);
+
+  const openFeedCollection = useCallback(() => {
+    router.push(FEED_COLLECTION_ROUTE);
   }, [router]);
 
   const openLanguage = useCallback(() => {
@@ -45,6 +50,7 @@ export function useProfileScreen() {
     username,
     handleLogout,
     openAccount,
+    openFeedCollection,
     openLanguage,
     closeLanguage,
     showLanguageSheet,
