@@ -7,8 +7,8 @@ import { Row } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
 import { SheetShell } from '@/screens/account-info/components/SheetShell';
 import type { FeedCollectionModel } from '@/features/feed-collection';
-import { FEED_ORANGE, FEED_TYPE_LABEL_TH } from '../feedPalette';
-import { FeedChartIcon, FeedPackageIcon } from './FeedIcons';
+import { FEED_TYPE_LABEL_TH, feedPaletteFor, type FeedPalette } from '../feedPalette';
+import { FeedChartIcon, feedGlyphFor } from './FeedIcons';
 
 type Props = {
   visible: boolean;
@@ -38,6 +38,9 @@ export function SheetFeedActions({
     );
   }
 
+  const palette = feedPaletteFor(feed.kind);
+  const Glyph = feedGlyphFor(feed.kind);
+
   return (
     <SheetShell visible={visible} onClose={onClose} heightPct={0.5}>
       <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 28 }}>
@@ -47,12 +50,12 @@ export function SheetFeedActions({
               width: 40,
               height: 40,
               borderRadius: 11,
-              backgroundColor: FEED_ORANGE.tile,
+              backgroundColor: palette.tile,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <FeedPackageIcon size={20} stroke={2} color="#fff" />
+            <Glyph size={20} stroke={2} color="#fff" />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text
@@ -75,11 +78,12 @@ export function SheetFeedActions({
           onPress={onEdit}
         />
         <ActionRow
-          icon={<FeedChartIcon size={18} color={FEED_ORANGE.ink} />}
+          icon={<FeedChartIcon size={18} color={palette.ink} />}
           iconBg="#ffffff"
           label="อัปเดตราคา"
           sub="บันทึกราคาใหม่ในประวัติ"
           highlight
+          palette={palette}
           onPress={onUpdatePrice}
         />
         <ActionRow
@@ -101,6 +105,7 @@ function ActionRow({
   label,
   sub,
   highlight,
+  palette,
   labelColor,
   onPress,
 }: {
@@ -109,6 +114,7 @@ function ActionRow({
   label: string;
   sub: string;
   highlight?: boolean;
+  palette?: FeedPalette;
   labelColor?: string;
   onPress?: () => void;
 }) {
@@ -124,7 +130,7 @@ function ActionRow({
         paddingHorizontal: 14,
         paddingVertical: 14,
         borderRadius: 14,
-        backgroundColor: highlight ? FEED_ORANGE.soft : 'transparent',
+        backgroundColor: highlight && palette ? palette.soft : 'transparent',
       }}
     >
       <View

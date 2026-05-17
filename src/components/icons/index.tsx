@@ -233,6 +233,34 @@ export const Icon = {
       <Path d="M8 11V8a4 4 0 018 0v3" />
     </Frame>
   ),
+  sliders: (p: IconProps) => (
+    <Frame {...p}>
+      <Path d="M4 6h11" />
+      <Circle cx="18" cy="6" r="2.2" />
+      <Path d="M9 12H4" />
+      <Circle cx="13" cy="12" r="2.2" />
+      <Path d="M15.2 12H20" />
+      <Path d="M4 18h11" />
+      <Circle cx="18" cy="18" r="2.2" />
+    </Frame>
+  ),
+  worker: (p: IconProps) => (
+    <Frame {...p}>
+      <Circle cx="8" cy="8" r="3.2" />
+      <Circle cx="17" cy="10" r="2.4" />
+      <Path d="M2 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" />
+      <Path d="M15 20c0-2.4 1.8-4 4-4" />
+    </Frame>
+  ),
+  merchant: (p: IconProps) => (
+    <Frame {...p}>
+      <Path d="M4 9l1-4h14l1 4" />
+      <Path d="M4 9c0 1.7 1.3 3 3 3s3-1.3 3-3" />
+      <Path d="M10 9c0 1.7 1.3 3 3 3s3-1.3 3-3" />
+      <Path d="M16 9c0 1.7 1.3 3 3 3" />
+      <Path d="M5 12v8h14v-8" />
+    </Frame>
+  ),
 } satisfies Record<string, (p: IconProps) => React.ReactElement>;
 
 export type IconName = keyof typeof Icon;

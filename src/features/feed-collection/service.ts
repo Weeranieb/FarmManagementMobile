@@ -50,3 +50,11 @@ export function addFeedPriceHistory(
 ): Promise<FeedPriceHistoryResponse> {
   return http.post('/feed-price-history', body);
 }
+
+export async function listFeedPriceHistory(
+  feedCollectionId: number,
+): Promise<FeedPriceHistoryResponse[]> {
+  const payload = await http.get<unknown>('/feed-price-history', { feedCollectionId });
+  if (Array.isArray(payload)) return payload as FeedPriceHistoryResponse[];
+  return [];
+}

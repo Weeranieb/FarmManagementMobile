@@ -7,8 +7,8 @@ import { Row } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import type { FeedCollectionModel } from '@/features/feed-collection';
-import { FEED_ORANGE, FEED_TYPE_LABEL_TH } from '../feedPalette';
-import { FeedChartIcon, FeedPackageIcon } from './FeedIcons';
+import { FEED_PILL_TONE_BY_KIND, FEED_TYPE_LABEL_TH, feedPaletteFor } from '../feedPalette';
+import { FeedChartIcon, feedGlyphFor } from './FeedIcons';
 
 type Props = {
   feed: FeedCollectionModel;
@@ -20,6 +20,8 @@ type Props = {
 export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
   const { t } = useTheme();
   const updated = new Date(feed.updatedAt);
+  const palette = feedPaletteFor(feed.kind);
+  const Glyph = feedGlyphFor(feed.kind);
 
   return (
     <Card padded={false} style={{ overflow: 'hidden' }}>
@@ -30,12 +32,12 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
               width: 44,
               height: 44,
               borderRadius: 12,
-              backgroundColor: FEED_ORANGE.tile,
+              backgroundColor: palette.tile,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <FeedPackageIcon size={22} stroke={2} color="#fff" />
+            <Glyph size={22} stroke={2} color="#fff" />
           </View>
 
           <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
@@ -51,7 +53,7 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
               {feed.name}
             </Text>
             <Row gap={6} wrap>
-              <Pill tone={feed.kind === 'pellet' ? 'warn' : 'brand'}>
+              <Pill tone={FEED_PILL_TONE_BY_KIND[feed.kind]}>
                 {FEED_TYPE_LABEL_TH[feed.kind]}
               </Pill>
               {feed.fcr != null ? (

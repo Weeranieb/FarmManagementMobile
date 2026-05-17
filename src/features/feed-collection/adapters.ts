@@ -1,4 +1,4 @@
-import type { FeedCollectionPageItem, FeedKind } from './types';
+import type { FeedCollectionPageItem, FeedKind, FeedPriceHistoryResponse } from './types';
 
 /** UI-facing model. DTOs from `./types` get adapted into this. */
 export type FeedCollectionModel = {
@@ -26,5 +26,33 @@ export function adaptFeedCollection(f: FeedCollectionPageItem): FeedCollectionMo
     price: f.latestPrice ?? null,
     fcr: f.fcr == null ? null : Number(f.fcr),
     updatedAt: f.latestPriceUpdatedDate ?? f.updatedAt,
+  };
+}
+
+/** UI-facing single price-history entry. Date is an ISO `YYYY-MM-DD` string. */
+export type FeedPriceHistoryEntry = {
+  id: number;
+  feedCollectionId: number;
+  price: number;
+  /** ISO `YYYY-MM-DD` — day the price became effective. */
+  effectiveDate: string;
+};
+
+function toYmd(iso: string): string {
+  // The backend returns RFC3339 timestamps; the UI only cares about the day.
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function adaptFeedPriceHistory(p: FeedPriceHistoryResponse): FeedPriceHistoryEntry {
+  return {
+    id: p.id,
+    feedCollectionId: p.feedCollectionId,
+    price: Number(p.price),
+    effectiveDate: toYmd(p.priceUpdatedDate),
   };
 }

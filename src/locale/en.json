@@ -15,7 +15,22 @@
   "tabs": {
     "home": "Home",
     "farms": "Farms",
+    "manage": "Manage",
     "profile": "Profile"
+  },
+  "manage": {
+    "title": "Manage",
+    "subtitle": "Tools for owners and admins",
+    "toolsLabel": "Tools",
+    "rowFeedCollection": "Feed catalogue",
+    "rowMerchants": "Merchants",
+    "rowWorkers": "Workers & users",
+    "comingSoon": "Coming soon",
+    "feedSub": "{{count}} items · Updated {{date}}",
+    "feedSubNoDate": "{{count}} items",
+    "feedSubEmpty": "No items yet",
+    "footnote": "You see this tab because you're a farm owner or admin · regular users won't see it",
+    "adminOnly": "This page is for farm owners and admins only"
   },
   "home": {
     "greeting": "Hello, {{name}}",
@@ -109,7 +124,6 @@
     "displayMode": "Display mode",
     "logout": "Sign out",
     "rowAccount": "Account info",
-    "rowFeedCollection": "Feed catalogue",
     "rowLanguage": "Language",
     "rowAbout": "About",
     "rowTheme": "App theme",

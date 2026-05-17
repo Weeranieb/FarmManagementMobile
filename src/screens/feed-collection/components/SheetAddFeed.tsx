@@ -6,8 +6,9 @@ import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { SheetShell } from '@/screens/account-info/components/SheetShell';
 import type { FeedCollectionModel, FeedKind } from '@/features/feed-collection';
-import { FEED_UNIT_BY_KIND } from '../feedPalette';
+import { FEED_UNIT_BY_KIND, feedPaletteFor } from '../feedPalette';
 import { DateField } from './DateField';
+import { feedGlyphFor } from './FeedIcons';
 
 export type AddFeedSubmitPayload = {
   name: string;
@@ -93,10 +94,17 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
         <Field label="ประเภท">
           <Segmented
             value={kind}
-            options={[
-              { value: 'pellet', label: 'เม็ด' },
-              { value: 'fresh', label: 'สด' },
-            ]}
+            options={(['pellet', 'fresh'] as const).map((k) => {
+              const Glyph = feedGlyphFor(k);
+              const palette = feedPaletteFor(k);
+              return {
+                value: k,
+                label: k === 'pellet' ? 'เม็ด' : 'สด',
+                icon: (selected: boolean) => (
+                  <Glyph size={16} stroke={2} color={selected ? palette.tileEdge : undefined} />
+                ),
+              };
+            })}
             onChange={(v) => setKind(v as FeedKind)}
           />
         </Field>
@@ -290,7 +298,7 @@ function Segmented<T extends string>({
   onChange,
 }: {
   value: T;
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; icon?: (selected: boolean) => React.ReactNode }[];
   onChange: (v: T) => void;
 }) {
   const { t } = useTheme();
@@ -318,10 +326,25 @@ function Segmented<T extends string>({
               height: 44,
               borderRadius: radii.sm,
               backgroundColor: sel ? t.surface : 'transparent',
+              flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
+              gap: 8,
             }}
           >
+            {opt.icon ? (
+              <View
+                style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  // unselected glyphs inherit the muted ink for consistent
+                  // tone with the label below.
+                  opacity: sel ? 1 : 0.7,
+                }}
+              >
+                {opt.icon(sel)}
+              </View>
+            ) : null}
             <Text
               style={{
                 color: sel ? t.ink : t.inkSoft,

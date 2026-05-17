@@ -16,7 +16,6 @@ type Props = {
   username: string;
   handleLogout: () => void;
   openAccount: () => void;
-  openFeedCollection: () => void;
   openLanguage: () => void;
   closeLanguage: () => void;
   showLanguageSheet: boolean;
@@ -53,7 +52,6 @@ export function ProfileView({
   username,
   handleLogout,
   openAccount,
-  openFeedCollection,
   openLanguage,
   closeLanguage,
   showLanguageSheet,
@@ -126,11 +124,6 @@ export function ProfileView({
         <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
           <Card padded={false}>
             <ListRow icon="user" label={tx('profile.rowAccount')} onPress={openAccount} />
-            <ListRow
-              icon="feed"
-              label={tx('profile.rowFeedCollection')}
-              onPress={openFeedCollection}
-            />
             <ListRow
               icon="globe"
               label={tx('profile.rowLanguage')}

@@ -8,9 +8,9 @@ import { fmt } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import { SheetShell } from '@/screens/account-info/components/SheetShell';
 import type { FeedCollectionModel } from '@/features/feed-collection';
-import { FEED_ORANGE } from '../feedPalette';
+import { feedPaletteFor } from '../feedPalette';
 import { DateField } from './DateField';
-import { FeedPackageIcon } from './FeedIcons';
+import { feedGlyphFor } from './FeedIcons';
 
 type Props = {
   visible: boolean;
@@ -41,6 +41,9 @@ export function SheetUpdatePrice({ visible, feed, onClose, onSubmit }: Props) {
       </SheetShell>
     );
   }
+
+  const palette = feedPaletteFor(feed.kind);
+  const Glyph = feedGlyphFor(feed.kind);
 
   const handleSubmit = () => {
     const n = Number(next);
@@ -106,12 +109,12 @@ export function SheetUpdatePrice({ visible, feed, onClose, onSubmit }: Props) {
               width: 38,
               height: 38,
               borderRadius: 10,
-              backgroundColor: FEED_ORANGE.tile,
+              backgroundColor: palette.tile,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <FeedPackageIcon size={20} stroke={2} color="#fff" />
+            <Glyph size={20} stroke={2} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
             <Text

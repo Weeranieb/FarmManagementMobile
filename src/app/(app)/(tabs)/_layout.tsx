@@ -3,10 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Icon } from '@/components/icons';
 import { type } from '@/theme/tokens';
+import { useAuthStore } from '@/features/auth';
 
 export default function TabsLayout() {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
+  /** Anyone signed in is the farm owner/admin in the current data model. */
+  const isAdmin = useAuthStore((s) => s.user != null);
 
   return (
     <Tabs
@@ -42,6 +45,17 @@ export default function TabsLayout() {
           title: tx('tabs.farms'),
           tabBarIcon: ({ color, focused }) => (
             <Icon.farm size={22} color={color} stroke={focused ? 2 : 1.6} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="manage"
+        options={{
+          // Non-admins don't see the tab at all (role gating = visibility).
+          href: isAdmin ? undefined : null,
+          title: tx('tabs.manage'),
+          tabBarIcon: ({ color, focused }) => (
+            <Icon.sliders size={22} color={color} stroke={focused ? 2 : 1.6} />
           ),
         }}
       />
