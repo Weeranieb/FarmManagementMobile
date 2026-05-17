@@ -3,6 +3,7 @@ export {
   createFeedCollection,
   updateFeedCollection,
   addFeedPriceHistory,
+  listFeedPriceHistory,
 } from './service';
 export {
   feedCollectionKeys,
@@ -11,8 +12,15 @@ export {
   useCreateFeedCollection,
   useUpdateFeedCollection,
   useAddFeedPriceHistory,
+  useFeedPriceHistory,
+  useFeedPriceHistoryData,
 } from './queries';
-export { adaptFeedCollection, type FeedCollectionModel } from './adapters';
+export {
+  adaptFeedCollection,
+  adaptFeedPriceHistory,
+  type FeedCollectionModel,
+  type FeedPriceHistoryEntry,
+} from './adapters';
 export type {
   FeedCollectionResponse,
   FeedCollectionPageItem,
@@ -24,4 +32,3 @@ export type {
   FeedPriceHistoryResponse,
   FeedKind,
 } from './types';
-export { mockFeedCollections } from './__mocks__/data';

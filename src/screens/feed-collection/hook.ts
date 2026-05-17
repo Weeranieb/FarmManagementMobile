@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useAuthStore } from '@/features/auth';
+import { isClientAdmin, useAuthStore } from '@/features/auth';
 import {
   feedCollectionKeys,
   useAddFeedPriceHistory,
@@ -67,8 +67,8 @@ export function useFeedCollectionScreen(): FeedCollectionState {
   const router = useRouter();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  /** Anyone signed in is the farm owner/admin in the current data model. */
-  const isAdmin = user != null;
+  /** Admin actions (add/edit/update-price) require `userLevel >= ClientAdmin` — matches web's gate in `useFeedCollectionsPage`. */
+  const isAdmin = isClientAdmin(user);
 
   const { data: feeds } = useFeedCollectionsData();
 
@@ -163,9 +163,8 @@ export function useFeedCollectionScreen(): FeedCollectionState {
   );
 
   const handleOpenHistory = useCallback(
-    (_feed: FeedCollectionModel) => {
-      // Price-history detail screen is out of scope for FAR-68 — stub only.
-      router.push('/(app)/feed-collection' as never);
+    (feed: FeedCollectionModel) => {
+      router.push(`/(app)/feed-collection/${feed.id}/history` as never);
     },
     [router],
   );
