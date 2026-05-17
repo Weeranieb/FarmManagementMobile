@@ -1,0 +1,150 @@
+import { Text, View } from 'react-native';
+import { useTheme } from '@/theme/ThemeProvider';
+import { type } from '@/theme/tokens';
+import { Card } from '@/components/ui';
+import { Icon } from '@/components/icons';
+import { dangerInk } from '@/theme/ink';
+import { Row } from '@/components/layout/Row';
+import { fmt } from '@/utils/fmt';
+import { thaiDate } from '@/locale/thaiDate';
+import { feedPaletteFor } from '@/screens/feed-collection/feedPalette';
+import { feedGlyphFor } from '@/screens/feed-collection/components/FeedIcons';
+import type { FeedKind, FeedPriceHistoryEntry } from '@/features/feed-collection';
+
+type Props = {
+  unit: string;
+  kind: FeedKind;
+  current: FeedPriceHistoryEntry;
+  deltaPct: number | null;
+};
+
+/**
+ * Top-of-screen card: package tile + current price + month-over-month delta
+ * chip. Higher price → red (bad for farmer); lower → green; flat → neutral.
+ */
+export function HeroPriceCard({ unit, kind, current, deltaPct }: Props) {
+  const { t, mode } = useTheme();
+  const curDate = new Date(current.effectiveDate);
+  const palette = feedPaletteFor(kind);
+  const Glyph = feedGlyphFor(kind);
+
+  const tone = pickDeltaTone(deltaPct);
+  const { bg, fg, label, icon } = describeDelta(tone, deltaPct, t, mode);
+
+  return (
+    <Card padded={false}>
+      <View style={{ padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+        <View
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 14,
+            backgroundColor: palette.tile,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Glyph size={28} stroke={1.8} color="#fff" />
+        </View>
+        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+          <Text
+            style={{
+              fontSize: 11,
+              fontFamily: type.familyBold,
+              color: t.inkMute,
+              letterSpacing: 0.5,
+              textTransform: 'uppercase',
+            }}
+          >
+            ราคาปัจจุบัน
+          </Text>
+          <Row gap={4} style={{ alignItems: 'baseline' }}>
+            <Text
+              style={{
+                fontFamily: type.familyNumBold,
+                fontSize: 32,
+                color: t.ink,
+                letterSpacing: -0.6,
+                lineHeight: 36,
+              }}
+            >
+              {fmt.baht(current.price)}
+            </Text>
+            <Text style={{ fontSize: 15, color: t.inkSoft, fontFamily: type.familyMedium }}>
+              /{unit}
+            </Text>
+          </Row>
+          <Row gap={6} wrap style={{ marginTop: 2 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 4,
+                paddingVertical: 3,
+                paddingHorizontal: 10,
+                borderRadius: 9999,
+                backgroundColor: bg,
+              }}
+            >
+              {icon}
+              <Text style={{ color: fg, fontSize: 12, fontFamily: type.familyNumSemi }}>{label}</Text>
+            </View>
+          </Row>
+          <Text
+            style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}
+          >
+            อัปเดตล่าสุด{' '}
+            <Text style={{ fontFamily: type.familyNum }}>{thaiDate.short(curDate)}</Text>
+          </Text>
+        </View>
+      </View>
+    </Card>
+  );
+}
+
+type DeltaTone = 'down' | 'up' | 'neutral' | 'no-data';
+
+function pickDeltaTone(deltaPct: number | null): DeltaTone {
+  if (deltaPct == null) return 'no-data';
+  if (deltaPct > 0.5) return 'down'; // price up = bad → red
+  if (deltaPct < -0.5) return 'up'; // price down = good → green
+  return 'neutral';
+}
+
+function describeDelta(
+  tone: DeltaTone,
+  deltaPct: number | null,
+  t: ReturnType<typeof useTheme>['t'],
+  mode: ReturnType<typeof useTheme>['mode'],
+): { bg: string; fg: string; label: string; icon: React.ReactNode } {
+  if (tone === 'no-data') {
+    return {
+      bg: t.surfaceAlt,
+      fg: t.inkSoft,
+      label: 'ไม่มีข้อมูลเทียบ',
+      icon: null,
+    };
+  }
+  if (tone === 'neutral') {
+    return {
+      bg: t.surfaceAlt,
+      fg: t.inkSoft,
+      label: 'ไม่เปลี่ยนแปลง',
+      icon: <Icon.arrow size={13} color={t.inkSoft} />,
+    };
+  }
+  if (tone === 'down') {
+    return {
+      bg: t.dangerSoft,
+      fg: dangerInk(mode, t),
+      label: `+${(deltaPct as number).toFixed(1)}% จากเดือนก่อน`,
+      icon: <Icon.arrow size={13} color={dangerInk(mode, t)} />,
+    };
+  }
+  return {
+    bg: t.fillSoft,
+    fg: t.fillInk,
+    label: `${(deltaPct as number).toFixed(1)}% จากเดือนก่อน`,
+    icon: <Icon.arrow size={13} color={t.fillInk} />,
+  };
+}

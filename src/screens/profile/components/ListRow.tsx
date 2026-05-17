@@ -13,35 +13,48 @@ type Props = {
   sub?: string;
   last?: boolean;
   tone?: ListRowTone;
+  /** Mutes label/sub/icon and suppresses the chevron — used for "coming soon" rows. */
+  disabled?: boolean;
   onPress?: () => void;
 };
 
-export function ListRow({ icon, label, trailing, sub, last, tone = 'default', onPress }: Props) {
+export function ListRow({
+  icon,
+  label,
+  trailing,
+  sub,
+  last,
+  tone = 'default',
+  disabled,
+  onPress,
+}: Props) {
   const { t, mode } = useTheme();
   const Ico = Icon[icon];
   const danger = tone === 'danger';
-  const labelColor = danger ? dangerInk(mode, t) : t.ink;
+  const labelColor = danger ? dangerInk(mode, t) : disabled ? t.inkMute : t.ink;
   const subColor = danger ? dangerInk(mode, t) : t.inkMute;
   const iconBg = danger ? t.dangerSoft : t.surfaceAlt;
-  const iconColor = danger ? dangerInk(mode, t) : t.ink;
+  const iconColor = danger ? dangerInk(mode, t) : disabled ? t.inkMute : t.ink;
   const chevColor = danger ? dangerInk(mode, t) : t.inkSoft;
+  const showChev = !disabled && !!onPress;
 
   const trailingNode =
     typeof trailing === 'string' ? (
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Text style={{ color: t.inkSoft, fontSize: 14, fontFamily: type.family }}>{trailing}</Text>
-        {onPress ? <Icon.chevR size={16} color={chevColor} /> : null}
+        {showChev ? <Icon.chevR size={16} color={chevColor} /> : null}
       </View>
     ) : trailing !== undefined ? (
       trailing
-    ) : onPress ? (
+    ) : showChev ? (
       <Icon.chevR size={16} color={chevColor} />
     ) : null;
 
   return (
     <Pressable
-      onPress={onPress}
-      android_ripple={{ color: t.surfaceAlt }}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      android_ripple={disabled ? undefined : { color: t.surfaceAlt }}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
