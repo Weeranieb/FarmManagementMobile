@@ -16,6 +16,7 @@ type Props = {
   onNextMonth: () => void;
   nextMonthDisabled?: boolean;
   onFarmPress?: () => void;
+  onMonthLabelPress?: () => void;
 };
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
@@ -33,6 +34,7 @@ export function CollapsingChrome({
   onNextMonth,
   nextMonthDisabled = false,
   onFarmPress,
+  onMonthLabelPress,
 }: Props) {
   const { t } = useTheme();
 
@@ -73,6 +75,7 @@ export function CollapsingChrome({
           onPrev={onPrevMonth}
           onNext={onNextMonth}
           nextDisabled={nextMonthDisabled}
+          onLabelPress={onMonthLabelPress}
         />
       </View>
       <View

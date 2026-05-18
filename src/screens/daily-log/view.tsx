@@ -6,6 +6,10 @@ import { AppBar } from './components/AppBar';
 import { CollapsingChrome } from './components/CollapsingChrome';
 import { ConfirmSaveSheet } from './components/ConfirmSaveSheet';
 import { FarmPickerSheet, type FarmOption } from './components/FarmPickerSheet';
+import {
+  MonthYearPickerSheet,
+  type MonthMarksMap,
+} from './components/MonthYearPickerSheet';
 import { Numpad } from './components/Numpad';
 import { SaveBar } from './components/SaveBar';
 import { TableHeader } from './components/TableHeader';
@@ -59,6 +63,7 @@ export function DailyLogView({
     dirtyCount,
     savedCount,
     total,
+    unsavedMonths,
     setCellValue,
     setFeedSelection,
     previousValueForActiveCell,
@@ -85,6 +90,7 @@ export function DailyLogView({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const dateLabel = useMemo(
@@ -161,6 +167,43 @@ export function DailyLogView({
 
   const onPrevMonth = useCallback(() => requestMonthChange(-1), [requestMonthChange]);
   const onNextMonth = useCallback(() => requestMonthChange(1), [requestMonthChange]);
+
+  const today = useMemo(() => {
+    const d = new Date();
+    return { y: d.getFullYear(), m: d.getMonth() };
+  }, []);
+  const currentYM = useMemo(
+    () => ({ y: selectedDate.getFullYear(), m: selectedDate.getMonth() }),
+    [selectedDate],
+  );
+
+  // Translate the hook's set of dirty months into the picker's marks map.
+  // Closed-cycle / has-data indicators are not surfaced here yet — the
+  // picker accepts them via the same map once those become available.
+  const monthPickerMarks = useMemo<MonthMarksMap>(() => {
+    const out: Record<string, 'unsaved'> = {};
+    for (const key of unsavedMonths) out[key] = 'unsaved';
+    return out;
+  }, [unsavedMonths]);
+
+  const onMonthLabelPress = useCallback(() => setMonthPickerOpen(true), []);
+
+  const onMonthPickerConfirm = useCallback(
+    (year: number, monthIdx: number) => {
+      setMonthPickerOpen(false);
+      const cur = selectedDate.getFullYear() * 12 + selectedDate.getMonth();
+      const target = year * 12 + monthIdx;
+      const delta = target - cur;
+      if (delta === 0) return;
+      if (dirtyCount > 0) {
+        setSaveError(null);
+        setPending({ kind: 'month', delta });
+        return;
+      }
+      navigateMonth(delta);
+    },
+    [selectedDate, dirtyCount, navigateMonth],
+  );
 
   const onFarmPress = useCallback(() => setPickerOpen(true), []);
 
@@ -289,6 +332,7 @@ export function DailyLogView({
             onNextMonth={onNextMonth}
             nextMonthDisabled={nextMonthDisabled}
             onFarmPress={onFarmPress}
+            onMonthLabelPress={onMonthLabelPress}
           />
 
           <View
@@ -381,6 +425,15 @@ export function DailyLogView({
         anchorTop={CHROME.title + CHROME.farm + 4}
         onDismiss={() => setPickerOpen(false)}
         onSelect={onPickerSelect}
+      />
+
+      <MonthYearPickerSheet
+        visible={monthPickerOpen}
+        current={currentYM}
+        today={today}
+        marks={monthPickerMarks}
+        onClose={() => setMonthPickerOpen(false)}
+        onConfirm={onMonthPickerConfirm}
       />
     </View>
   );

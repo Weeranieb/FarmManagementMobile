@@ -10,9 +10,19 @@ type Props = {
   onNext: () => void;
   /** When true, forward month navigation is blocked (e.g. already at current month). */
   nextDisabled?: boolean;
+  /** Opens the month/year picker bottom sheet. When omitted the label is
+   *  non-interactive (still rendered) so callers that don't wire the picker
+   *  don't accidentally show a dead pressable. */
+  onLabelPress?: () => void;
 };
 
-export function MonthNavRow({ selectedDate, onPrev, onNext, nextDisabled = false }: Props) {
+export function MonthNavRow({
+  selectedDate,
+  onPrev,
+  onNext,
+  nextDisabled = false,
+  onLabelPress,
+}: Props) {
   const { t } = useTheme();
   const label = `${thMonth(selectedDate.getMonth())} ${selectedDate.getFullYear() + 543}`;
 
@@ -46,6 +56,10 @@ export function MonthNavRow({ selectedDate, onPrev, onNext, nextDisabled = false
       </Pressable>
 
       <Pressable
+        onPress={onLabelPress}
+        disabled={!onLabelPress}
+        accessibilityRole="button"
+        accessibilityLabel={`เลือกเดือน · ปี · ${label}`}
         style={{
           flex: 1,
           height: 32,

@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  type LayoutChangeEvent,
-} from 'react-native';
+import { Pressable, ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
@@ -137,10 +131,7 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
   return (
     <View style={{ paddingTop: 12, paddingBottom: 24 }}>
       <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
-        <TodayBanner
-          entry={todayEntry}
-          onOpenDailyLog={onOpenDailyLog}
-        />
+        <TodayBanner entry={todayEntry} onOpenDailyLog={onOpenDailyLog} />
       </View>
 
       <MonthPicker
@@ -188,17 +179,9 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
         <SectionLabel>สรุปทั้งเดือน</SectionLabel>
         <Card padded={false}>
           <Row gap={0} style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
-            <SummaryStat
-              label="อาหารเม็ด"
-              v={fmt.kg(monthStats.pellet)}
-              toneKey="brand"
-            />
+            <SummaryStat label="อาหารเม็ด" v={fmt.kg(monthStats.pellet)} toneKey="brand" />
             <Divider />
-            <SummaryStat
-              label="เหยื่อสด"
-              v={fmt.kg(monthStats.fresh)}
-              toneKey="success"
-            />
+            <SummaryStat label="เหยื่อสด" v={fmt.kg(monthStats.fresh)} toneKey="success" />
             <Divider />
             <SummaryStat
               label="ปลาตาย"
@@ -207,11 +190,7 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
             />
           </Row>
           <Sep />
-          <MonthCostRow
-            cost={monthCost}
-            loggedDays={monthStats.days}
-            daysInMonth={daysInMonth}
-          />
+          <MonthCostRow cost={monthCost} loggedDays={monthStats.days} daysInMonth={daysInMonth} />
         </Card>
       </View>
     </View>
@@ -368,10 +347,7 @@ function MonthPicker({
 }) {
   const { t } = useTheme();
   return (
-    <Row
-      justify="space-between"
-      style={{ paddingHorizontal: 20, paddingBottom: 8 }}
-    >
+    <Row justify="space-between" style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
       <Pressable
         onPress={onPrev}
         accessibilityRole="button"
@@ -565,9 +541,7 @@ function SelectedDayHeader({
         <Pill tone="success">
           <Row gap={4}>
             <Icon.check size={11} color={t.statusActive} />
-            <Text
-              style={{ color: t.statusActive, fontSize: 12, fontFamily: type.familyMedium }}
-            >
+            <Text style={{ color: t.statusActive, fontSize: 12, fontFamily: type.familyMedium }}>
               บันทึกแล้ว
             </Text>
           </Row>
@@ -578,9 +552,7 @@ function SelectedDayHeader({
         <Pill tone="warn">
           <Row gap={4}>
             <Icon.clock size={11} color={warnInk(mode, t)} />
-            <Text
-              style={{ color: warnInk(mode, t), fontSize: 12, fontFamily: type.familyMedium }}
-            >
+            <Text style={{ color: warnInk(mode, t), fontSize: 12, fontFamily: type.familyMedium }}>
               ไม่ได้บันทึก
             </Text>
           </Row>
@@ -640,12 +612,7 @@ function SelectedDayDetail({
         <Divider />
         {showTourist ? (
           <>
-            <SummaryStat
-              label="จับปลาเป็น"
-              v={`${tourist}`}
-              sub="ตัว"
-              toneColor={t.inkSoft}
-            />
+            <SummaryStat label="จับปลาเป็น" v={`${tourist}`} sub="ตัว" toneColor={t.inkSoft} />
             <Divider />
           </>
         ) : null}
@@ -703,9 +670,7 @@ function ReadRow({
           <Text style={{ fontFamily: type.familyNumBold, fontSize: 16, color: t.ink }}>
             {fmt.kg(total)}
           </Text>
-          <Text
-            style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}
-          >
+          <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}>
             {fmt.baht(total * price)}
           </Text>
         </Col>
@@ -758,9 +723,7 @@ function ReadRowSingle({
           <Text style={{ fontFamily: type.familyNumBold, fontSize: 16, color: t.ink }}>
             {fmt.kg(v)}
           </Text>
-          <Text
-            style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}
-          >
+          <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}>
             {fmt.baht(v * price)}
           </Text>
         </Col>
@@ -787,9 +750,7 @@ function ReadCell({ label, v, unit }: { label: string; v: number; unit: string }
     >
       <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familySemi }}>{label}</Text>
       <Row gap={3}>
-        <Text
-          style={{ fontFamily: type.familyNumSemi, fontSize: 15, color: t.ink }}
-        >
+        <Text style={{ fontFamily: type.familyNumSemi, fontSize: 15, color: t.ink }}>
           {n(v).toLocaleString('en-US', { maximumFractionDigits: 1 })}
         </Text>
         <Text style={{ fontSize: 10, color: t.inkMute, fontFamily: type.familyNum }}>{unit}</Text>
@@ -849,10 +810,7 @@ function MonthCostRow({
 }) {
   const { t } = useTheme();
   return (
-    <Row
-      justify="space-between"
-      style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-    >
+    <Row justify="space-between" style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       <Col gap={1}>
         <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
           ต้นทุนอาหารเดือนนี้
@@ -865,9 +823,7 @@ function MonthCostRow({
         <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>บันทึกครบ</Text>
         <Text style={{ fontFamily: type.familyNumBold, fontSize: 16, color: t.ink }}>
           <Text>{loggedDays}</Text>
-          <Text style={{ color: t.inkMute, fontFamily: type.familyNumMedium }}>
-            /{daysInMonth}
-          </Text>
+          <Text style={{ color: t.inkMute, fontFamily: type.familyNumMedium }}>/{daysInMonth}</Text>
           <Text style={{ color: t.ink, fontFamily: type.familyMedium }}> วัน</Text>
         </Text>
       </Col>
@@ -875,13 +831,7 @@ function MonthCostRow({
   );
 }
 
-function EmptyDay({
-  isFuture,
-  onOpenDailyLog,
-}: {
-  isFuture: boolean;
-  onOpenDailyLog: () => void;
-}) {
+function EmptyDay({ isFuture, onOpenDailyLog }: { isFuture: boolean; onOpenDailyLog: () => void }) {
   const { t } = useTheme();
   return (
     <View
@@ -942,9 +892,7 @@ function EmptyDay({
             gap: 6,
           }}
         >
-          <Text style={{ fontFamily: type.familyBold, fontSize: 13, color: '#fff' }}>
-            ไปบันทึก
-          </Text>
+          <Text style={{ fontFamily: type.familyBold, fontSize: 13, color: '#fff' }}>ไปบันทึก</Text>
           <Icon.chevR size={14} color="#fff" />
         </Pressable>
       ) : null}

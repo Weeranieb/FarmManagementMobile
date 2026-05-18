@@ -57,6 +57,11 @@ export type UseDailyLogV6 = {
    *  to render the small "{n} บ่ออยู่ในซ่อมบำรุง" caption below the saved
    *  / total count. */
   maintenanceCount: number;
+  /** Set of `${year}-${monthIdx}` (0-based month) for months that contain
+   *  any dirty (unsaved) override across all dates. Drives the "มีค้าง"
+   *  amber-dot indicator inside the month/year picker so users can spot
+   *  pending edits from a different month at a glance. */
+  unsavedMonths: ReadonlySet<string>;
 
   setCellValue: (pondKey: string, col: ColKey, value: number | '') => void;
   /** Record the user's feed-collection pick (from the numpad picker) for a
@@ -614,6 +619,22 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
 
   const dirtyCount = useMemo(() => ponds.filter((p) => p.state === 'dirty').length, [ponds]);
   const savedCount = useMemo(() => ponds.filter((p) => p.state === 'saved').length, [ponds]);
+  // Walk every date with overrides; flag the month if any pond in that
+  // bucket is still dirty. Keys are the dKey form "YYYY-MM-DD" so we can
+  // parse year/month directly without re-deriving from a Date.
+  const unsavedMonths = useMemo<ReadonlySet<string>>(() => {
+    const out = new Set<string>();
+    for (const [k, bucket] of Object.entries(overrides)) {
+      const hasDirty = Object.values(bucket).some((o) => o.state === 'dirty');
+      if (!hasDirty) continue;
+      // dKey shape: YYYY-MM-DD. Slice the year and month parts and convert
+      // the 1-based month string back to the 0-based index the picker uses.
+      const y = Number(k.slice(0, 4));
+      const m = Number(k.slice(5, 7)) - 1;
+      if (Number.isFinite(y) && Number.isFinite(m)) out.add(`${y}-${m}`);
+    }
+    return out;
+  }, [overrides]);
   // Counter denominator = ponds the user must log for today (active only).
   // Maintenance ponds appear in the table but aren't counted toward progress.
   const total = useMemo(() => ponds.filter((p) => !p.disabled).length, [ponds]);
@@ -632,6 +653,7 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
     savedCount,
     total,
     maintenanceCount,
+    unsavedMonths,
     setCellValue,
     setFeedSelection,
     previousValueForActiveCell,
