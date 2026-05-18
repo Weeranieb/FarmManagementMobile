@@ -6,7 +6,15 @@ import { useFeedCollectionsData } from '@/features/feed-collection';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
-import { COLS, GROUP_LIGHT, VIBRANT_BRAND, fmtTh, type ColKey, type GroupKey } from '../constants';
+import {
+  COLS,
+  GROUP_LIGHT,
+  VIBRANT_BRAND,
+  fmtTh,
+  thMonthAbbr,
+  type ColKey,
+  type GroupKey,
+} from '../constants';
 import { FeedTypePicker } from './FeedTypePicker';
 import { GroupIcon } from './GroupIcon';
 
@@ -15,7 +23,14 @@ type Props = {
   pondId: string;
   col: ColKey;
   initialValue: number | '';
-  yesterday?: number | null;
+  /** Latest prior entry for this pond + column — value plus the date it was
+   *  logged on. Renders as "เดิม 14 · 1 พ.ค." underneath the typed value. */
+  yesterday?: { value: number; date: Date } | null;
+  /** Feed-collection ID used in the active pond's most recent entry. When
+   *  present in the available feeds, it becomes the default chip selection —
+   *  so re-entering data for a pond keeps the feed type it was last logged
+   *  with. */
+  lastUsedFeedId?: number | null;
   onCancel: () => void;
   /** `feedId` is the feed-collection ID the user (or the auto-default) had
    *  selected at the moment of commit. null for columns that don't carry a
@@ -48,6 +63,7 @@ export function Numpad({
   col,
   initialValue,
   yesterday,
+  lastUsedFeedId,
   onCancel,
   onCommit,
   onNext,
@@ -76,16 +92,22 @@ export function Numpad({
     [allFeeds, supportsFeedType, group],
   );
 
-  // Default to the first available feed when the list arrives or the column
-  // changes — preserves the currently selected feed if it's still in the list.
+  // Default selection order: keep the user's current pick if still available,
+  // otherwise prefer the feed used in the active pond's most recent entry,
+  // otherwise fall back to the first feed in the list. The middle step is
+  // what lets a returning user keep typing without re-picking the same feed.
   useEffect(() => {
     if (!supportsFeedType) {
       setSelectedFeedId(null);
       return;
     }
     if (selectedFeedId != null && feeds.some((f) => f.id === selectedFeedId)) return;
-    setSelectedFeedId(feeds[0]?.id ?? null);
-  }, [feeds, supportsFeedType, selectedFeedId]);
+    const fromLastEntry =
+      lastUsedFeedId != null && feeds.some((f) => f.id === lastUsedFeedId)
+        ? lastUsedFeedId
+        : null;
+    setSelectedFeedId(fromLastEntry ?? feeds[0]?.id ?? null);
+  }, [feeds, supportsFeedType, selectedFeedId, lastUsedFeedId]);
 
   useEffect(() => {
     if (visible) {
@@ -281,8 +303,10 @@ export function Numpad({
                   <Text style={{ fontSize: 12, color: t.inkSoft, marginLeft: 8 }}>
                     เดิม{' '}
                     <Text style={{ fontFamily: type.familyNumBold, color: t.inkSoft }}>
-                      {fmtTh(yesterday)}
+                      {fmtTh(yesterday.value)}
                     </Text>
+                    {' · '}
+                    {yesterday.date.getDate()} {thMonthAbbr(yesterday.date.getMonth())}
                   </Text>
                 ) : null}
               </View>

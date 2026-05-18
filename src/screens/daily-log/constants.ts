@@ -82,9 +82,26 @@ const TH_MONTHS_ARR = [
   'พฤศจิกายน',
   'ธันวาคม',
 ] as const;
+// Formal Thai month abbreviations (e.g. "พ.ค." not "พฤษ.") for compact
+// date labels like the "เดิม 14 · 1 พ.ค." hint inside Numpad.
+const TH_MONTHS_ABBR_ARR = [
+  'ม.ค.',
+  'ก.พ.',
+  'มี.ค.',
+  'เม.ย.',
+  'พ.ค.',
+  'มิ.ย.',
+  'ก.ค.',
+  'ส.ค.',
+  'ก.ย.',
+  'ต.ค.',
+  'พ.ย.',
+  'ธ.ค.',
+] as const;
 
 export const thDow = (dayIndex: number): string => TH_DOW_ARR[dayIndex] ?? '';
 export const thMonth = (monthIndex: number): string => TH_MONTHS_ARR[monthIndex] ?? '';
+export const thMonthAbbr = (monthIndex: number): string => TH_MONTHS_ABBR_ARR[monthIndex] ?? '';
 
 export const fmtTh = (n: number | '' | null | undefined): string => {
   if (n === '' || n == null) return '';

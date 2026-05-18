@@ -61,6 +61,8 @@ export function DailyLogView({
     total,
     setCellValue,
     setFeedSelection,
+    previousValueForActiveCell,
+    lastUsedFeedIdForActiveCell,
     advanceActive,
     saveAll,
     discardDirty,
@@ -342,7 +344,8 @@ export function DailyLogView({
           pondId={activePond.id}
           col={activeCell.col}
           initialValue={activeValue}
-          yesterday={null}
+          yesterday={previousValueForActiveCell}
+          lastUsedFeedId={lastUsedFeedIdForActiveCell}
           onCancel={() => setActiveCell(null)}
           onCommit={onNumpadCommit}
           onNext={onNumpadNext}

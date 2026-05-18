@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useQueries, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsAuthenticated } from '@/features/auth';
 import {
   dailyLogKeys,
@@ -9,7 +9,7 @@ import {
   type DailyLogResponse,
 } from '@/features/daily-log';
 import { adaptPond, mockPonds, usePonds, type PondModel } from '@/features/pond';
-import type { ColKey } from './constants';
+import { COLS, type ColKey } from './constants';
 
 export type CellState = 'saved' | 'dirty' | 'empty';
 
@@ -63,6 +63,15 @@ export type UseDailyLogV6 = {
    *  given pond + group. saveAll prefers this over what came back from the
    *  monthly GET, so cells typed against the in-numpad default still save. */
   setFeedSelection: (pondKey: string, group: 'pellet' | 'fresh', feedId: number) => void;
+  /** Latest non-zero value for the active cell from any prior day (same month,
+   *  then prev month) along with the date it was logged on. `null` when no
+   *  prior entry exists. Drives the "เดิม X · 1 พ.ค." hint inside Numpad. */
+  previousValueForActiveCell: { value: number; date: Date } | null;
+  /** Feed-collection ID used in the active pond's most recent entry, scoped to
+   *  the active cell's group (pellet vs fresh). Used to pre-select the Numpad's
+   *  feed-type chip. `null` for groups without a feed type (death / catch) or
+   *  when no prior entry exists. */
+  lastUsedFeedIdForActiveCell: number | null;
   advanceActive: () => void;
   saveAll: () => Promise<SaveResult>;
   discardDirty: () => void;
@@ -139,6 +148,41 @@ function entryToValues(e: DailyLogEntry): CellValues {
     cat: e.touristCatchCount,
   };
 }
+
+// Map a column key to the matching numeric field on the DTO. Mirrors
+// entryToValues but for single-cell lookup (used by the previous-value hint).
+function entryValueForCol(e: DailyLogEntry, col: ColKey): number {
+  switch (col) {
+    case 'pm':
+      return e.pelletMorning;
+    case 'pe':
+      return e.pelletEvening;
+    case 'fresh':
+      return e.fresh;
+    case 'death':
+      return e.deathFishCount;
+    case 'cat':
+      return e.touristCatchCount;
+  }
+}
+
+// Pick the entry with the largest `day` from a list filtered to non-zero
+// values for the target column. Returns null when nothing qualifies.
+function latestNonZeroEntry(
+  entries: readonly DailyLogEntry[] | undefined,
+  col: ColKey,
+  maxDayExclusive: number | null,
+): DailyLogEntry | null {
+  if (!entries) return null;
+  let best: DailyLogEntry | null = null;
+  for (const e of entries) {
+    if (maxDayExclusive != null && e.day >= maxDayExclusive) continue;
+    if (entryValueForCol(e, col) <= 0) continue;
+    if (best == null || e.day > best.day) best = e;
+  }
+  return best;
+}
+
 
 export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 {
   // Call the low-level React Query hook directly. `usePondsData` would adapt
@@ -244,6 +288,88 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
     });
     return m;
   }, [pondIds, dailyLogQueries, isAuth]);
+
+  // Previous-value hint ("เดิม X") shown inside Numpad. We need entries from
+  // the active pond strictly before the selected day, falling back to the
+  // previous month when the same month has nothing. Lazy-fetch the prev month
+  // for the active pond only — fanning out prev-month queries for every pond
+  // on screen load would double network traffic for a hint that's only used
+  // once a cell is open.
+  const activePondId = useMemo(
+    () => (activeCell ? Number(activeCell.pondKey) : null),
+    [activeCell],
+  );
+  const prevMonth = useMemo(() => {
+    const d = new Date(selectedDate);
+    d.setDate(1);
+    d.setMonth(d.getMonth() - 1);
+    return monthKey(d);
+  }, [selectedDate]);
+
+  const activePondPrevMonthQuery = useQuery({
+    queryKey: dailyLogKeys.month(activePondId ?? 0, prevMonth),
+    queryFn: () => getDailyLogMonth(activePondId as number, prevMonth),
+    enabled: isAuth && activePondId != null,
+    staleTime: 60_000,
+  });
+
+  // Resolve current/prev-month responses for the active pond. Authenticated:
+  // pull from the per-pond useQueries (current) and the lazy useQuery (prev).
+  // Mock mode: synthesize so cycle-isolation testing still works offline.
+  const activePondCurrentMonthData = useMemo<DailyLogResponse | undefined>(() => {
+    if (activePondId == null) return undefined;
+    if (!isAuth) return mockMonthForPond(activePondId, month);
+    const idx = pondIds.indexOf(activePondId);
+    if (idx < 0) return undefined;
+    return dailyLogQueries[idx]?.data;
+  }, [activePondId, isAuth, month, pondIds, dailyLogQueries]);
+
+  const activePondPrevMonthData = useMemo<DailyLogResponse | undefined>(() => {
+    if (activePondId == null) return undefined;
+    if (!isAuth) return mockMonthForPond(activePondId, prevMonth);
+    return activePondPrevMonthQuery.data;
+  }, [activePondId, isAuth, prevMonth, activePondPrevMonthQuery.data]);
+
+  const previousValueForActiveCell = useMemo<{ value: number; date: Date } | null>(() => {
+    if (!activeCell || activePondId == null) return null;
+    const col = activeCell.col;
+    // Same month: cap at the selected day (exclusive). Treats `0` as "no
+    // data" — the backend zero-fills cells the user never touched.
+    const sameMonth = latestNonZeroEntry(activePondCurrentMonthData?.entries, col, day);
+    if (sameMonth) {
+      return {
+        value: entryValueForCol(sameMonth, col),
+        date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), sameMonth.day),
+      };
+    }
+    // Prev month: no day cap; all of its days are < the selected day.
+    const prev = latestNonZeroEntry(activePondPrevMonthData?.entries, col, null);
+    if (prev) {
+      // Step back from a copy of selectedDate to derive prev-month's year/month
+      // — month-1 wraps to Dec of the previous year automatically.
+      const prevAnchor = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
+      return {
+        value: entryValueForCol(prev, col),
+        date: new Date(prevAnchor.getFullYear(), prevAnchor.getMonth(), prev.day),
+      };
+    }
+    return null;
+  }, [activeCell, activePondId, day, selectedDate, activePondCurrentMonthData, activePondPrevMonthData]);
+
+  const lastUsedFeedIdForActiveCell = useMemo<number | null>(() => {
+    if (!activeCell || activePondId == null) return null;
+    const group = COLS.find((c) => c.key === activeCell.col)?.group;
+    if (group !== 'pellet' && group !== 'fresh') return null;
+    // The backend tracks feed at the pond level (not per-entry), so the
+    // ID on the monthly GET response *is* the feed used in the latest entry
+    // — every upsert echoes the current pond-level feed back into this field.
+    const pickId = (data: DailyLogResponse | undefined): number | null => {
+      if (!data) return null;
+      const id = group === 'pellet' ? data.pelletFeedCollectionId : data.freshFeedCollectionId;
+      return typeof id === 'number' && id > 0 ? id : null;
+    };
+    return pickId(activePondCurrentMonthData) ?? pickId(activePondPrevMonthData);
+  }, [activeCell, activePondId, activePondCurrentMonthData, activePondPrevMonthData]);
 
   const dayOverrides = overrides[dKey];
 
@@ -508,6 +634,8 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
     maintenanceCount,
     setCellValue,
     setFeedSelection,
+    previousValueForActiveCell,
+    lastUsedFeedIdForActiveCell,
     advanceActive,
     saveAll,
     discardDirty,
