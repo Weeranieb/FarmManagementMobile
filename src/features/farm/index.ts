@@ -8,4 +8,3 @@ export type {
   FarmDetailSummary,
   FarmDetailPondItem,
 } from './types';
-export { mockFarms } from './__mocks__/data';

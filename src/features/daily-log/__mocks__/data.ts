@@ -10,8 +10,7 @@ export const mockDailyLog: DailyLogResponse = {
   entries: [
     {
       day: 1,
-      freshMorning: 8,
-      freshEvening: 9,
+      fresh: 17,
       pelletMorning: 5,
       pelletEvening: 5,
       deathFishCount: 2,

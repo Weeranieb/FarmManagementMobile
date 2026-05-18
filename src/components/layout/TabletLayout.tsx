@@ -81,11 +81,7 @@ export function TabletLayout() {
               onOpenDailyLog={() => setDetailMode('daily')}
             />
           ) : pane === 'home' && detailMode === 'daily' ? (
-            <DailyLogScreen
-              pondId={selectedPondId}
-              showHeader
-              onBack={() => setDetailMode('pond')}
-            />
+            <DailyLogScreen onBack={() => setDetailMode('pond')} />
           ) : pane === 'farms' && detailMode === 'pond' ? (
             <PondDetailScreen
               pondId={selectedPondId}
@@ -94,11 +90,7 @@ export function TabletLayout() {
               onOpenDailyLog={() => setDetailMode('daily')}
             />
           ) : pane === 'farms' && detailMode === 'daily' ? (
-            <DailyLogScreen
-              pondId={selectedPondId}
-              showHeader
-              onBack={() => setDetailMode('pond')}
-            />
+            <DailyLogScreen onBack={() => setDetailMode('pond')} />
           ) : (
             <HomeScreen showHeader={false} />
           )}

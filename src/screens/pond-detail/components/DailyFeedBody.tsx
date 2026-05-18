@@ -63,7 +63,7 @@ function feedPrice(id: number | undefined, fallback: number): number {
 }
 
 function totalKg(e: DailyLogEntry): number {
-  return n(e.pelletMorning) + n(e.pelletEvening) + n(e.freshMorning) + n(e.freshEvening);
+  return n(e.pelletMorning) + n(e.pelletEvening) + n(e.fresh);
 }
 
 export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
@@ -122,7 +122,7 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
     let death = 0;
     Object.values(entriesByDay).forEach((e) => {
       pellet += n(e.pelletMorning) + n(e.pelletEvening);
-      fresh += n(e.freshMorning) + n(e.freshEvening);
+      fresh += n(e.fresh);
       death += n(e.deathFishCount);
     });
     return {
@@ -606,12 +606,11 @@ function SelectedDayDetail({
   const { t, mode } = useTheme();
   const pAm = n(entry.pelletMorning);
   const pPm = n(entry.pelletEvening);
-  const fAm = n(entry.freshMorning);
-  const fPm = n(entry.freshEvening);
+  const f = n(entry.fresh);
   const deaths = n(entry.deathFishCount);
   const tourist = n(entry.touristCatchCount);
   const showTourist = tourist > 0;
-  const cost = (pAm + pPm) * pelletPrice + (fAm + fPm) * freshPrice;
+  const cost = (pAm + pPm) * pelletPrice + f * freshPrice;
   return (
     <>
       <Sep />
@@ -624,12 +623,10 @@ function SelectedDayDetail({
         price={pelletPrice}
       />
       <Sep />
-      <ReadRow
-        kind="fresh"
+      <ReadRowSingle
         title="เหยื่อสด"
         subtitle={`${freshName}${freshName ? ' · ' : ''}฿${freshPrice}/กก.`}
-        am={fAm}
-        pm={fPm}
+        value={f}
         price={freshPrice}
       />
       <Sep />
@@ -666,7 +663,7 @@ function ReadRow({
   pm,
   price,
 }: {
-  kind: 'pellet' | 'fresh';
+  kind: 'pellet';
   title: string;
   subtitle: string;
   am: number;
@@ -717,6 +714,58 @@ function ReadRow({
         <ReadCell label="เช้า" v={amN} unit="กก." />
         <ReadCell label="เย็น" v={pmN} unit="กก." />
       </Row>
+    </View>
+  );
+}
+
+function ReadRowSingle({
+  title,
+  subtitle,
+  value,
+  price,
+}: {
+  title: string;
+  subtitle: string;
+  value: number;
+  price: number;
+}) {
+  const { t } = useTheme();
+  const v = n(value);
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      <Row justify="space-between" style={{ marginBottom: 8 }}>
+        <Row gap={10}>
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: radii.sm,
+              backgroundColor: t.statusActiveSoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon.feed size={16} color={t.success} />
+          </View>
+          <Col gap={1}>
+            <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.ink }}>{title}</Text>
+            <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>
+              {subtitle}
+            </Text>
+          </Col>
+        </Row>
+        <Col gap={1} align="flex-end">
+          <Text style={{ fontFamily: type.familyNumBold, fontSize: 16, color: t.ink }}>
+            {fmt.kg(v)}
+          </Text>
+          <Text
+            style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}
+          >
+            {fmt.baht(v * price)}
+          </Text>
+        </Col>
+      </Row>
+      <ReadCell label="วันนี้" v={v} unit="กก." />
     </View>
   );
 }
