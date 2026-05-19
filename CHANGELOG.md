@@ -9,6 +9,14 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.2](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.1...v0.2.2) (2026-05-17)
+
+
+### Features
+
+* far 17 enhance pond detail ([#13](https://github.com/Weeranieb/FarmManagementMobile/issues/13)) ([e2f1827](https://github.com/Weeranieb/FarmManagementMobile/commit/e2f1827185614a3e46c496c4b00e67150bbe18e8))
+* **feed-collection:** mobile parity — list, detail, history, admin ([#15](https://github.com/Weeranieb/FarmManagementMobile/issues/15)) ([b462f93](https://github.com/Weeranieb/FarmManagementMobile/commit/b462f93348b1347c626b6ae2ffef88769d66ec5c))
+
 ## [0.2.1](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.0...v0.2.1) (2026-05-13)
 
 
