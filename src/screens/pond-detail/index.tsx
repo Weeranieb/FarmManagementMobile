@@ -1,11 +1,13 @@
 import { usePondDetailScreen } from './hook';
 import { PondDetailView } from './view';
 
+export type DailyLogDrillDown = { farmId: number; pondId: number };
+
 type Props = {
   pondId: number;
   onBack?: () => void;
   onAction?: (kind: 'fill' | 'move' | 'sell') => void;
-  onOpenDailyLog?: (pondId: number) => void;
+  onOpenDailyLog?: (ctx: DailyLogDrillDown) => void;
   showHeader?: boolean;
 };
 

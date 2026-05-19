@@ -35,6 +35,33 @@ export type SellPondRequest = {
   sizeGradeId: number;
 };
 
+/** UI model for pond activity timeline rows (from API via `adaptActivity`). */
+export type PondActivityModel = {
+  id: number;
+  mode: 'fill' | 'move' | 'sell';
+  date: string;
+  amount: number;
+  fishType: string;
+  pricePerUnit?: number;
+  total: number;
+  remark?: string;
+  merchant?: string;
+};
+
+/** Sell-flow picker option — wire to API when merchant list endpoint exists. */
+export type MerchantOption = {
+  id: number;
+  name: string;
+  contactNumber: string;
+  location: string;
+};
+
+/** Sell-flow picker option — wire to API when size-grade list endpoint exists. */
+export type SizeGradeOption = {
+  id: number;
+  name: string;
+};
+
 /** One row of the pond activity timeline returned by GET /pond/:pondId/activities. */
 export type ActivityResponse = {
   id: number;

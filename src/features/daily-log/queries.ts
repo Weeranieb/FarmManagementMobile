@@ -2,17 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsAuthenticated } from '@/features/auth';
 import { getDailyLogMonth, upsertDailyLogMonth } from './service';
 import type { DailyLogResponse, DailyLogUpsertRequest } from './types';
-import { mockDailyLog } from './__mocks__/data';
 
 export const dailyLogKeys = {
   month: (pondId: number, month: string) => ['dailyLog', pondId, month] as const,
 } as const;
 
 export function useDailyLog(pondId: number | undefined, month: string) {
+  const enabled = useIsAuthenticated();
   return useQuery({
     queryKey: dailyLogKeys.month(pondId ?? 0, month),
     queryFn: () => getDailyLogMonth(pondId as number, month),
-    enabled: pondId != null,
+    enabled: enabled && pondId != null,
   });
 }
 
@@ -26,7 +26,7 @@ export function useDailyLogData(
   const q = useDailyLog(enabled && pondId != null ? pondId : undefined, month);
 
   if (!enabled || pondId == null) {
-    return { data: mockDailyLog, isLoading: false, isError: false };
+    return { data: null, isLoading: false, isError: !enabled };
   }
 
   if (q.isPending) {

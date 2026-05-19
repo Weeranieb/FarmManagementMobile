@@ -27,11 +27,14 @@ export function useFarmsData(): {
   isLoading: boolean;
   isError: boolean;
 } {
+  const enabled = useIsAuthenticated();
   const q = useFarms();
   const raw = q.data;
-  const data = Array.isArray(raw) ? raw.map(adaptFarm) : [];
+  if (!enabled || q.isError || raw == null || !Array.isArray(raw)) {
+    return { data: [], isLoading: enabled && q.isLoading, isError: !enabled || q.isError };
+  }
   return {
-    data,
+    data: raw.map(adaptFarm),
     isLoading: q.isLoading,
     isError: q.isError,
   };

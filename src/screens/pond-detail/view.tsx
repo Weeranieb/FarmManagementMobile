@@ -32,7 +32,7 @@ type Props = {
   onPondOverflow: () => void;
   onBack?: () => void;
   onAction?: (kind: 'fill' | 'move' | 'sell') => void;
-  onOpenDailyLog?: (pondId: number) => void;
+  onOpenDailyLog?: (ctx: { farmId: number; pondId: number }) => void;
   showHeader?: boolean;
 };
 
@@ -239,7 +239,9 @@ export function PondDetailView({
         {tab === 'feed' ? (
           <DailyFeedBody
             pondId={pond.id}
-            onOpenDailyLog={() => onOpenDailyLog?.(pond.id)}
+            onOpenDailyLog={() =>
+              onOpenDailyLog?.({ farmId: pond.farmId, pondId: pond.id })
+            }
           />
         ) : (
           <HistoryBody pondId={pond.id} />

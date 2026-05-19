@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsAuthenticated } from '@/features/auth';
 import {
@@ -8,7 +8,7 @@ import {
   type DailyLogEntry,
   type DailyLogResponse,
 } from '@/features/daily-log';
-import { adaptPond, mockPonds, usePonds, type PondModel } from '@/features/pond';
+import { adaptPond, usePonds, type PondModel } from '@/features/pond';
 import { COLS, type ColKey } from './constants';
 
 export type CellState = 'saved' | 'dirty' | 'empty';
@@ -60,6 +60,7 @@ export type UseDailyLogV6 = {
   /** Set of `${year}-${monthIdx}` (0-based month) for months that contain
    *  any dirty (unsaved) override across all dates. Drives the "มีค้าง"
    *  amber-dot indicator inside the month/year picker so users can spot
+   *
    *  pending edits from a different month at a glance. */
   unsavedMonths: ReadonlySet<string>;
 
@@ -121,29 +122,6 @@ function startDateKey(startDate: string | null): string | null {
   return dateKey(d);
 }
 
-// Synthetic per-pond month payload used when running unauthenticated against
-// mock data. Pattern: a handful of saved days per month, varied by pondId, so
-// switching dates in the day strip visibly changes savedCount.
-function mockMonthForPond(pondId: number, month: string): DailyLogResponse {
-  const savedDays = [3, 7, 11, 15, 19, 23, 27].filter((d) => (d + pondId) % 3 !== 0);
-  return {
-    pondId,
-    month,
-    freshFeedCollectionId: 0,
-    freshFeedCollectionName: '',
-    pelletFeedCollectionId: 0,
-    pelletFeedCollectionName: '',
-    entries: savedDays.map((day) => ({
-      day,
-      fresh: 17,
-      pelletMorning: 5,
-      pelletEvening: 5,
-      deathFishCount: (day + pondId) % 4,
-      touristCatchCount: 0,
-    })),
-  };
-}
-
 function entryToValues(e: DailyLogEntry): CellValues {
   return {
     pm: e.pelletMorning,
@@ -188,8 +166,17 @@ function latestNonZeroEntry(
   return best;
 }
 
+type UseDailyLogV6Options = {
+  /** Focus this pond when rows load (pond detail → daily log drill-down). */
+  initialPondId?: number;
+};
 
-export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 {
+export function useDailyLogV6(
+  farmId: number | null | undefined,
+  options?: UseDailyLogV6Options,
+): UseDailyLogV6 {
+  const initialPondId = options?.initialPondId;
+  const initialFocusDone = useRef(false);
   // Call the low-level React Query hook directly. `usePondsData` would adapt
   // on every render, returning a fresh `raw.map(...)` array — that thrashes
   // downstream memos and (under React Query refetch heuristics) the network.
@@ -201,14 +188,14 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
   const pondModels = useMemo<PondModel[]>(() => {
     try {
       if (!isAuth || isError || !Array.isArray(rawPonds)) {
-        return farmId != null ? mockPonds.filter((p) => p.farmId === farmId) : mockPonds;
+        return [];
       }
       return rawPonds.map(adaptPond);
     } catch (err) {
       console.log('[DailyLog][hook] pondModels adapt threw', err);
       return [];
     }
-  }, [isAuth, isError, rawPonds, farmId]);
+  }, [isAuth, isError, rawPonds]);
 
   const [overrides, setOverrides] = useState<OverrideMap>({});
   const [feedSelections, setFeedSelections] = useState<
@@ -235,7 +222,7 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
   // Fetch monthly daily-log data for ALL ponds — a pond currently in
   // maintenance may still have historical entries from when it was active,
   // and those should render read-only on the day they exist for. Disabled
-  // when unauthenticated to avoid 401s against mock pond IDs.
+  // when unauthenticated to avoid 401s.
   const pondIds = useMemo(() => pondModels.map((p) => p.id), [pondModels]);
 
   // Fan out per-pond monthly queries. Same `useQueries` pattern as the farms
@@ -259,12 +246,7 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
   const entriesByPondId = useMemo(() => {
     const m = new Map<number, DailyLogEntry>();
     pondIds.forEach((id, idx) => {
-      // Authenticated: pull from per-pond month query. Unauthenticated mock
-      // mode: synthesize a per-pond month so date switches visibly recalc
-      // savedCount instead of being stuck at 0.
-      const data: DailyLogResponse | undefined = isAuth
-        ? dailyLogQueries[idx]?.data
-        : mockMonthForPond(id, month);
+      const data: DailyLogResponse | undefined = isAuth ? dailyLogQueries[idx]?.data : undefined;
       if (!data) return;
       const entry = data.entries.find((e) => e.day === day);
       if (entry) m.set(id, entry);
@@ -282,9 +264,7 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
   const feedCollectionsByPondId = useMemo(() => {
     const m = new Map<number, { fresh?: number; pellet?: number }>();
     pondIds.forEach((id, idx) => {
-      const data: DailyLogResponse | undefined = isAuth
-        ? dailyLogQueries[idx]?.data
-        : undefined;
+      const data: DailyLogResponse | undefined = isAuth ? dailyLogQueries[idx]?.data : undefined;
       if (!data) return;
       m.set(id, {
         fresh: data.freshFeedCollectionId,
@@ -318,22 +298,17 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
     staleTime: 60_000,
   });
 
-  // Resolve current/prev-month responses for the active pond. Authenticated:
-  // pull from the per-pond useQueries (current) and the lazy useQuery (prev).
-  // Mock mode: synthesize so cycle-isolation testing still works offline.
   const activePondCurrentMonthData = useMemo<DailyLogResponse | undefined>(() => {
-    if (activePondId == null) return undefined;
-    if (!isAuth) return mockMonthForPond(activePondId, month);
+    if (activePondId == null || !isAuth) return undefined;
     const idx = pondIds.indexOf(activePondId);
     if (idx < 0) return undefined;
     return dailyLogQueries[idx]?.data;
-  }, [activePondId, isAuth, month, pondIds, dailyLogQueries]);
+  }, [activePondId, isAuth, pondIds, dailyLogQueries]);
 
   const activePondPrevMonthData = useMemo<DailyLogResponse | undefined>(() => {
-    if (activePondId == null) return undefined;
-    if (!isAuth) return mockMonthForPond(activePondId, prevMonth);
+    if (activePondId == null || !isAuth) return undefined;
     return activePondPrevMonthQuery.data;
-  }, [activePondId, isAuth, prevMonth, activePondPrevMonthQuery.data]);
+  }, [activePondId, isAuth, activePondPrevMonthQuery.data]);
 
   const previousValueForActiveCell = useMemo<{ value: number; date: Date } | null>(() => {
     if (!activeCell || activePondId == null) return null;
@@ -359,7 +334,14 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
       };
     }
     return null;
-  }, [activeCell, activePondId, day, selectedDate, activePondCurrentMonthData, activePondPrevMonthData]);
+  }, [
+    activeCell,
+    activePondId,
+    day,
+    selectedDate,
+    activePondCurrentMonthData,
+    activePondPrevMonthData,
+  ]);
 
   const lastUsedFeedIdForActiveCell = useMemo<number | null>(() => {
     if (!activeCell || activePondId == null) return null;
@@ -434,6 +416,19 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
     return rows;
   }, [pondModels, dayOverrides, entriesByPondId, dKey]);
 
+  useEffect(() => {
+    if (initialFocusDone.current || initialPondId == null || !Number.isFinite(initialPondId)) {
+      return;
+    }
+    const key = String(initialPondId);
+    const row = ponds.find((p) => p.key === key);
+    if (!row) return;
+    initialFocusDone.current = true;
+    if (!row.disabled) {
+      setActiveCell({ pondKey: key, col: 'pm' });
+    }
+  }, [initialPondId, ponds]);
+
   const setCellValue = useCallback(
     (pondKey: string, col: ColKey, value: number | '') => {
       setOverrides((prev) => {
@@ -504,11 +499,10 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
     // count as 'saved' on the next refetch.
     const dirtyEntries = Object.entries(bucket).filter(([pondKey, o]) => {
       if (o.state !== 'dirty') return false;
-      const hasAnyData =
-        (Object.keys(o.v) as (keyof CellValues)[]).some((k) => {
-          const v = o.v[k];
-          return v !== '' && Number(v) !== 0;
-        });
+      const hasAnyData = (Object.keys(o.v) as (keyof CellValues)[]).some((k) => {
+        const v = o.v[k];
+        return v !== '' && Number(v) !== 0;
+      });
       if (hasAnyData) return true;
       // No new data — only worth saving if we're overwriting an existing
       // backend record (e.g. user cleared cells they previously entered).
@@ -638,10 +632,7 @@ export function useDailyLogV6(farmId: number | null | undefined): UseDailyLogV6 
   // Counter denominator = ponds the user must log for today (active only).
   // Maintenance ponds appear in the table but aren't counted toward progress.
   const total = useMemo(() => ponds.filter((p) => !p.disabled).length, [ponds]);
-  const maintenanceCount = useMemo(
-    () => ponds.filter((p) => p.maintenance).length,
-    [ponds],
-  );
+  const maintenanceCount = useMemo(() => ponds.filter((p) => p.maintenance).length, [ponds]);
 
   return {
     ponds,

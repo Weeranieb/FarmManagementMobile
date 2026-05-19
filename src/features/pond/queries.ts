@@ -1,16 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsAuthenticated } from '@/features/auth';
-import {
-  fillPond,
-  getPond,
-  listPondActivities,
-  listPonds,
-  movePond,
-  sellPond,
-} from './service';
+import { fillPond, getPond, listPondActivities, listPonds, movePond, sellPond } from './service';
 import type { FillPondRequest, MovePondRequest, SellPondRequest } from './types';
 import { adaptActivity, adaptPond, type PondModel } from './adapters';
-import { mockActivitiesByPond, mockPonds, type ActivityMock } from './__mocks__/data';
+import type { PondActivityModel } from './types';
 
 export const pondKeys = {
   all: () => ['ponds'] as const,
@@ -20,25 +13,29 @@ export const pondKeys = {
 } as const;
 
 export function usePonds(farmId?: number) {
+  const enabled = useIsAuthenticated();
   return useQuery({
     queryKey: farmId == null ? pondKeys.all() : pondKeys.byFarm(farmId),
     queryFn: () => listPonds(farmId),
+    enabled,
   });
 }
 
 export function usePond(id: number | undefined) {
+  const enabled = useIsAuthenticated();
   return useQuery({
     queryKey: pondKeys.detail(id ?? 0),
     queryFn: () => getPond(id as number),
-    enabled: id != null,
+    enabled: enabled && id != null,
   });
 }
 
 export function usePondActivities(pondId: number | undefined) {
+  const enabled = useIsAuthenticated();
   return useQuery({
     queryKey: pondKeys.activities(pondId ?? 0),
     queryFn: () => listPondActivities(pondId as number),
-    enabled: pondId != null,
+    enabled: enabled && pondId != null,
   });
 }
 
@@ -49,8 +46,7 @@ export function usePondsData(farmId?: number): DataState<PondModel[]> {
   const q = usePonds(farmId);
   const raw = q.data;
   if (!enabled || q.isError || raw == null || !Array.isArray(raw)) {
-    const list = farmId != null ? mockPonds.filter((p) => p.farmId === farmId) : mockPonds;
-    return { data: list, isLoading: false, isError: false };
+    return { data: [], isLoading: enabled && q.isLoading, isError: !enabled || q.isError };
   }
   return {
     data: raw.map(adaptPond),
@@ -59,29 +55,26 @@ export function usePondsData(farmId?: number): DataState<PondModel[]> {
   };
 }
 
-export function usePondActivitiesData(
-  pondId: number | undefined,
-): DataState<ActivityMock[]> {
+export function usePondActivitiesData(pondId: number | undefined): DataState<PondActivityModel[]> {
   const enabled = useIsAuthenticated();
   const q = usePondActivities(enabled ? pondId : undefined);
 
   if (!enabled || pondId == null) {
-    const list = pondId != null ? (mockActivitiesByPond[pondId] ?? []) : [];
-    return { data: list, isLoading: false, isError: false };
+    return { data: [], isLoading: false, isError: !enabled };
+  }
+
+  if (q.isPending) {
+    return { data: [], isLoading: true, isError: false };
   }
 
   if (q.isError || !Array.isArray(q.data)) {
-    return {
-      data: mockActivitiesByPond[pondId] ?? [],
-      isLoading: q.isLoading,
-      isError: q.isError,
-    };
+    return { data: [], isLoading: false, isError: true };
   }
 
   return {
     data: q.data.map(adaptActivity),
-    isLoading: q.isLoading,
-    isError: q.isError,
+    isLoading: false,
+    isError: false,
   };
 }
 
@@ -89,13 +82,8 @@ export function usePondData(id: number | undefined): DataState<PondModel | null>
   const enabled = useIsAuthenticated();
   const q = usePond(enabled ? id : undefined);
 
-  if (!enabled) {
-    const found = id != null ? mockPonds.find((p) => p.id === id) ?? null : null;
-    return { data: found, isLoading: false, isError: false };
-  }
-
-  if (id == null) {
-    return { data: null, isLoading: false, isError: false };
+  if (!enabled || id == null) {
+    return { data: null, isLoading: false, isError: !enabled };
   }
 
   if (q.isPending) {

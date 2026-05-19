@@ -6,7 +6,7 @@ import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { fmt, FISH_TH } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
-import { usePondActivitiesData, type ActivityMock } from '@/features/pond';
+import { usePondActivitiesData, type PondActivityModel } from '@/features/pond';
 
 export function HistoryBody({ pondId }: { pondId: number }) {
   const { data: list, isLoading } = usePondActivitiesData(pondId);
@@ -56,7 +56,7 @@ function EmptyState() {
   );
 }
 
-function ActivityHistoryCard({ a }: { a: ActivityMock }) {
+function ActivityHistoryCard({ a }: { a: PondActivityModel }) {
   const { t } = useTheme();
   const labelMap = {
     fill: 'เติมปลา',
@@ -85,7 +85,10 @@ function ActivityHistoryCard({ a }: { a: ActivityMock }) {
     .join(' · ');
 
   return (
-    <Card padded={false} style={{ overflow: 'hidden', borderLeftWidth: 4, borderLeftColor: border }}>
+    <Card
+      padded={false}
+      style={{ overflow: 'hidden', borderLeftWidth: 4, borderLeftColor: border }}
+    >
       <View style={{ padding: 16, gap: 10, backgroundColor: bg + '18' }}>
         <Row justify="space-between" align="flex-start">
           <Col gap={6} style={{ flex: 1, minWidth: 0 }}>

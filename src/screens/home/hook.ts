@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { mockProfile, useAuthStore } from '@/features/auth';
+import { useAuthStore } from '@/features/auth';
 import { HOME_ALERTS, HOME_ACTIVITY, HOME_TASK, log } from './constants';
 
 type HookProps = {
@@ -11,8 +11,7 @@ type HookProps = {
 export function useHomeScreen({ isLoading, showHeader, fabClearance }: HookProps) {
   const [refreshing, setRefreshing] = useState(false);
   const authUser = useAuthStore((s) => s.user);
-  const fallbackName = mockProfile.name.split(' ')[0] ?? mockProfile.name;
-  const greetingName = authUser?.firstName?.trim() || fallbackName;
+  const greetingName = authUser?.firstName?.trim() || 'ผู้ใช้';
   const displayInitial = greetingName.trim().slice(0, 1);
 
   const onRefresh = useCallback(async () => {

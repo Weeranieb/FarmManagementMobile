@@ -1,17 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
-import { mockPonds, useMovePond, type PondModel } from '@/features/pond';
+import { useMovePond, usePondData, usePondsData } from '@/features/pond';
 import { useAuthStore } from '@/features/auth';
 
 export function useMoveFlow(pondId: number, onClose?: () => void) {
-  const fromPond = mockPonds.find((p) => p.id === pondId) ?? mockPonds[0];
-  const candidates = mockPonds.filter((p) => p.id !== pondId && p.status === 'active');
-  const [toId, setToId] = useState<number>(candidates[0]?.id ?? -1);
+  const { data: fromPond } = usePondData(pondId);
+  const { data: allPonds } = usePondsData(fromPond?.farmId);
+  const candidates = useMemo(
+    () => allPonds.filter((p) => p.id !== pondId && p.status === 'active'),
+    [allPonds, pondId],
+  );
+  const [toId, setToId] = useState<number>(-1);
   const [amount, setAmount] = useState('');
   const [step, setStep] = useState<1 | 2>(1);
   const toPond = candidates.find((p) => p.id === toId);
   const moveMutation = useMovePond(pondId);
   const isAuthed = useAuthStore((s) => s.token != null);
+
+  useEffect(() => {
+    if (candidates.length > 0 && !candidates.some((p) => p.id === toId)) {
+      setToId(candidates[0]!.id);
+    }
+  }, [candidates, toId]);
 
   const handleConfirm = async () => {
     if (!isAuthed || !toPond) {
@@ -47,7 +57,7 @@ export function useMoveFlow(pondId: number, onClose?: () => void) {
   };
 
   return {
-    fromPond: fromPond as PondModel | undefined,
+    fromPond,
     toPond,
     candidates,
     toId,

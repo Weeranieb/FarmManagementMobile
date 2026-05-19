@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
 import { useRouter } from 'expo-router';
@@ -12,7 +12,7 @@ import { FarmPondsScreen } from '@/screens/farm-ponds';
 import { ProfileScreen } from '@/screens/profile';
 import { PondDetailScreen } from '@/screens/pond-detail';
 import { DailyLogScreen } from '@/screens/daily-log';
-import { mockPonds } from '@/features/pond';
+import { usePondData, usePondsData } from '@/features/pond';
 import { fmt } from '@/utils/fmt';
 
 type Pane = 'home' | 'farms' | 'profile';
@@ -21,9 +21,13 @@ export function TabletLayout() {
   const { t } = useTheme();
   const router = useRouter();
   const [pane, setPane] = useState<Pane>('home');
-  const [selectedPondId, setSelectedPondId] = useState<number>(14);
+  const [selectedPondId, setSelectedPondId] = useState<number | null>(null);
   const [selectedFarmId, setSelectedFarmId] = useState<number | null>(null);
   const [detailMode, setDetailMode] = useState<'pond' | 'daily'>('pond');
+
+  const { data: homePonds } = usePondsData();
+  const { data: selectedPond } = usePondData(selectedPondId ?? undefined);
+  const drillFarmId = selectedFarmId ?? selectedPond?.farmId;
 
   return (
     <ThemedSafeAreaView edges={['top', 'bottom']}>
@@ -40,6 +44,7 @@ export function TabletLayout() {
         <View style={{ width: 380, borderRightWidth: 1, borderRightColor: t.border }}>
           {pane === 'home' ? (
             <PondMaster
+              ponds={homePonds}
               selectedId={selectedPondId}
               onSelect={(id) => {
                 setSelectedPondId(id);
@@ -51,11 +56,6 @@ export function TabletLayout() {
               onOpenFarm={(id) => {
                 setSelectedFarmId(id);
                 setDetailMode('pond');
-                setSelectedPondId((prev) => {
-                  const inFarm = mockPonds.filter((p) => p.farmId === id);
-                  if (inFarm.some((p) => p.id === prev)) return prev;
-                  return inFarm[0]?.id ?? prev;
-                });
               }}
             />
           ) : pane === 'farms' && selectedFarmId != null ? (
@@ -73,24 +73,32 @@ export function TabletLayout() {
         </View>
 
         <View style={{ flex: 1 }}>
-          {pane === 'home' && detailMode === 'pond' ? (
+          {selectedPondId != null && pane === 'home' && detailMode === 'pond' ? (
             <PondDetailScreen
               pondId={selectedPondId}
               showHeader
               onAction={(kind) => router.push(`/(app)/flows/${kind}?pondId=${selectedPondId}`)}
               onOpenDailyLog={() => setDetailMode('daily')}
             />
-          ) : pane === 'home' && detailMode === 'daily' ? (
-            <DailyLogScreen onBack={() => setDetailMode('pond')} />
-          ) : pane === 'farms' && detailMode === 'pond' ? (
+          ) : selectedPondId != null && pane === 'home' && detailMode === 'daily' ? (
+            <DailyLogScreen
+              farmId={drillFarmId ?? undefined}
+              initialPondId={selectedPondId}
+              onBack={() => setDetailMode('pond')}
+            />
+          ) : selectedPondId != null && pane === 'farms' && detailMode === 'pond' ? (
             <PondDetailScreen
               pondId={selectedPondId}
               showHeader
               onAction={(kind) => router.push(`/(app)/flows/${kind}?pondId=${selectedPondId}`)}
               onOpenDailyLog={() => setDetailMode('daily')}
             />
-          ) : pane === 'farms' && detailMode === 'daily' ? (
-            <DailyLogScreen onBack={() => setDetailMode('pond')} />
+          ) : selectedPondId != null && pane === 'farms' && detailMode === 'daily' ? (
+            <DailyLogScreen
+              farmId={drillFarmId ?? undefined}
+              initialPondId={selectedPondId}
+              onBack={() => setDetailMode('pond')}
+            />
           ) : (
             <HomeScreen showHeader={false} />
           )}
@@ -158,14 +166,16 @@ function NavRail({ active, onChange }: { active: Pane; onChange: (p: Pane) => vo
 }
 
 function PondMaster({
+  ponds,
   selectedId,
   onSelect,
 }: {
-  selectedId: number;
+  ponds: ReturnType<typeof usePondsData>['data'];
+  selectedId: number | null;
   onSelect: (id: number) => void;
 }) {
   const { t } = useTheme();
-  const list = mockPonds.filter((p) => p.status === 'active');
+  const list = useMemo(() => ponds.filter((p) => p.status === 'active'), [ponds]);
   const pending = list.filter((p) => !p.loggedToday);
   return (
     <View style={{ flex: 1 }}>
@@ -178,55 +188,68 @@ function PondMaster({
         </View>
       </View>
       <View style={{ flex: 1, paddingHorizontal: 14, paddingBottom: 14 }}>
-        <View style={{ gap: 6 }}>
-          {list.map((p) => {
-            const sel = p.id === selectedId;
-            return (
-              <Pressable
-                key={p.id}
-                onPress={() => onSelect(p.id)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: radii.md,
-                  backgroundColor: sel ? t.brandSoft : 'transparent',
-                  borderWidth: 1,
-                  borderColor: sel ? t.brand : 'transparent',
-                }}
-              >
-                <View
+        {list.length === 0 ? (
+          <Text style={{ fontSize: 13, color: t.inkMute, fontFamily: type.family, padding: 12 }}>
+            ไม่มีบ่อ — ลองรีเฟรชหรือเข้าสู่ระบบใหม่
+          </Text>
+        ) : (
+          <View style={{ gap: 6 }}>
+            {list.map((p) => {
+              const sel = p.id === selectedId;
+              return (
+                <Pressable
+                  key={p.id}
+                  onPress={() => onSelect(p.id)}
                   style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: p.loggedToday ? t.success : p.lateDays > 0 ? t.danger : t.warn,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    borderRadius: radii.md,
+                    backgroundColor: sel ? t.brandSoft : 'transparent',
+                    borderWidth: 1,
+                    borderColor: sel ? t.brand : 'transparent',
                   }}
-                />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-                    <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.ink }}>
-                      {p.name}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>
-                      · {p.farmName}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: p.loggedToday
+                        ? t.success
+                        : p.lateDays > 0
+                          ? t.danger
+                          : t.warn,
+                    }}
+                  />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                      <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.ink }}>
+                        {p.name}
+                      </Text>
+                      {p.farmName ? (
+                        <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>
+                          · {p.farmName}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}>
+                      {fmt.num(p.totalFish)} ตัว
+                      {p.ageDays != null ? ` · อายุ ${p.ageDays} วัน` : ''}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}>
-                    {fmt.num(p.totalFish)} ตัว · อายุ {p.ageDays} วัน
-                  </Text>
-                </View>
-                {p.loggedToday ? (
-                  <Icon.check size={14} color={t.success} />
-                ) : (
-                  <Icon.chevR size={14} color={t.inkMute} />
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
+                  {p.loggedToday ? (
+                    <Icon.check size={14} color={t.success} />
+                  ) : (
+                    <Icon.chevR size={14} color={t.inkMute} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
       </View>
     </View>
   );

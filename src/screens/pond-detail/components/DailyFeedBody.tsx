@@ -10,7 +10,7 @@ import { thaiDate, TH_WEEKDAYS_SHORT } from '@/locale/thaiDate';
 import { fmt } from '@/utils/fmt';
 import { today } from '@/shared/time';
 import { useDailyLogData, type DailyLogEntry } from '@/features/daily-log';
-import { mockFeedCollections } from '@/features/pond';
+import { useFeedCollectionsData, type FeedCollectionModel } from '@/features/feed-collection';
 
 const CARD_PAD = space[4];
 const FALLBACK_PELLET_PRICE = 32;
@@ -50,10 +50,14 @@ function n(x: unknown): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-function feedPrice(id: number | undefined, fallback: number): number {
+function feedPrice(
+  id: number | undefined,
+  collections: FeedCollectionModel[],
+  fallback: number,
+): number {
   if (id == null) return fallback;
-  const c = mockFeedCollections.find((x) => x.id === id);
-  return c?.latestPrice ?? fallback;
+  const c = collections.find((x) => x.id === id);
+  return c?.price ?? fallback;
 }
 
 function totalKg(e: DailyLogEntry): number {
@@ -61,6 +65,7 @@ function totalKg(e: DailyLogEntry): number {
 }
 
 export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
+  const { data: feedCollections } = useFeedCollectionsData();
   const refNow = today;
   const currentMonthStr = monthStrFromDate(refNow);
   const todayDay = refNow.getDate();
@@ -107,8 +112,12 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
     ? entriesByDay[todayDay]
     : currentLog?.entries.find((e) => e.day === todayDay);
 
-  const pelletPrice = feedPrice(log?.pelletFeedCollectionId, FALLBACK_PELLET_PRICE);
-  const freshPrice = feedPrice(log?.freshFeedCollectionId, FALLBACK_FRESH_PRICE);
+  const pelletPrice = feedPrice(
+    log?.pelletFeedCollectionId,
+    feedCollections,
+    FALLBACK_PELLET_PRICE,
+  );
+  const freshPrice = feedPrice(log?.freshFeedCollectionId, feedCollections, FALLBACK_FRESH_PRICE);
 
   const monthStats = useMemo(() => {
     let pellet = 0;

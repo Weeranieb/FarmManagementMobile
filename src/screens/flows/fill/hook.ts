@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
-import { mockPonds, useFillPond, type PondModel } from '@/features/pond';
+import { useFillPond, usePondData } from '@/features/pond';
 import { useAuthStore } from '@/features/auth';
 import { today } from '@/shared/time';
 
 export function useFillFlow(pondId: number, onClose?: () => void) {
-  const pond = mockPonds.find((p) => p.id === pondId) ?? mockPonds[0];
+  const { data: pond } = usePondData(pondId);
   const isStartCycle = pond?.status === 'maintenance';
   const [step, setStep] = useState<1 | 2>(1);
   const [fishType, setFishType] = useState<string>(pond?.fishTypes[0] ?? 'nil');
@@ -16,6 +16,10 @@ export function useFillFlow(pondId: number, onClose?: () => void) {
   const [remark, setRemark] = useState('');
   const fillMutation = useFillPond(pondId);
   const isAuthed = useAuthStore((s) => s.token != null);
+
+  useEffect(() => {
+    if (pond?.fishTypes[0]) setFishType(pond.fishTypes[0]);
+  }, [pond?.fishTypes]);
 
   const handleConfirm = async () => {
     if (!isAuthed) {
@@ -58,7 +62,7 @@ export function useFillFlow(pondId: number, onClose?: () => void) {
   };
 
   return {
-    pond: pond as PondModel | undefined,
+    pond,
     step,
     setStep,
     fishType,
