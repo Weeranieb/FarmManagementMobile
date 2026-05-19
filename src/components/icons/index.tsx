@@ -233,6 +233,17 @@ export const Icon = {
       <Path d="M8 11V8a4 4 0 018 0v3" />
     </Frame>
   ),
+  sun: (p: IconProps) => (
+    <Frame {...p}>
+      <Circle cx="12" cy="12" r="3" />
+      <Path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+    </Frame>
+  ),
+  wrench: (p: IconProps) => (
+    <Frame {...p}>
+      <Path d="M14.7 6.3a4 4 0 0 1-5.6 5.6L3.3 17.7a1.4 1.4 0 0 0 2 2l5.8-5.8a4 4 0 0 0 5.6-5.6l-2.5 2.5-2.4-2.4 2.5-2.5z" />
+    </Frame>
+  ),
   sliders: (p: IconProps) => (
     <Frame {...p}>
       <Path d="M4 6h11" />

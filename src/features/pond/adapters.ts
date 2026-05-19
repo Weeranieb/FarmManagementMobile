@@ -1,5 +1,4 @@
-import type { ActivityMock } from './__mocks__/data';
-import type { ActivityResponse, PondResponse } from './types';
+import type { ActivityResponse, PondActivityModel, PondResponse } from './types';
 
 /** UI-facing model rendered by every pond screen / card. */
 export type PondModel = {
@@ -45,11 +44,8 @@ export function adaptPond(p: PondResponse): PondModel {
   };
 }
 
-/**
- * Maps the backend ActivityResponse onto the UI's ActivityMock shape so
- * HistoryBody can render API rows through the same code path as mocks.
- */
-export function adaptActivity(a: ActivityResponse): ActivityMock {
+/** Maps the backend ActivityResponse onto the UI activity model. */
+export function adaptActivity(a: ActivityResponse): PondActivityModel {
   return {
     id: a.id,
     mode: a.mode,

@@ -1,29 +1,34 @@
 import { useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import {
-  mockMerchants,
-  mockPonds,
-  mockSizeGrades,
+  usePondData,
   useSellPond,
+  type MerchantOption,
   type PondModel,
+  type SizeGradeOption,
 } from '@/features/pond';
 import { useAuthStore } from '@/features/auth';
 
+/** TODO: replace with merchant list API when available on mobile. */
+const MERCHANTS: MerchantOption[] = [];
+/** TODO: replace with size-grade list API when available on mobile. */
+const SIZE_GRADES: SizeGradeOption[] = [];
+
 export function useSellFlow(pondId: number, onClose?: () => void) {
-  const pond = mockPonds.find((p) => p.id === pondId) ?? mockPonds[0];
+  const { data: pond } = usePondData(pondId);
   const [step, setStep] = useState<1 | 2>(1);
   const [amount, setAmount] = useState('');
   const [pricePerKg, setPricePerKg] = useState('');
-  const [merchantId, setMerchantId] = useState<number>(mockMerchants[0]?.id ?? -1);
-  const [gradeId, setGradeId] = useState<number>(mockSizeGrades[0]?.id ?? -1);
+  const [merchantId, setMerchantId] = useState<number>(MERCHANTS[0]?.id ?? -1);
+  const [gradeId, setGradeId] = useState<number>(SIZE_GRADES[0]?.id ?? -1);
 
   const total = useMemo(() => {
     const a = parseFloat(amount) || 0;
     const p = parseFloat(pricePerKg) || 0;
     return Math.round(a * p);
   }, [amount, pricePerKg]);
-  const merchant = mockMerchants.find((m) => m.id === merchantId);
-  const grade = mockSizeGrades.find((g) => g.id === gradeId);
+  const merchant = MERCHANTS.find((m) => m.id === merchantId);
+  const grade = SIZE_GRADES.find((g) => g.id === gradeId);
   const sellMutation = useSellPond(pondId);
   const isAuthed = useAuthStore((s) => s.token != null);
 
@@ -56,6 +61,8 @@ export function useSellFlow(pondId: number, onClose?: () => void) {
 
   return {
     pond: pond as PondModel | undefined,
+    merchants: MERCHANTS,
+    sizeGrades: SIZE_GRADES,
     step,
     setStep,
     amount,

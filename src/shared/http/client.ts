@@ -86,8 +86,11 @@ function normalizeApiError(body: unknown, status: number, fallbackMessage: strin
       : typeof obj.error === 'string'
         ? obj.error
         : fallbackMessage);
+  const details =
+    (nestedError && typeof nestedError.details === 'string' ? nestedError.details : null) ??
+    (typeof obj.details === 'string' ? obj.details : undefined);
 
-  return { code, message, status };
+  return { code, message, details, status };
 }
 
 async function parseError(res: Response): Promise<ApiError> {
@@ -114,7 +117,13 @@ function unwrapSuccessBody(json: unknown, res: Response): unknown {
   }
 
   if (typeof obj.code === 'string' && typeof obj.message === 'string' && obj.result !== true) {
-    throw { code: obj.code, message: obj.message, status: res.status } satisfies ApiError;
+    const details = typeof obj.details === 'string' ? obj.details : undefined;
+    throw {
+      code: obj.code,
+      message: obj.message,
+      details,
+      status: res.status,
+    } satisfies ApiError;
   }
 
   return json;

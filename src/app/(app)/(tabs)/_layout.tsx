@@ -70,7 +70,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen name="farm/[farmId]/index" options={{ href: null }} />
       <Tabs.Screen name="pond/[id]/index" options={{ href: null }} />
-      <Tabs.Screen name="pond/[id]/daily-log" options={{ href: null }} />
+      <Tabs.Screen name="daily-log" options={{ href: null }} />
     </Tabs>
   );
 }

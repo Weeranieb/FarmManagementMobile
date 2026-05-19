@@ -4,14 +4,13 @@ import { radii, type } from '@/theme/tokens';
 import { Btn, Input, TopBar } from '@/components/ui';
 import { Row, Col } from '@/components/layout/Row';
 import { fmt, FISH_TH } from '@/utils/fmt';
-import { mockMerchants, mockSizeGrades, type PondModel } from '@/features/pond';
+import type { MerchantOption, PondModel, SizeGradeOption } from '@/features/pond';
 import { BottomBar, FieldRow, FlowBackBtn, PreviewCard } from '../shared';
-
-type Merchant = (typeof mockMerchants)[number];
-type SizeGrade = (typeof mockSizeGrades)[number];
 
 type Props = {
   pond: PondModel;
+  merchants: MerchantOption[];
+  sizeGrades: SizeGradeOption[];
   step: 1 | 2;
   setStep: (s: 1 | 2) => void;
   amount: string;
@@ -22,8 +21,8 @@ type Props = {
   setMerchantId: (id: number) => void;
   gradeId: number;
   setGradeId: (id: number) => void;
-  merchant: Merchant | undefined;
-  grade: SizeGrade | undefined;
+  merchant: MerchantOption | undefined;
+  grade: SizeGradeOption | undefined;
   total: number;
   handleConfirm: () => void;
   isPending: boolean;
@@ -32,6 +31,8 @@ type Props = {
 
 export function SellView({
   pond,
+  merchants,
+  sizeGrades,
   step,
   setStep,
   amount,
@@ -63,7 +64,7 @@ export function SellView({
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
             <FieldRow label="ผู้รับซื้อ">
               <Col gap={8}>
-                {mockMerchants.map((m) => {
+                {merchants.map((m) => {
                   const sel = m.id === merchantId;
                   return (
                     <Pressable
@@ -95,7 +96,7 @@ export function SellView({
 
             <FieldRow label="ขนาดปลา">
               <Row gap={8} wrap>
-                {mockSizeGrades.map((g) => {
+                {sizeGrades.map((g) => {
                   const sel = g.id === gradeId;
                   return (
                     <Pressable

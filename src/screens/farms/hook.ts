@@ -28,7 +28,7 @@ export function useFarmsScreen(): {
   const { data: farmsRaw } = useFarmsData();
   const farmsQuery = useFarms();
   const hasToken = useAuthStore((s) => s.token != null);
-  /** Only merge `/pond` rollups when the farm list actually came back from API (not mock fallback). */
+  /** Only merge `/pond` rollups when the farm list loaded successfully from the API. */
   const useLivePondRollup = hasToken && farmsQuery.isSuccess && Array.isArray(farmsQuery.data);
 
   const baseline = Array.isArray(farmsRaw) ? farmsRaw : [];

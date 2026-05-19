@@ -69,7 +69,7 @@ export default function HomeRoute() {
     setQuickOpen(false);
     switch (id) {
       case 'logFeed': {
-        const path = `/(app)/(tabs)/pond/${DEFAULT_POND_ID}/daily-log`;
+        const path = '/(app)/(tabs)/daily-log';
         log('router.push', path);
         router.push(path);
         break;

@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-  type LayoutChangeEvent,
-} from 'react-native';
+import { Pressable, ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
@@ -16,7 +10,7 @@ import { thaiDate, TH_WEEKDAYS_SHORT } from '@/locale/thaiDate';
 import { fmt } from '@/utils/fmt';
 import { today } from '@/shared/time';
 import { useDailyLogData, type DailyLogEntry } from '@/features/daily-log';
-import { mockFeedCollections } from '@/features/pond';
+import { useFeedCollectionsData, type FeedCollectionModel } from '@/features/feed-collection';
 
 const CARD_PAD = space[4];
 const FALLBACK_PELLET_PRICE = 32;
@@ -56,17 +50,22 @@ function n(x: unknown): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-function feedPrice(id: number | undefined, fallback: number): number {
+function feedPrice(
+  id: number | undefined,
+  collections: FeedCollectionModel[],
+  fallback: number,
+): number {
   if (id == null) return fallback;
-  const c = mockFeedCollections.find((x) => x.id === id);
-  return c?.latestPrice ?? fallback;
+  const c = collections.find((x) => x.id === id);
+  return c?.price ?? fallback;
 }
 
 function totalKg(e: DailyLogEntry): number {
-  return n(e.pelletMorning) + n(e.pelletEvening) + n(e.freshMorning) + n(e.freshEvening);
+  return n(e.pelletMorning) + n(e.pelletEvening) + n(e.fresh);
 }
 
 export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
+  const { data: feedCollections } = useFeedCollectionsData();
   const refNow = today;
   const currentMonthStr = monthStrFromDate(refNow);
   const todayDay = refNow.getDate();
@@ -113,8 +112,12 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
     ? entriesByDay[todayDay]
     : currentLog?.entries.find((e) => e.day === todayDay);
 
-  const pelletPrice = feedPrice(log?.pelletFeedCollectionId, FALLBACK_PELLET_PRICE);
-  const freshPrice = feedPrice(log?.freshFeedCollectionId, FALLBACK_FRESH_PRICE);
+  const pelletPrice = feedPrice(
+    log?.pelletFeedCollectionId,
+    feedCollections,
+    FALLBACK_PELLET_PRICE,
+  );
+  const freshPrice = feedPrice(log?.freshFeedCollectionId, feedCollections, FALLBACK_FRESH_PRICE);
 
   const monthStats = useMemo(() => {
     let pellet = 0;
@@ -122,7 +125,7 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
     let death = 0;
     Object.values(entriesByDay).forEach((e) => {
       pellet += n(e.pelletMorning) + n(e.pelletEvening);
-      fresh += n(e.freshMorning) + n(e.freshEvening);
+      fresh += n(e.fresh);
       death += n(e.deathFishCount);
     });
     return {
@@ -137,10 +140,7 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
   return (
     <View style={{ paddingTop: 12, paddingBottom: 24 }}>
       <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
-        <TodayBanner
-          entry={todayEntry}
-          onOpenDailyLog={onOpenDailyLog}
-        />
+        <TodayBanner entry={todayEntry} onOpenDailyLog={onOpenDailyLog} />
       </View>
 
       <MonthPicker
@@ -188,17 +188,9 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
         <SectionLabel>สรุปทั้งเดือน</SectionLabel>
         <Card padded={false}>
           <Row gap={0} style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
-            <SummaryStat
-              label="อาหารเม็ด"
-              v={fmt.kg(monthStats.pellet)}
-              toneKey="brand"
-            />
+            <SummaryStat label="อาหารเม็ด" v={fmt.kg(monthStats.pellet)} toneKey="brand" />
             <Divider />
-            <SummaryStat
-              label="เหยื่อสด"
-              v={fmt.kg(monthStats.fresh)}
-              toneKey="success"
-            />
+            <SummaryStat label="เหยื่อสด" v={fmt.kg(monthStats.fresh)} toneKey="success" />
             <Divider />
             <SummaryStat
               label="ปลาตาย"
@@ -207,11 +199,7 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
             />
           </Row>
           <Sep />
-          <MonthCostRow
-            cost={monthCost}
-            loggedDays={monthStats.days}
-            daysInMonth={daysInMonth}
-          />
+          <MonthCostRow cost={monthCost} loggedDays={monthStats.days} daysInMonth={daysInMonth} />
         </Card>
       </View>
     </View>
@@ -368,10 +356,7 @@ function MonthPicker({
 }) {
   const { t } = useTheme();
   return (
-    <Row
-      justify="space-between"
-      style={{ paddingHorizontal: 20, paddingBottom: 8 }}
-    >
+    <Row justify="space-between" style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
       <Pressable
         onPress={onPrev}
         accessibilityRole="button"
@@ -565,9 +550,7 @@ function SelectedDayHeader({
         <Pill tone="success">
           <Row gap={4}>
             <Icon.check size={11} color={t.statusActive} />
-            <Text
-              style={{ color: t.statusActive, fontSize: 12, fontFamily: type.familyMedium }}
-            >
+            <Text style={{ color: t.statusActive, fontSize: 12, fontFamily: type.familyMedium }}>
               บันทึกแล้ว
             </Text>
           </Row>
@@ -578,9 +561,7 @@ function SelectedDayHeader({
         <Pill tone="warn">
           <Row gap={4}>
             <Icon.clock size={11} color={warnInk(mode, t)} />
-            <Text
-              style={{ color: warnInk(mode, t), fontSize: 12, fontFamily: type.familyMedium }}
-            >
+            <Text style={{ color: warnInk(mode, t), fontSize: 12, fontFamily: type.familyMedium }}>
               ไม่ได้บันทึก
             </Text>
           </Row>
@@ -606,12 +587,11 @@ function SelectedDayDetail({
   const { t, mode } = useTheme();
   const pAm = n(entry.pelletMorning);
   const pPm = n(entry.pelletEvening);
-  const fAm = n(entry.freshMorning);
-  const fPm = n(entry.freshEvening);
+  const f = n(entry.fresh);
   const deaths = n(entry.deathFishCount);
   const tourist = n(entry.touristCatchCount);
   const showTourist = tourist > 0;
-  const cost = (pAm + pPm) * pelletPrice + (fAm + fPm) * freshPrice;
+  const cost = (pAm + pPm) * pelletPrice + f * freshPrice;
   return (
     <>
       <Sep />
@@ -624,12 +604,10 @@ function SelectedDayDetail({
         price={pelletPrice}
       />
       <Sep />
-      <ReadRow
-        kind="fresh"
+      <ReadRowSingle
         title="เหยื่อสด"
         subtitle={`${freshName}${freshName ? ' · ' : ''}฿${freshPrice}/กก.`}
-        am={fAm}
-        pm={fPm}
+        value={f}
         price={freshPrice}
       />
       <Sep />
@@ -643,12 +621,7 @@ function SelectedDayDetail({
         <Divider />
         {showTourist ? (
           <>
-            <SummaryStat
-              label="จับปลาเป็น"
-              v={`${tourist}`}
-              sub="ตัว"
-              toneColor={t.inkSoft}
-            />
+            <SummaryStat label="จับปลาเป็น" v={`${tourist}`} sub="ตัว" toneColor={t.inkSoft} />
             <Divider />
           </>
         ) : null}
@@ -666,7 +639,7 @@ function ReadRow({
   pm,
   price,
 }: {
-  kind: 'pellet' | 'fresh';
+  kind: 'pellet';
   title: string;
   subtitle: string;
   am: number;
@@ -706,9 +679,7 @@ function ReadRow({
           <Text style={{ fontFamily: type.familyNumBold, fontSize: 16, color: t.ink }}>
             {fmt.kg(total)}
           </Text>
-          <Text
-            style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}
-          >
+          <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}>
             {fmt.baht(total * price)}
           </Text>
         </Col>
@@ -717,6 +688,56 @@ function ReadRow({
         <ReadCell label="เช้า" v={amN} unit="กก." />
         <ReadCell label="เย็น" v={pmN} unit="กก." />
       </Row>
+    </View>
+  );
+}
+
+function ReadRowSingle({
+  title,
+  subtitle,
+  value,
+  price,
+}: {
+  title: string;
+  subtitle: string;
+  value: number;
+  price: number;
+}) {
+  const { t } = useTheme();
+  const v = n(value);
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+      <Row justify="space-between" style={{ marginBottom: 8 }}>
+        <Row gap={10}>
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: radii.sm,
+              backgroundColor: t.statusActiveSoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon.feed size={16} color={t.success} />
+          </View>
+          <Col gap={1}>
+            <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.ink }}>{title}</Text>
+            <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>
+              {subtitle}
+            </Text>
+          </Col>
+        </Row>
+        <Col gap={1} align="flex-end">
+          <Text style={{ fontFamily: type.familyNumBold, fontSize: 16, color: t.ink }}>
+            {fmt.kg(v)}
+          </Text>
+          <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}>
+            {fmt.baht(v * price)}
+          </Text>
+        </Col>
+      </Row>
+      <ReadCell label="วันนี้" v={v} unit="กก." />
     </View>
   );
 }
@@ -738,9 +759,7 @@ function ReadCell({ label, v, unit }: { label: string; v: number; unit: string }
     >
       <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familySemi }}>{label}</Text>
       <Row gap={3}>
-        <Text
-          style={{ fontFamily: type.familyNumSemi, fontSize: 15, color: t.ink }}
-        >
+        <Text style={{ fontFamily: type.familyNumSemi, fontSize: 15, color: t.ink }}>
           {n(v).toLocaleString('en-US', { maximumFractionDigits: 1 })}
         </Text>
         <Text style={{ fontSize: 10, color: t.inkMute, fontFamily: type.familyNum }}>{unit}</Text>
@@ -800,10 +819,7 @@ function MonthCostRow({
 }) {
   const { t } = useTheme();
   return (
-    <Row
-      justify="space-between"
-      style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-    >
+    <Row justify="space-between" style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
       <Col gap={1}>
         <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
           ต้นทุนอาหารเดือนนี้
@@ -816,9 +832,7 @@ function MonthCostRow({
         <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>บันทึกครบ</Text>
         <Text style={{ fontFamily: type.familyNumBold, fontSize: 16, color: t.ink }}>
           <Text>{loggedDays}</Text>
-          <Text style={{ color: t.inkMute, fontFamily: type.familyNumMedium }}>
-            /{daysInMonth}
-          </Text>
+          <Text style={{ color: t.inkMute, fontFamily: type.familyNumMedium }}>/{daysInMonth}</Text>
           <Text style={{ color: t.ink, fontFamily: type.familyMedium }}> วัน</Text>
         </Text>
       </Col>
@@ -826,13 +840,7 @@ function MonthCostRow({
   );
 }
 
-function EmptyDay({
-  isFuture,
-  onOpenDailyLog,
-}: {
-  isFuture: boolean;
-  onOpenDailyLog: () => void;
-}) {
+function EmptyDay({ isFuture, onOpenDailyLog }: { isFuture: boolean; onOpenDailyLog: () => void }) {
   const { t } = useTheme();
   return (
     <View
@@ -893,9 +901,7 @@ function EmptyDay({
             gap: 6,
           }}
         >
-          <Text style={{ fontFamily: type.familyBold, fontSize: 13, color: '#fff' }}>
-            ไปบันทึก
-          </Text>
+          <Text style={{ fontFamily: type.familyBold, fontSize: 13, color: '#fff' }}>ไปบันทึก</Text>
           <Icon.chevR size={14} color="#fff" />
         </Pressable>
       ) : null}

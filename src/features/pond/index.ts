@@ -25,15 +25,10 @@ export { adaptPond, adaptActivity, type PondModel } from './adapters';
 export type {
   ActivityResponse,
   PondResponse,
+  PondActivityModel,
+  MerchantOption,
+  SizeGradeOption,
   FillPondRequest,
   MovePondRequest,
   SellPondRequest,
 } from './types';
-export {
-  mockPonds,
-  mockMerchants,
-  mockSizeGrades,
-  mockFeedCollections,
-  mockActivitiesByPond,
-  type ActivityMock,
-} from './__mocks__/data';

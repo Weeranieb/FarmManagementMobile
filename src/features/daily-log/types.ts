@@ -2,8 +2,7 @@
 
 export type DailyLogEntry = {
   day: number;
-  freshMorning: number;
-  freshEvening: number;
+  fresh: number;
   pelletMorning: number;
   pelletEvening: number;
   deathFishCount: number;
@@ -13,9 +12,11 @@ export type DailyLogEntry = {
 export type DailyLogResponse = {
   pondId: number;
   month: string;
-  freshFeedCollectionId: number;
+  // Backend returns `*int` with omitempty — undefined when the pond has no
+  // feed collection configured for that feed type.
+  freshFeedCollectionId?: number;
   freshFeedCollectionName: string;
-  pelletFeedCollectionId: number;
+  pelletFeedCollectionId?: number;
   pelletFeedCollectionName: string;
   entries: DailyLogEntry[];
 };

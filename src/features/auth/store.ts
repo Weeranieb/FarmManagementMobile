@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 }));
 
 /**
- * Single source of truth for "do we hit the API or fall back to mocks".
+ * Single source of truth for whether authenticated API calls are enabled.
  * Used by every feature's `useXData` hook so the rule stays consistent.
  */
 export function useIsAuthenticated(): boolean {
