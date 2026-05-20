@@ -3,7 +3,7 @@
     "name": "FarmOS",
     "slug": "farmos-mobile",
     "scheme": "farmos",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
