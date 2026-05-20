@@ -156,11 +156,9 @@ function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
       {COLS.map((c) => {
         const g = GROUP_LIGHT[c.group];
         const cellDisabled =
-          (c.group === 'pellet' && !pond.hasPellet) ||
-          (c.group === 'fresh' && !pond.hasFresh);
+          (c.group === 'pellet' && !pond.hasPellet) || (c.group === 'fresh' && !pond.hasFresh);
         const value = pond.v[c.key];
-        const isActive =
-          activeCell?.pondKey === pond.key && activeCell?.col === c.key;
+        const isActive = activeCell?.pondKey === pond.key && activeCell?.col === c.key;
         // Zero == "no data" — mirrors saveAll's `hasAnyData` filter in hook.ts
         // so the cell visually agrees with what the backend will treat as a
         // skipped column.
