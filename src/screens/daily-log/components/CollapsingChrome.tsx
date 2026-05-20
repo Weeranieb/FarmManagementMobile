@@ -17,6 +17,7 @@ type Props = {
   nextMonthDisabled?: boolean;
   onFarmPress?: () => void;
   onMonthLabelPress?: () => void;
+  daysWithDrafts?: ReadonlySet<string>;
 };
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
@@ -35,6 +36,7 @@ export function CollapsingChrome({
   nextMonthDisabled = false,
   onFarmPress,
   onMonthLabelPress,
+  daysWithDrafts,
 }: Props) {
   const { t } = useTheme();
 
@@ -85,7 +87,11 @@ export function CollapsingChrome({
           overflow: dayExpanded ? 'visible' : 'hidden',
         }}
       >
-        <DayStripRow selectedDate={selectedDate} onSelectDate={onSelectDate} />
+        <DayStripRow
+          selectedDate={selectedDate}
+          onSelectDate={onSelectDate}
+          daysWithDrafts={daysWithDrafts}
+        />
       </View>
     </View>
   );

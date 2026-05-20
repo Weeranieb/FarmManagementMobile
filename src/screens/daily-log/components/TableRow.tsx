@@ -4,6 +4,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import {
+  CELL_HIGHLIGHT,
   COLS,
   GROUP_LIGHT,
   MAINT,
@@ -13,6 +14,7 @@ import {
   VIBRANT_BRAND,
   colW,
   fmtTh,
+  isCellValueInvalid,
   type ColKey,
 } from '../constants';
 import type { ActiveCell, PondRow } from '../hook';
@@ -49,6 +51,24 @@ function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
   const zebra = idx % 2 === 1 ? TABLE_SURFACE.zebra : TABLE_SURFACE.even;
   const rowActive = activeCell?.pondKey === pond.key;
   const rowBg = rowActive ? VIBRANT_BRAND[50] : zebra;
+  // Row-label sync (Daily Log v7 frame Y / Z / AA — the highlighted cell's
+  // row pulls the pond label cell into focus too). Stripe gets thicker + a
+  // soft brand ring, label text gets extra tracking. Color swaps to red on
+  // the error variant so the row reads "something is wrong here" at a
+  // glance, matching the cell's red border. The row is flagged as "error"
+  // whenever it carries any out-of-range cell — not only on the active
+  // row — so a scrolled-away dirty row with `25,000` still pulls the
+  // user's eye via the red label.
+  const hasInvalidCell = COLS.some((c) => isCellValueInvalid(pond.v[c.key]));
+  const isErrorRow = hasInvalidCell;
+  const stripeColor = isErrorRow
+    ? CELL_HIGHLIGHT.errorBorder
+    : rowActive
+      ? VIBRANT_BRAND[600]
+      : accent === 'transparent'
+        ? t.border
+        : accent;
+  const stripeRingColor = isErrorRow ? CELL_HIGHLIGHT.errorRing : CELL_HIGHLIGHT.ring;
 
   return (
     <View
@@ -73,21 +93,47 @@ function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
           borderRightColor: t.borderStrong,
         }}
       >
-        <View
-          style={{
-            width: 3,
-            height: 30,
-            borderRadius: 2,
-            backgroundColor: accent === 'transparent' ? t.border : accent,
-          }}
-        />
+        {rowActive ? (
+          // Soft 2px ring around the stripe — emulates the inset box-shadow
+          // from the prototype (`0 0 0 2px rgba(31,95,212,.18)`). React Native
+          // has no `box-shadow`, so a wrapper View with the ring color sits
+          // under the stripe and renders the halo.
+          <View
+            style={{
+              padding: 2,
+              backgroundColor: stripeRingColor,
+              borderRadius: 4,
+            }}
+          >
+            <View
+              style={{
+                width: 4,
+                height: 34,
+                borderRadius: 2,
+                backgroundColor: stripeColor,
+              }}
+            />
+          </View>
+        ) : (
+          <View
+            style={{
+              width: 3,
+              height: 30,
+              borderRadius: 2,
+              backgroundColor: stripeColor,
+            }}
+          />
+        )}
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text
             style={{
               fontSize: 14,
               fontFamily: type.familyBold,
               color: t.ink,
-              letterSpacing: 0.1,
+              // 700 is the heaviest IBM Plex weight available — bump the
+              // tracking on the highlight row so the label still reads
+              // "more emphasised" than its neighbours.
+              letterSpacing: rowActive ? 0.2 : 0.1,
             }}
             numberOfLines={1}
           >
@@ -110,22 +156,42 @@ function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
       {COLS.map((c) => {
         const g = GROUP_LIGHT[c.group];
         const cellDisabled =
-          (c.group === 'pellet' && !pond.hasPellet) ||
-          (c.group === 'fresh' && !pond.hasFresh);
+          (c.group === 'pellet' && !pond.hasPellet) || (c.group === 'fresh' && !pond.hasFresh);
         const value = pond.v[c.key];
-        const isActive =
-          activeCell?.pondKey === pond.key && activeCell?.col === c.key;
+        const isActive = activeCell?.pondKey === pond.key && activeCell?.col === c.key;
         // Zero == "no data" — mirrors saveAll's `hasAnyData` filter in hook.ts
         // so the cell visually agrees with what the backend will treat as a
         // skipped column.
         const filled = value !== '' && value != null && Number(value) !== 0;
-        const bg = isActive
+        const isCellDirty = pond.dirtyCols.has(c.key);
+        // Validation — flags any cell whose value exceeds CELL_MAX_VALUE.
+        // Derived directly from the displayed value so saved-but-out-of-range
+        // entries (rare, but possible if the limit changes after the fact)
+        // still surface red.
+        const isError = isCellValueInvalid(value);
+        // Pill overlay — Daily Log v7 frames Y / Z / AA + legend. Renders
+        // whenever the cell is in a "highlighted" state: actively being
+        // edited (Y / AA), carrying an unsaved value vs. the saved baseline
+        // (Z), OR holding an out-of-range value (AA). The spec callout on
+        // state Z is explicit that the pill+dot pair should be legible
+        // "ตั้งแต่ระดับเซลล์ ไม่ต้องดูแค่ป้ายของแถว", so non-active dirty /
+        // invalid cells get the same treatment.
+        const showPill = isActive || isCellDirty || isError;
+        // Amber dot — paired with the pill on dirty cells. Suppressed when
+        // the cell is in the error variant since the red `!` badge already
+        // occupies the same top-right corner.
+        const showChangedDot = isCellDirty && !isError;
+        const bg = showPill
           ? TABLE_SURFACE.even
           : rowActive
             ? 'rgba(255,255,255,.55)'
             : filled
               ? 'transparent'
               : g.tint;
+
+        const accentColor = isError ? CELL_HIGHLIGHT.errorBorder : CELL_HIGHLIGHT.border;
+        const accentTint = isError ? CELL_HIGHLIGHT.errorTint : CELL_HIGHLIGHT.tint;
+        const accentRing = isError ? CELL_HIGHLIGHT.errorRing : CELL_HIGHLIGHT.ring;
 
         return (
           <Pressable
@@ -135,21 +201,127 @@ function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
             style={{
               width: colW(c.key),
               backgroundColor: bg,
-              borderWidth: isActive ? 2 : 0,
-              borderColor: isActive ? VIBRANT_BRAND[600] : 'transparent',
               paddingHorizontal: 8,
               alignItems: 'flex-end',
               justifyContent: 'center',
+              position: 'relative',
             }}
           >
+            {/* Pill highlight overlay — sits inside the cell so column
+             *  dividers stay clean. Two stacked Views emulate the
+             *  prototype's `border + box-shadow ring` since React Native
+             *  has no `outline` / `box-shadow` ring.
+             *  · Outer view is a 3px *ring* (border only, transparent
+             *    centre) so the inner pill's tint sits on the cell
+             *    background, not on top of the ring fill — keeping the
+             *    centre at the intended 7% blue instead of compositing
+             *    to ~21%.
+             *  · Inner pill carries the 2px solid border + 7% tint. */}
+            {showPill ? (
+              <>
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: 1,
+                    bottom: 1,
+                    left: 2,
+                    right: 2,
+                    borderRadius: 10,
+                    borderWidth: 3,
+                    borderColor: accentRing,
+                  }}
+                />
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: 4,
+                    bottom: 4,
+                    left: 5,
+                    right: 5,
+                    borderRadius: 7,
+                    borderWidth: 2,
+                    borderColor: accentColor,
+                    backgroundColor: accentTint,
+                  }}
+                />
+              </>
+            ) : null}
+
+            {/* Changed indicator — small amber dot in the top-right of any
+             *  cell whose value differs from the saved baseline. Renders
+             *  whether or not the cell is currently active so the dirty
+             *  state is legible without opening the keypad. */}
+            {showChangedDot ? (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 5,
+                  right: 7,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  backgroundColor: t.warn,
+                  borderWidth: 1.5,
+                  borderColor: t.surface,
+                  zIndex: 2,
+                }}
+              />
+            ) : null}
+
+            {/* Error glyph — red "!" badge in the top-right of the active
+             *  cell on validation failures. The validator isn't wired yet,
+             *  so this only renders when callers pass
+             *  `activeCellVariant='error'` (see Props). */}
+            {isError ? (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  top: 3,
+                  right: 5,
+                  width: 14,
+                  height: 14,
+                  borderRadius: 999,
+                  backgroundColor: accentColor,
+                  borderWidth: 1.5,
+                  borderColor: t.surface,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 2,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 9,
+                    lineHeight: 10,
+                    fontFamily: type.familyNumBold,
+                    color: '#ffffff',
+                  }}
+                >
+                  !
+                </Text>
+              </View>
+            ) : null}
+
             {cellDisabled ? (
               <Text style={{ fontSize: 11, color: t.borderStrong }}>—</Text>
             ) : (
               <Text
                 style={{
-                  fontSize: filled ? 15.5 : 16,
-                  fontFamily: filled ? type.familyNumSemi : type.familyNum,
-                  color: filled ? t.ink : t.borderStrong,
+                  // Highlighted cells (active or dirty) render heavier and
+                  // slightly larger so the live / changed value pops out of
+                  // the table grid — matches the bold "14.5" in the v7
+                  // state Y / Z legend glyphs.
+                  fontSize: showPill ? 16 : filled ? 15.5 : 16,
+                  fontFamily: showPill
+                    ? type.familyNumBold
+                    : filled
+                      ? type.familyNumSemi
+                      : type.familyNum,
+                  color: isError ? CELL_HIGHLIGHT.errorInk : filled ? t.ink : t.borderStrong,
                   lineHeight: 16,
                 }}
               >

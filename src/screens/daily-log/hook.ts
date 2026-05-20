@@ -9,7 +9,7 @@ import {
   type DailyLogResponse,
 } from '@/features/daily-log';
 import { adaptPond, usePonds, type PondModel } from '@/features/pond';
-import { COLS, type ColKey } from './constants';
+import { COLS, isCellValueInvalid, type ColKey } from './constants';
 
 export type CellState = 'saved' | 'dirty' | 'empty';
 
@@ -20,6 +20,8 @@ export type CellValues = {
   death: number | '';
   cat: number | '';
 };
+
+const EMPTY_DIRTY_COLS: ReadonlySet<ColKey> = new Set();
 
 export type PondRow = {
   id: string;
@@ -36,6 +38,11 @@ export type PondRow = {
   disabled: boolean;
   state: CellState;
   v: CellValues;
+  /** Per-cell dirty set — which columns hold unsaved local edits. Empty
+   *  for clean rows (state !== 'dirty'). TableRow marks these cells with
+   *  the amber "changed" dot in the top-right corner (Daily Log v7 frame
+   *  Z + legend). */
+  dirtyCols: ReadonlySet<ColKey>;
 };
 
 export type ActiveCell = { pondKey: string; col: ColKey } | null;
@@ -50,6 +57,11 @@ export type UseDailyLogV6 = {
 
   dirtyCount: number;
   savedCount: number;
+  /** Number of active ponds with at least one out-of-range cell value
+   *  (`isCellValueInvalid`). Drives the SaveBar disable + the inline
+   *  guard text — saving is blocked while any row is invalid so the
+   *  bulk upsert doesn't ship known-bad data. */
+  invalidCount: number;
   /** Number of active ponds the user is expected to log for. Excludes
    *  maintenance ponds and pre-start ponds. */
   total: number;
@@ -63,6 +75,10 @@ export type UseDailyLogV6 = {
    *
    *  pending edits from a different month at a glance. */
   unsavedMonths: ReadonlySet<string>;
+  /** Set of `YYYY-MM-DD` keys for days with any unsaved override. Drives
+   *  the amber dot on day pills in the date strip so users can find their
+   *  way back to a day with pending edits. */
+  daysWithDrafts: ReadonlySet<string>;
 
   setCellValue: (pondKey: string, col: ColKey, value: number | '') => void;
   /** Record the user's feed-collection pick (from the numpad picker) for a
@@ -96,8 +112,29 @@ export type SaveResult = {
 
 const EMPTY_VALUES: CellValues = { pm: '', pe: '', fresh: '', death: '', cat: '' };
 
-type LocalOverride = { state: CellState; v: CellValues };
+// Overrides only exist for ponds with at least one dirty cell. On successful
+// save, the upsert response is written into the React Query cache and the
+// override is dropped — saved values render from the cache, not from here.
+type LocalOverride = { v: CellValues; dirtyCols: ReadonlySet<ColKey> };
 type OverrideMap = Record<string, Record<string, LocalOverride>>;
+
+const CELL_KEYS: readonly (keyof CellValues)[] = ['pm', 'pe', 'fresh', 'death', 'cat'];
+
+// Numeric comparison helper: treats '' as 0 because the backend zero-fills
+// untouched cells. Cleared-back-to-empty matches an absent backend value.
+function valuesEqual(a: number | '', b: number | ''): boolean {
+  const na = a === '' ? 0 : Number(a);
+  const nb = b === '' ? 0 : Number(b);
+  return na === nb;
+}
+
+function computeDirtyCols(next: CellValues, ref: CellValues): ReadonlySet<ColKey> {
+  const out = new Set<ColKey>();
+  for (const k of CELL_KEYS) {
+    if (!valuesEqual(next[k], ref[k])) out.add(k as ColKey);
+  }
+  return out;
+}
 
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n);
@@ -381,6 +418,7 @@ export function useDailyLogV6(
 
       let state: CellState;
       let v: CellValues;
+      let dirtyCols: ReadonlySet<ColKey> = EMPTY_DIRTY_COLS;
       if (disabled) {
         // Maintenance ponds may carry a backend entry from when they were
         // active, but they aren't part of the day's progress denominator
@@ -390,8 +428,9 @@ export function useDailyLogV6(
         state = 'empty';
         v = backendEntry ? entryToValues(backendEntry) : EMPTY_VALUES;
       } else if (override) {
-        state = override.state;
+        state = 'dirty';
         v = override.v;
+        dirtyCols = override.dirtyCols;
       } else if (backendEntry) {
         state = 'saved';
         v = entryToValues(backendEntry);
@@ -411,6 +450,7 @@ export function useDailyLogV6(
         disabled,
         state,
         v,
+        dirtyCols,
       });
     }
     return rows;
@@ -438,27 +478,31 @@ export function useDailyLogV6(
         // Seed first-time edits from the backend entry so the user editing
         // one cell doesn't blank the other four. Subsequent edits stack on
         // the existing override.
-        let baseValues: CellValues;
-        if (existing) {
-          baseValues = existing.v;
-        } else {
-          baseValues = backendEntry ? entryToValues(backendEntry) : EMPTY_VALUES;
-        }
-        const nextValues: CellValues = {
-          ...baseValues,
-          [col]: value,
-        };
+        const baseValues: CellValues = existing
+          ? existing.v
+          : backendEntry
+            ? entryToValues(backendEntry)
+            : EMPTY_VALUES;
+        const nextValues: CellValues = { ...baseValues, [col]: value };
 
-        // If the user "advanced past" a pond without typing (numpad → Next
-        // committing value=''), and the pond has no other data and no
-        // backend entry, skip creating a ghost dirty override. Otherwise
-        // saveAll would persist {0,0,0,0,0} for it and inflate savedCount.
-        const allEmpty = (Object.keys(nextValues) as (keyof CellValues)[]).every(
-          (k) => nextValues[k] === '',
-        );
+        // Dirty = differs from the backend reference. Reverting a cell to
+        // its original server value clears its dirty flag; reverting every
+        // cell drops the override entirely.
+        const refValues = backendEntry ? entryToValues(backendEntry) : EMPTY_VALUES;
+        const dirtyCols = computeDirtyCols(nextValues, refValues);
+
+        if (dirtyCols.size === 0) {
+          if (!existing) return prev;
+          const { [pondKey]: _omit, ...rest } = bucket;
+          return { ...prev, [dKey]: rest };
+        }
+
+        // Skip ghost overrides when the user advances past a pond without
+        // typing (numpad → Next with value='') — otherwise saveAll would
+        // persist {0,0,0,0,0} and inflate savedCount on refetch.
+        const allEmpty = CELL_KEYS.every((k) => nextValues[k] === '');
         if (allEmpty && !backendEntry) {
           if (!existing) return prev;
-          // Drop the leftover override so the pond stays state='empty'.
           const { [pondKey]: _omit, ...rest } = bucket;
           return { ...prev, [dKey]: rest };
         }
@@ -467,7 +511,7 @@ export function useDailyLogV6(
           ...prev,
           [dKey]: {
             ...bucket,
-            [pondKey]: { state: 'dirty', v: nextValues },
+            [pondKey]: { v: nextValues, dirtyCols },
           },
         };
       });
@@ -492,14 +536,12 @@ export function useDailyLogV6(
   const saveAll = useCallback(async (): Promise<SaveResult> => {
     const bucket = overrides[dKey];
     if (!bucket) return { ok: true, failedCount: 0 };
-    // Defense-in-depth: even if a ghost dirty override slipped through
-    // setCellValue (e.g. via legacy state), skip entries that would write
-    // an all-zero record for a pond with no prior backend entry. Without
-    // this filter, those rows post {0,0,0,0,0} to the backend and then
-    // count as 'saved' on the next refetch.
+    // Every override is dirty by construction (setCellValue drops overrides
+    // that match the backend ref). Skip entries that would post {0,0,0,0,0}
+    // for a pond with no prior backend record — defensive filter against
+    // any legacy/in-flight state that slipped through.
     const dirtyEntries = Object.entries(bucket).filter(([pondKey, o]) => {
-      if (o.state !== 'dirty') return false;
-      const hasAnyData = (Object.keys(o.v) as (keyof CellValues)[]).some((k) => {
+      const hasAnyData = CELL_KEYS.some((k) => {
         const v = o.v[k];
         return v !== '' && Number(v) !== 0;
       });
@@ -536,8 +578,8 @@ export function useDailyLogV6(
           entries: [entry],
         };
         try {
-          await upsertDailyLogMonth(Number(pondKey), payload);
-          return pondKey;
+          const response = await upsertDailyLogMonth(Number(pondKey), payload);
+          return { pondKey, response };
         } catch (err) {
           // Log the exact payload alongside the rejection reason — otherwise
           // a 500010 is impossible to reproduce from logs alone.
@@ -557,7 +599,11 @@ export function useDailyLogV6(
     let errorDetails: string | undefined;
     for (const r of results) {
       if (r.status === 'fulfilled') {
-        successKeys.add(r.value);
+        successKeys.add(r.value.pondKey);
+        // Prime the React Query cache with the upsert response so the row
+        // renders saved values without waiting for a refetch round-trip —
+        // avoids flashing stale backend values during the override drop.
+        qc.setQueryData(dailyLogKeys.month(Number(r.value.pondKey), month), r.value.response);
       } else {
         failedCount += 1;
         if (errorCode == null) {
@@ -572,38 +618,34 @@ export function useDailyLogV6(
     }
 
     if (successKeys.size > 0) {
-      // Flip only successful dirty entries → saved. Failed ones stay dirty so
-      // the user can retry. The refetch then reconciles the cache with what
-      // the backend actually accepted.
+      // Drop overrides for successful ponds — the cache update above means
+      // the row will read freshly-saved values from React Query. Failed
+      // ponds keep their override (still dirty) so the user can retry.
       setOverrides((prev) => {
         const cur = prev[dKey];
         if (!cur) return prev;
         const nextBucket: Record<string, LocalOverride> = {};
         for (const [k, o] of Object.entries(cur)) {
-          if (successKeys.has(k) && o.state === 'dirty') {
-            nextBucket[k] = { ...o, state: 'saved' };
-          } else {
-            nextBucket[k] = o;
-          }
+          if (!successKeys.has(k)) nextBucket[k] = o;
+        }
+        if (Object.keys(nextBucket).length === 0) {
+          const { [dKey]: _omit, ...rest } = prev;
+          return rest;
         }
         return { ...prev, [dKey]: nextBucket };
       });
-
-      void qc.invalidateQueries({ queryKey: ['dailyLog'] });
     }
 
     return { ok: failedCount === 0, failedCount, errorCode, errorMessage, errorDetails };
   }, [overrides, dKey, month, day, qc, entriesByPondId, feedCollectionsByPondId, feedSelections]);
 
   const discardDirty = useCallback(() => {
+    // All overrides are dirty by construction — drop the day's bucket
+    // entirely. Saved values reappear from the React Query cache.
     setOverrides((prev) => {
-      const cur = prev[dKey];
-      if (!cur) return prev;
-      const nextBucket: Record<string, LocalOverride> = {};
-      for (const [k, o] of Object.entries(cur)) {
-        if (o.state !== 'dirty') nextBucket[k] = o;
-      }
-      return { ...prev, [dKey]: nextBucket };
+      if (!prev[dKey]) return prev;
+      const { [dKey]: _omit, ...rest } = prev;
+      return rest;
     });
   }, [dKey]);
 
@@ -613,19 +655,33 @@ export function useDailyLogV6(
 
   const dirtyCount = useMemo(() => ponds.filter((p) => p.state === 'dirty').length, [ponds]);
   const savedCount = useMemo(() => ponds.filter((p) => p.state === 'saved').length, [ponds]);
-  // Walk every date with overrides; flag the month if any pond in that
-  // bucket is still dirty. Keys are the dKey form "YYYY-MM-DD" so we can
-  // parse year/month directly without re-deriving from a Date.
+  // Block save while any active pond carries an out-of-range value. Only
+  // active rows are counted — locked rows (maintenance / closed cycle)
+  // render their historical values read-only and can't be touched anyway.
+  const invalidCount = useMemo(
+    () =>
+      ponds.filter((p) => !p.disabled && COLS.some((c) => isCellValueInvalid(p.v[c.key]))).length,
+    [ponds],
+  );
+  // Walk every date with overrides. Any non-empty bucket means dirty (we
+  // drop overrides on save / revert). Keys are the dKey form "YYYY-MM-DD"
+  // so we can parse year/month directly without re-deriving from a Date.
   const unsavedMonths = useMemo<ReadonlySet<string>>(() => {
     const out = new Set<string>();
     for (const [k, bucket] of Object.entries(overrides)) {
-      const hasDirty = Object.values(bucket).some((o) => o.state === 'dirty');
-      if (!hasDirty) continue;
+      if (Object.keys(bucket).length === 0) continue;
       // dKey shape: YYYY-MM-DD. Slice the year and month parts and convert
       // the 1-based month string back to the 0-based index the picker uses.
       const y = Number(k.slice(0, 4));
       const m = Number(k.slice(5, 7)) - 1;
       if (Number.isFinite(y) && Number.isFinite(m)) out.add(`${y}-${m}`);
+    }
+    return out;
+  }, [overrides]);
+  const daysWithDrafts = useMemo<ReadonlySet<string>>(() => {
+    const out = new Set<string>();
+    for (const [k, bucket] of Object.entries(overrides)) {
+      if (Object.keys(bucket).length > 0) out.add(k);
     }
     return out;
   }, [overrides]);
@@ -642,9 +698,11 @@ export function useDailyLogV6(
     setActiveCell,
     dirtyCount,
     savedCount,
+    invalidCount,
     total,
     maintenanceCount,
     unsavedMonths,
+    daysWithDrafts,
     setCellValue,
     setFeedSelection,
     previousValueForActiveCell,

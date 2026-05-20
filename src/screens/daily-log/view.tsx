@@ -62,8 +62,10 @@ export function DailyLogView({
     setActiveCell,
     dirtyCount,
     savedCount,
+    invalidCount,
     total,
     unsavedMonths,
+    daysWithDrafts,
     setCellValue,
     setFeedSelection,
     previousValueForActiveCell,
@@ -235,6 +237,15 @@ export function DailyLogView({
   }, [pending, discardDirty, dispatchPending]);
 
   const onGuardSaveAndExit = useCallback(async () => {
+    // Refuse to save while any row carries an out-of-range value — same
+    // rule the SaveBar enforces, just at the guard layer too so the user
+    // can't sneak a bad upsert through the "บันทึกแล้วออก" path. The
+    // dialog stays open with an inline error so they can fix the value
+    // before navigating.
+    if (invalidCount > 0) {
+      setSaveError('แก้ไขค่าที่ผิดเงื่อนไขก่อนบันทึก');
+      return;
+    }
     const p = pending;
     const result = await saveAll();
     if (result.ok) {
@@ -244,7 +255,7 @@ export function DailyLogView({
     } else {
       setSaveError(formatSaveError(result));
     }
-  }, [pending, saveAll, dispatchPending]);
+  }, [pending, invalidCount, saveAll, dispatchPending]);
 
   const pickerFarms = useMemo<FarmOption[]>(
     () =>
@@ -333,6 +344,7 @@ export function DailyLogView({
             nextMonthDisabled={nextMonthDisabled}
             onFarmPress={onFarmPress}
             onMonthLabelPress={onMonthLabelPress}
+            daysWithDrafts={daysWithDrafts}
           />
 
           <View
@@ -379,7 +391,11 @@ export function DailyLogView({
           </ScrollView>
         </ScrollView>
 
-        <SaveBar dirtyCount={dirtyCount} onSavePress={() => setConfirmOpen(true)} />
+        <SaveBar
+          dirtyCount={dirtyCount}
+          invalidCount={invalidCount}
+          onSavePress={() => setConfirmOpen(true)}
+        />
       </View>
 
       {activeCell && activePond ? (
