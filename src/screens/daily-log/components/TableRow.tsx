@@ -31,7 +31,7 @@ function TableRowImpl({ pond, idx, activeCell, onCellTap }: Props) {
   // (cycle hasn't started yet on the selected day) — uses the same striped
   // + central-lock visual so the table reads as a single "can't enter data
   // here" pattern. The pill text below the pond code distinguishes them
-  // ("พักบ่อ" vs "ปิดบ่อ").
+  // ("ซ่อมบำรุง" vs "ปิดบ่อ").
   if (pond.disabled) {
     return <LockedRow pond={pond} />;
   }
@@ -343,13 +343,13 @@ function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
 // possible: taps are absorbed (no toast — per user note in chat10)
 // and the data columns render as a striped pattern with a single
 // central lock glyph instead of column placeholders. Pill text and
-// glyph differ by reason: maintenance shows a wrench + "พักบ่อ",
+// glyph differ by reason: maintenance shows a wrench + "ซ่อมบำรุง",
 // pre-start ponds show a lock + "ปิดบ่อ".
 // ────────────────────────────────────────────────────────────
 function LockedRow({ pond }: { pond: PondRow }) {
   const { t } = useTheme();
   const PillIcon = pond.maintenance ? Icon.wrench : Icon.lock;
-  const pillLabel = pond.maintenance ? 'พักบ่อ' : 'ปิดบ่อ';
+  const pillLabel = pond.maintenance ? 'ซ่อมบำรุง' : 'ปิดบ่อ';
   return (
     <View
       style={{

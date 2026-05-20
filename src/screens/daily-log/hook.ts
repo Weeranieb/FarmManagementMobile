@@ -66,7 +66,7 @@ export type UseDailyLogV6 = {
    *  maintenance ponds and pre-start ponds. */
   total: number;
   /** Number of ponds in `status === 'maintenance'`. Used by the farm chip
-   *  to render the small "{n} บ่ออยู่ในพักบ่อ" caption below the saved
+   *  to render the small "{n} บ่ออยู่ในซ่อมบำรุง" caption below the saved
    *  / total count. */
   maintenanceCount: number;
   /** Set of `${year}-${monthIdx}` (0-based month) for months that contain
@@ -289,7 +289,7 @@ export function useDailyLogV6(
       if (entry) m.set(id, entry);
     });
     return m;
-  }, [pondIds, dailyLogQueries, day, isAuth]);
+  }, [pondIds, dailyLogQueries, day, isAuth, month]);
 
   // Feed collection IDs per pond, read from the same monthly query that
   // populates entries. The upsert validator on the backend rejects payloads
@@ -492,6 +492,16 @@ export function useDailyLogV6(
         const dirtyCols = computeDirtyCols(nextValues, refValues);
 
         if (dirtyCols.size === 0) {
+          if (!existing) return prev;
+          const { [pondKey]: _omit, ...rest } = bucket;
+          return { ...prev, [dKey]: rest };
+        }
+
+        // Skip ghost overrides when the user advances past a pond without
+        // typing (numpad → Next with value='') — otherwise saveAll would
+        // persist {0,0,0,0,0} and inflate savedCount on refetch.
+        const allEmpty = CELL_KEYS.every((k) => nextValues[k] === '');
+        if (allEmpty && !backendEntry) {
           if (!existing) return prev;
           const { [pondKey]: _omit, ...rest } = bucket;
           return { ...prev, [dKey]: rest };
