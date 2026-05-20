@@ -7,6 +7,9 @@ import { CHROME, DAY_PILL_H, DAY_STRIP_PAD_V, VIBRANT_BRAND, thDow } from '../co
 type Props = {
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
+  /** Set of YYYY-MM-DD keys that have unsaved local edits. Pills for these
+   *  days show a small amber dot so the user can navigate back. */
+  daysWithDrafts?: ReadonlySet<string>;
 };
 
 function sameDay(a: Date, b: Date) {
@@ -17,11 +20,19 @@ function sameDay(a: Date, b: Date) {
   );
 }
 
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+function dKeyFor(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
 const PILL_WIDTH = 42;
 const PILL_GAP = 6;
 const STRIP_PADDING = 14;
 
-export function DayStripRow({ selectedDate, onSelectDate }: Props) {
+export function DayStripRow({ selectedDate, onSelectDate, daysWithDrafts }: Props) {
   const { t } = useTheme();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -76,6 +87,7 @@ export function DayStripRow({ selectedDate, onSelectDate }: Props) {
           const isSelected = sameDay(d.date, selectedDate);
           const isToday = sameDay(d.date, today);
           const isFuture = d.date.getTime() > today.getTime();
+          const hasDraft = daysWithDrafts?.has(dKeyFor(d.date)) ?? false;
           return (
             <Pressable
               key={i}
@@ -128,6 +140,19 @@ export function DayStripRow({ selectedDate, onSelectDate }: Props) {
                     height: 3,
                     borderRadius: 999,
                     backgroundColor: 'rgba(255,255,255,.55)',
+                  }}
+                />
+              ) : null}
+              {hasDraft ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 5,
+                    right: 6,
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: isSelected ? '#fff' : t.warn,
                   }}
                 />
               ) : null}

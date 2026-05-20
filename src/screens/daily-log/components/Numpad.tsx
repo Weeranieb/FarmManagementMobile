@@ -7,10 +7,13 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import {
+  CELL_HIGHLIGHT,
+  CELL_MAX_VALUE,
   COLS,
   GROUP_LIGHT,
   VIBRANT_BRAND,
   fmtTh,
+  isCellValueInvalid,
   thMonthAbbr,
   type ColKey,
   type GroupKey,
@@ -117,6 +120,14 @@ export function Numpad({
   }, [visible, initialValue, pondId, col]);
 
   const displayValue = useMemo(() => (buf === '' ? '0' : buf), [buf]);
+  // Mirror the table's validation rule inside the keypad so the user sees
+  // the rejection the moment a tap pushes the typed buffer past the ceiling
+  // (Daily Log v7 frame AA — header number flips red, inline hint appears,
+  // "ถัดไป" disables). `parseValue` returns `''` for the empty/dot-only
+  // buffer, which `isCellValueInvalid` treats as valid — empty input is a
+  // commit-time concern, not a range error.
+  const parsed = useMemo(() => parseValue(buf), [buf]);
+  const isInvalid = isCellValueInvalid(parsed);
   const screenH = Dimensions.get('window').height;
   // Grow the sheet to cover the home-indicator inset so the footer keeps its
   // designed proportions and still clears the device safe area.
@@ -132,7 +143,12 @@ export function Numpad({
     onCancel();
   };
   const handleNext = () => {
-    onNext(parseValue(buf), supportsFeedType ? selectedFeedId : null);
+    if (isInvalid) return;
+    onNext(parsed, supportsFeedType ? selectedFeedId : null);
+  };
+  const handleCommit = () => {
+    if (isInvalid) return;
+    onCommit(parsed, supportsFeedType ? selectedFeedId : null);
   };
 
   const cur = supportsFeedType ? (feeds.find((f) => f.id === selectedFeedId) ?? null) : null;
@@ -149,10 +165,7 @@ export function Numpad({
           entering={FadeIn.duration(120)}
           style={{ flex: 1, backgroundColor: 'rgba(11,18,32,.25)' }}
         >
-          <Pressable
-            style={{ flex: 1 }}
-            onPress={() => onCommit(parseValue(buf), supportsFeedType ? selectedFeedId : null)}
-          />
+          <Pressable style={{ flex: 1 }} onPress={handleCommit} />
         </Animated.View>
 
         <Animated.View
@@ -290,7 +303,7 @@ export function Numpad({
                     fontSize: 34,
                     lineHeight: 36,
                     fontFamily: type.familyNumBold,
-                    color: t.ink,
+                    color: isInvalid ? CELL_HIGHLIGHT.errorInk : t.ink,
                     letterSpacing: -1,
                   }}
                 >
@@ -299,7 +312,7 @@ export function Numpad({
                 <Text style={{ fontSize: 14, color: t.inkSoft, fontFamily: type.familySemi }}>
                   {g.unit}
                 </Text>
-                {yesterday != null ? (
+                {yesterday != null && !isInvalid ? (
                   <Text style={{ fontSize: 12, color: t.inkSoft, marginLeft: 8 }}>
                     เดิม{' '}
                     <Text style={{ fontFamily: type.familyNumBold, color: t.inkSoft }}>
@@ -312,6 +325,60 @@ export function Numpad({
               </View>
             </View>
           </View>
+
+          {/* Inline validation hint — Daily Log v7 frame AA. Replaces the
+           *  default "เดิม X · D MMM" hint once the buffer exceeds the
+           *  range so the user reads only one piece of guidance at a time. */}
+          {isInvalid ? (
+            <View
+              style={{
+                marginHorizontal: 16,
+                marginTop: -4,
+                marginBottom: 8,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                borderRadius: 10,
+                backgroundColor: CELL_HIGHLIGHT.errorTint,
+                borderWidth: 1,
+                borderColor: CELL_HIGHLIGHT.errorRing,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <View
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: 999,
+                  backgroundColor: CELL_HIGHLIGHT.errorBorder,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: type.familyNumBold,
+                    fontSize: 11,
+                    lineHeight: 12,
+                    color: '#fff',
+                  }}
+                >
+                  !
+                </Text>
+              </View>
+              <Text
+                style={{
+                  flex: 1,
+                  fontFamily: type.familyBold,
+                  fontSize: 13,
+                  color: CELL_HIGHLIGHT.errorInk,
+                }}
+              >
+                {`ค่าต้องอยู่ระหว่าง 0–${CELL_MAX_VALUE} ${g.unit}`}
+              </Text>
+            </View>
+          ) : null}
 
           {/* keypad — 4 rows × 3 cols */}
           <View style={{ flex: 1, paddingHorizontal: 12 }}>
@@ -401,6 +468,7 @@ export function Numpad({
             </Pressable>
             <Pressable
               onPress={handleNext}
+              disabled={isInvalid}
               style={{
                 flex: 1,
                 height: 46,
@@ -410,6 +478,7 @@ export function Numpad({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
+                opacity: isInvalid ? 0.5 : 1,
               }}
             >
               <Text style={{ fontFamily: type.familyBold, fontSize: 15, color: '#fff' }}>

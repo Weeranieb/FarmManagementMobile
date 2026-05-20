@@ -159,3 +159,40 @@ export const MAINT = {
   /** Pill background under the pond code. */
   pillBg: 'rgba(124,140,170,.14)',
 } as const;
+
+/**
+ * Cell-highlight palette used by the active-cell pill overlay (frames Y / Z /
+ * AA in Daily Log v7). The active cell paints a 2px border + soft tint + outer
+ * ring so the in-edit cell remains legible regardless of the keypad position.
+ * `default` is the brand-blue treatment; `error` swaps to a red equivalent and
+ * is reserved for value validation (not wired yet — TableRow accepts the prop
+ * shape now so the visual is ready when the validator lands).
+ */
+export const CELL_HIGHLIGHT = {
+  ring: 'rgba(31,95,212,.18)',
+  tint: 'rgba(31,95,212,.07)',
+  border: '#1f5fd4',
+  errorRing: 'rgba(220,42,42,.15)',
+  errorTint: 'rgba(220,42,42,.07)',
+  errorBorder: '#dc2a2a',
+  errorInk: '#9b1c1c',
+} as const;
+
+export type CellHighlightVariant = 'default' | 'error';
+
+/**
+ * Maximum value accepted for any single data cell. Anything strictly greater
+ * is flagged as a validation error (red pill + `!` badge, Daily Log v7 frame
+ * AA). The v7 prototype uses 500 specifically for the death column ("ค่าต้อง
+ * อยู่ระหว่าง 0–500 ตัว"), but the user has asked for a uniform 100 ceiling
+ * across every column for now — easy to swap to per-column limits later by
+ * promoting this to a `Record<ColKey, number>`.
+ */
+export const CELL_MAX_VALUE = 100;
+
+export function isCellValueInvalid(value: number | '' | null | undefined): boolean {
+  if (value === '' || value == null) return false;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return false;
+  return n > CELL_MAX_VALUE;
+}
