@@ -49,11 +49,14 @@ export function adaptActivity(a: ActivityResponse): PondActivityModel {
   return {
     id: a.id,
     mode: a.mode,
+    direction: a.direction === 'in' ? 'in' : 'out',
     date: a.activityDate,
     amount: a.amount,
     fishType: a.fishType,
     pricePerUnit: a.pricePerUnit || undefined,
     total: a.total,
     merchant: a.merchant,
+    toPondName: a.toPondName,
+    fromPondName: a.fromPondName,
   };
 }

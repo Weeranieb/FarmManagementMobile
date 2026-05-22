@@ -69,18 +69,31 @@ function ActivityHistoryCard({ a }: { a: PondActivityModel }) {
     sell: { fg: t.sellInk, bg: t.sellSoft, border: t.sell },
   } as const;
   const { fg, bg, border } = accentMap[a.mode];
+  const isIncomingMove = a.mode === 'move' && a.direction === 'in';
+  const moveLabel = a.mode === 'move' ? (isIncomingMove ? 'ย้ายเข้า' : 'ย้ายออก') : labelMap[a.mode];
   const hasMoney = a.total > 0 && (a.mode === 'sell' || a.mode === 'fill');
   const hasCount = a.amount > 0;
+  const countRight = hasCount
+    ? `${isIncomingMove ? '+' : ''}${fmt.num(a.amount)} ตัว`
+    : '';
   const amountRight = hasMoney
     ? a.mode === 'sell'
       ? `+${fmt.baht(a.total)}`
       : fmt.baht(a.total)
-    : hasCount
-      ? `${fmt.num(a.amount)} ตัว`
-      : '';
+    : countRight;
   const fishLabel = FISH_TH[a.fishType] ?? a.fishType;
   const leadLabel = a.mode === 'sell' ? (a.merchant ?? '—') : fishLabel;
-  const detailLine = [leadLabel, hasCount ? `${fmt.num(a.amount)} ตัว` : null]
+  const moveDetail =
+    a.mode === 'move'
+      ? isIncomingMove
+        ? a.fromPondName
+          ? `จาก ${a.fromPondName}`
+          : null
+        : a.toPondName
+          ? `ไป ${a.toPondName}`
+          : null
+      : null;
+  const detailLine = [leadLabel, hasCount ? `${fmt.num(a.amount)} ตัว` : null, moveDetail]
     .filter(Boolean)
     .join(' · ');
 
@@ -102,7 +115,7 @@ function ActivityHistoryCard({ a }: { a: PondActivityModel }) {
                 }}
               >
                 <Text style={{ color: fg, fontFamily: type.familyBold, fontSize: 13 }}>
-                  {labelMap[a.mode]}
+                  {moveLabel}
                 </Text>
               </View>
               <Text style={{ color: t.inkMute, fontFamily: type.family, fontSize: 13 }}>

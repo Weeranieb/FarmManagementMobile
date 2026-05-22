@@ -31,4 +31,6 @@ export type {
   FillPondRequest,
   MovePondRequest,
   SellPondRequest,
+  SellPondDetailItem,
+  AdditionalCostItem,
 } from './types';

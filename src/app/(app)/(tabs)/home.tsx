@@ -12,6 +12,12 @@ import { FAB, FAB_SIZE } from '@/components/ui';
 import { HomeScreen } from '@/screens/home';
 import { space } from '@/theme/tokens';
 
+/**
+ * Default pond used only by the alert/activity rows on the home dashboard.
+ * The FAB quick actions deliberately do NOT use this — the Fill/Sell/Move
+ * flows now show an inline farm + pond picker when entered with no pondId
+ * (so transactions are never bound to a hardcoded pond).
+ */
 const DEFAULT_POND_ID = 11;
 
 const FAB_BOTTOM = space[5]; // 20 px above the tab bar
@@ -75,19 +81,19 @@ export default function HomeRoute() {
         break;
       }
       case 'fill': {
-        const path = `/(app)/flows/fill?pondId=${DEFAULT_POND_ID}`;
+        const path = '/(app)/flows/fill';
         log('router.push', path);
         router.push(path);
         break;
       }
       case 'move': {
-        const path = `/(app)/flows/move?pondId=${DEFAULT_POND_ID}`;
+        const path = '/(app)/flows/move';
         log('router.push', path);
         router.push(path);
         break;
       }
       case 'sell': {
-        const path = `/(app)/flows/sell?pondId=${DEFAULT_POND_ID}`;
+        const path = '/(app)/flows/sell';
         log('router.push', path);
         router.push(path);
         break;
