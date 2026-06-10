@@ -18,9 +18,9 @@ const SHEET_TOP_RADIUS = 20;
 const SCREEN_H = Dimensions.get('window').height;
 
 /**
- * Slide-up bottom sheet with dim backdrop. Mirrors the open/close motion of
- * the QuickActionsSheet (220ms backdrop fade + 280ms cubic-out slide) so the
- * app feels coherent — every sheet should animate the same way.
+ * Slide-up bottom sheet with dim backdrop. 220 ms backdrop fade + 280 ms
+ * cubic-out slide — every sheet in the app shares this motion so it feels
+ * coherent.
  *
  * Behavior:
  *   - Tap the backdrop to close.

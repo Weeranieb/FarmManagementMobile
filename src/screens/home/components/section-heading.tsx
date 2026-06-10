@@ -1,14 +1,23 @@
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { Icon } from '@/components/icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space, type } from '@/theme/tokens';
 
-export function SectionHeading({ title, count }: { title: string; count?: number }) {
+type Props = {
+  title: string;
+  count?: number;
+  /** Optional right-aligned link, e.g. "ดูประวัติทั้งหมด". */
+  rightLabel?: string;
+  onRightPress?: () => void;
+};
+
+export function SectionHeading({ title, count, rightLabel, onRightPress }: Props) {
   const { t } = useTheme();
   return (
     <View
       style={{
         paddingHorizontal: space[5],
-        paddingTop: space[6] - space[3],
+        paddingTop: space[5],
         paddingBottom: space[2],
         flexDirection: 'row',
         alignItems: 'baseline',
@@ -16,6 +25,7 @@ export function SectionHeading({ title, count }: { title: string; count?: number
       }}
     >
       <Text
+        numberOfLines={1}
         style={{
           fontSize: type.sizes.xs,
           fontFamily: type.familyBold,
@@ -27,7 +37,30 @@ export function SectionHeading({ title, count }: { title: string; count?: number
       >
         {title}
       </Text>
-      {count != null ? (
+      {rightLabel ? (
+        // Static style only — a function style here gets mangled by
+        // react-native-css-interop and the row collapses to a column
+        // (chevron wraps under the label).
+        <Pressable
+          onPress={onRightPress}
+          accessibilityRole="link"
+          hitSlop={8}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 3,
+            flexShrink: 0,
+            paddingLeft: space[2],
+          }}
+        >
+          <Text
+            style={{ color: t.brand, fontSize: type.sizes.xs + 1, fontFamily: type.familySemi }}
+          >
+            {rightLabel}
+          </Text>
+          <Icon.chevR size={12} color={t.brand} />
+        </Pressable>
+      ) : count != null ? (
         <Text style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.familyNum }}>
           {count}
         </Text>
