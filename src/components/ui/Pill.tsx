@@ -43,7 +43,10 @@ export function Pill({ tone = 'neutral', children, style }: Props) {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 4,
-          paddingVertical: 3,
+          // Thai diacritics (ไม้โท/ไม้เอก/สระอุ) sit well above the baseline,
+          // so we pad more vertically and use a generous lineHeight to avoid
+          // clipping marks like "ที่" in pill labels.
+          paddingVertical: 5,
           paddingHorizontal: 10,
           borderRadius: 9999,
           backgroundColor: bg,
@@ -60,7 +63,7 @@ export function Pill({ tone = 'neutral', children, style }: Props) {
             color: fg,
             fontSize: 12,
             fontFamily: type.familyMedium,
-            lineHeight: 16,
+            lineHeight: 18,
           }}
         >
           {children}
@@ -93,7 +96,14 @@ export function PillText({
     ghost: t.inkSoft,
   };
   return (
-    <Text style={{ color: fgMap[tone], fontSize: 12, fontFamily: type.familyMedium }}>
+    <Text
+      style={{
+        color: fgMap[tone],
+        fontSize: 12,
+        fontFamily: type.familyMedium,
+        lineHeight: 18,
+      }}
+    >
       {children}
     </Text>
   );

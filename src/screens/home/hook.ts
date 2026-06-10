@@ -1,25 +1,51 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuthStore } from '@/features/auth';
-import { HOME_ALERTS, HOME_ACTIVITY, HOME_TASK, log } from './constants';
+import {
+  HOME_ACTIVITY,
+  HOME_DIGEST_DEFAULT,
+  HOME_DIGEST_JUST_SAVED,
+  log,
+  type HomeDigest,
+} from './constants';
+import type { ActivityItem } from './components/activity-row';
+
+export type HomeVariant = 'loading' | 'empty' | 'default' | 'justSaved';
 
 type HookProps = {
-  isLoading: boolean;
-  showHeader: boolean;
-  fabClearance: number | undefined;
+  variant: HomeVariant;
+  justSavedCount?: number;
 };
 
-export function useHomeScreen({ isLoading, showHeader, fabClearance }: HookProps) {
+type HomeState = {
+  refreshing: boolean;
+  onRefresh: () => void;
+  greetingName: string;
+  displayInitial: string;
+  digest: HomeDigest | null;
+  activity: ActivityItem[];
+  isLoading: boolean;
+  isEmpty: boolean;
+  isJustSaved: boolean;
+};
+
+export function useHomeScreen({ variant, justSavedCount = 0 }: HookProps): HomeState {
   const [refreshing, setRefreshing] = useState(false);
   const authUser = useAuthStore((s) => s.user);
+
   const greetingName = authUser?.firstName?.trim() || 'ผู้ใช้';
   const displayInitial = greetingName.trim().slice(0, 1);
+
+  const isLoading = variant === 'loading';
+  const isEmpty = variant === 'empty';
+  const isJustSaved = variant === 'justSaved';
+
+  const digest = isLoading || isEmpty ? null : isJustSaved ? HOME_DIGEST_JUST_SAVED : HOME_DIGEST_DEFAULT;
+  const activity = isEmpty ? [] : HOME_ACTIVITY;
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 700);
-      });
+      await new Promise<void>((resolve) => setTimeout(resolve, 700));
     } finally {
       setRefreshing(false);
     }
@@ -27,22 +53,31 @@ export function useHomeScreen({ isLoading, showHeader, fabClearance }: HookProps
 
   useEffect(() => {
     log('HomeScreen mount', {
-      isLoading,
-      showHeader,
-      fabClearance,
+      variant,
+      justSavedCount,
       authUser: authUser ? { id: authUser.id, firstName: authUser.firstName } : null,
       greetingName,
       counts: {
-        alerts: HOME_ALERTS.length,
-        activity: HOME_ACTIVITY.length,
-        taskPending: HOME_TASK.pending,
-        taskLate: HOME_TASK.late,
+        activity: activity.length,
+        pending: digest?.pending.length ?? 0,
+        late: digest?.late.length ?? 0,
       },
     });
     return () => log('HomeScreen unmount');
-    // Run once per mount + when loading flag flips so we can see state
-    // transitions during dev (skeleton -> real data).
-  }, [isLoading, showHeader, fabClearance, authUser, greetingName]);
+    // Activity / digest are pure derivations of variant — including them
+    // here would just re-fire on every render with the same content.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variant, justSavedCount, authUser, greetingName]);
 
-  return { refreshing, onRefresh, greetingName, displayInitial };
+  return {
+    refreshing,
+    onRefresh,
+    greetingName,
+    displayInitial,
+    digest,
+    activity,
+    isLoading,
+    isEmpty,
+    isJustSaved,
+  };
 }

@@ -18,3 +18,17 @@ export const FISH_TH: Record<string, string> = {
   kang: 'ปลาคัง',
   duk: 'ปลาดุก',
 };
+
+/** Prefix a farm name with "ฟาร์ม" unless it's already there. */
+export function displayFarmName(name: string | null | undefined): string {
+  const raw = (name ?? '').trim();
+  if (!raw) return 'ฟาร์ม';
+  return raw.startsWith('ฟาร์ม') ? raw : `ฟาร์ม ${raw}`;
+}
+
+/** Prefix a pond name with "บ่อ" unless it's already there. */
+export function displayPondName(name: string | null | undefined): string {
+  const raw = (name ?? '').trim();
+  if (!raw) return 'บ่อ';
+  return raw.startsWith('บ่อ') ? raw : `บ่อ ${raw}`;
+}

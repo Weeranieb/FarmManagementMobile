@@ -18,7 +18,7 @@ export function TopBar({ title, subtitle, leading, trailing, dense, style }: Pro
       style={[
         {
           paddingHorizontal: 18,
-          paddingTop: dense ? 8 : 16,
+          paddingTop: dense ? 8 : 18,
           paddingBottom: dense ? 10 : 16,
           borderBottomWidth: 1,
           borderBottomColor: t.border,

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsAuthenticated } from '@/features/auth';
+import { farmKeys } from '@/features/farm';
 import { fillPond, getPond, listPondActivities, listPonds, movePond, sellPond } from './service';
 import type { FillPondRequest, MovePondRequest, SellPondRequest } from './types';
 import { adaptActivity, adaptPond, type PondModel } from './adapters';
@@ -109,6 +110,10 @@ export function useFillPond(pondId: number) {
       void qc.invalidateQueries({ queryKey: pondKeys.detail(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.activities(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
+      // Fill can transition a maintenance pond back to active, which changes
+      // farm.activePonds — invalidate the farms cache so dashboard counts
+      // refresh in lockstep.
+      void qc.invalidateQueries({ queryKey: farmKeys.all() });
     },
   });
 }
@@ -117,9 +122,15 @@ export function useMovePond(pondId: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: MovePondRequest) => movePond(pondId, body),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void qc.invalidateQueries({ queryKey: pondKeys.activities(pondId) });
+      void qc.invalidateQueries({ queryKey: pondKeys.activities(variables.toPondId) });
+      void qc.invalidateQueries({ queryKey: pondKeys.detail(pondId) });
+      void qc.invalidateQueries({ queryKey: pondKeys.detail(variables.toPondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
+      // markToClose can flip the source pond to maintenance — farm counts go
+      // stale; same with destination if it was previously empty/maintenance.
+      void qc.invalidateQueries({ queryKey: farmKeys.all() });
     },
   });
 }
@@ -132,6 +143,9 @@ export function useSellPond(pondId: number) {
       void qc.invalidateQueries({ queryKey: pondKeys.detail(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.activities(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
+      // markToClose can transition the pond to maintenance — farm counts go
+      // stale; refresh the farms cache so dashboards see the new totals.
+      void qc.invalidateQueries({ queryKey: farmKeys.all() });
     },
   });
 }

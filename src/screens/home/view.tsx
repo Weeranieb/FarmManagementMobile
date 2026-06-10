@@ -1,103 +1,141 @@
-import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { type, radii, space } from '@/theme/tokens';
-import { Icon } from '@/components/icons';
+import { space, type } from '@/theme/tokens';
 import { Skeleton, SkeletonShape } from '@/components/ui';
-import { Row, Col } from '@/components/layout/Row';
 import { thaiDate } from '@/locale/thaiDate';
 import { today } from '@/shared/time';
-// Home-specific components are co-located under ./components per the
-// "Consider a /screens folder" pattern in the Expo folder-structure guide.
-import { StatCard } from './components/stat-card';
-import { StatCardSkeleton } from './components/stat-card-skeleton';
-import { AlertStripCard } from './components/alert-strip-card';
-import { AlertStripCardSkeleton } from './components/alert-strip-card-skeleton';
-import { AlertRow } from './components/alert-row';
-import { AlertRowSkeleton } from './components/alert-row-skeleton';
-import { ActivityRow } from './components/activity-row';
+import { ActivityRow, type ActivityItem } from './components/activity-row';
 import { ActivityRowSkeleton } from './components/activity-row-skeleton';
-import { SectionHeading } from './components/section-heading';
+import { DailyLogCard } from './components/daily-log-card';
+import { DailyLogCardSkeleton } from './components/daily-log-card-skeleton';
 import {
-  GRID_GAP,
-  HOME_ACTIVITY,
-  HOME_ALERTS,
-  HOME_SUMMARY,
-  HOME_TASK,
-  joinValue,
-  log,
-} from './constants';
+  SecondaryActionRow,
+  SecondaryActionRowSkeleton,
+  type SecondaryActionId,
+} from './components/secondary-action-row';
+import { TodayStrip, TodayStripSkeleton } from './components/today-strip';
+import { EmptyHero, EmptyTrailing } from './components/empty-hero';
+import { SavedToast } from './components/saved-toast';
+import { SectionHeading } from './components/section-heading';
+import { log, type HomeDigest, type PendingPond } from './constants';
 
 type Props = {
   showHeader?: boolean;
-  onOpenPond?: (pondId?: number) => void;
-  /** Bottom scroll padding when FAB floats above tab bar (tab route only). */
-  fabClearance?: number;
-  /** When true, swap real cards for skeleton placeholders. */
-  isLoading?: boolean;
+  bottomClearance?: number;
+  justSavedCount: number;
   refreshing: boolean;
   onRefresh: () => void;
   greetingName: string;
   displayInitial: string;
+  digest: HomeDigest | null;
+  activity: ActivityItem[];
+  isLoading: boolean;
+  isEmpty: boolean;
+  isJustSaved: boolean;
+  /** Toast visibility is independent of `isJustSaved` so the demo can show
+   *  the "+3" bump pill on the card without the toast hanging around forever. */
+  showSavedToast?: boolean;
+  onOpenDailyLog?: (pondId?: number) => void;
+  onOpenActivity?: (e: ActivityItem) => void;
+  onOpenSecondaryAction?: (id: SecondaryActionId) => void;
+  onCreateFarm?: () => void;
+  onPressSavedToast?: () => void;
+  onDismissSavedToast?: () => void;
 };
 
 export function HomeView({
   showHeader = true,
-  onOpenPond,
-  fabClearance,
-  isLoading = false,
+  bottomClearance,
+  justSavedCount,
   refreshing,
   onRefresh,
   greetingName,
   displayInitial,
+  digest,
+  activity,
+  isLoading,
+  isEmpty,
+  isJustSaved,
+  showSavedToast,
+  onOpenDailyLog,
+  onOpenActivity,
+  onOpenSecondaryAction,
+  onCreateFarm,
+  onPressSavedToast,
+  onDismissSavedToast,
 }: Props) {
   const { t } = useTheme();
-  const { t: tx } = useTranslation();
-  const bottomPad = fabClearance ?? space[10] + space[8];
+  const bottomPad = bottomClearance ?? space[10];
+
+  const handlePending = (pond: PendingPond) => {
+    log('pending chip pressed', { id: pond.id, name: pond.name, lateDays: pond.lateDays });
+    onOpenDailyLog?.(pond.id);
+  };
+  const handleActivity = (e: ActivityItem) => {
+    log('activity row pressed', {
+      id: e.id,
+      kind: e.kind,
+      recordType: e.recordType,
+      recordId: e.recordId,
+    });
+    onOpenActivity?.(e);
+  };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: t.bg }}
-      contentContainerStyle={{ paddingBottom: bottomPad }}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={t.brand}
-          {...(Platform.OS === 'android' ? { colors: [t.brand] } : {})}
-        />
-      }
-    >
-      {showHeader ? (
-        <View style={{ paddingHorizontal: space[5], paddingTop: space[2], paddingBottom: 0 }}>
-          <Text
-            style={{
-              fontSize: type.sizes.xs,
-              color: t.inkMute,
-              letterSpacing: 0.4,
-              fontFamily: type.familyMedium,
-            }}
-          >
-            {tx('app.name')}
-          </Text>
-        </View>
-      ) : null}
-
-      <View
-        style={{ paddingHorizontal: space[5], paddingVertical: space[3], paddingBottom: space[4] }}
+    <View style={{ flex: 1, backgroundColor: t.bg }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: bottomPad }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={t.brand}
+            {...(Platform.OS === 'android' ? { colors: [t.brand] } : {})}
+          />
+        }
       >
-        <Row justify="space-between">
-          <Col gap={space[1]}>
+        {showHeader ? (
+          <View style={{ paddingHorizontal: space[5], paddingTop: space[2] }}>
+            <Text
+              style={{
+                fontSize: type.sizes.xs,
+                color: t.brandInk,
+                letterSpacing: 0.4,
+                fontFamily: type.familyBold,
+              }}
+            >
+              FarmOS
+            </Text>
+          </View>
+        ) : null}
+
+        {/* (1) Greeting */}
+        <View
+          style={{
+            paddingHorizontal: space[5],
+            paddingTop: space[2] - 2,
+            paddingBottom: space[3] + 2,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+          }}
+        >
+          <View style={{ flex: 1, gap: 2 }}>
             {isLoading ? (
               <>
-                <Skeleton width={140} height={11} radius={4} />
+                <Skeleton width={140} height={11} />
                 <Skeleton width={180} height={20} radius={5} style={{ marginTop: space[1] }} />
               </>
             ) : (
               <>
                 <Text
-                  style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family }}
+                  style={{
+                    fontSize: type.sizes.sm,
+                    color: t.inkMute,
+                    fontFamily: type.familyMedium,
+                  }}
                 >
                   {thaiDate.long(today)}
                 </Text>
@@ -109,19 +147,19 @@ export function HomeView({
                     letterSpacing: -0.2,
                   }}
                 >
-                  {tx('home.greeting', { name: greetingName })}
+                  {isEmpty ? 'ยินดีต้อนรับ' : `สวัสดี, คุณ${greetingName}`}
                 </Text>
               </>
             )}
-          </Col>
+          </View>
           {isLoading ? (
-            <SkeletonShape width={44} height={44} radius={22} />
-          ) : (
+            <SkeletonShape width={40} height={40} radius={20} />
+          ) : !isEmpty ? (
             <View
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
                 backgroundColor: t.brandSoft,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -137,172 +175,98 @@ export function HomeView({
                 {displayInitial}
               </Text>
             </View>
-          )}
-        </Row>
-      </View>
+          ) : null}
+        </View>
 
-      <View style={{ paddingHorizontal: space[5], paddingBottom: space[5] }}>
-        {isLoading ? (
-          <Skeleton width={120} height={32} radius={radii.pill} />
-        ) : (
-          <Pressable
-            onPress={() => log('farm filter chip pressed (no handler wired yet)')}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: space[2],
-              paddingHorizontal: space[4],
-              paddingVertical: space[2],
-              borderRadius: radii.pill,
-              backgroundColor: t.surfaceAlt,
-              borderWidth: 1,
-              borderColor: t.border,
-              alignSelf: 'flex-start',
-            }}
-          >
-            <View
-              style={{
-                width: space[2],
-                height: space[2],
-                borderRadius: space[1],
-                backgroundColor: t.brand,
-              }}
+        {/* (2) PRIMARY ACTION — Daily Log card. Above the fold. */}
+        <View style={{ paddingHorizontal: space[4], paddingBottom: space[2] + 2 }}>
+          {isLoading ? (
+            <DailyLogCardSkeleton />
+          ) : isEmpty ? (
+            <EmptyHero onCreateFarm={onCreateFarm} />
+          ) : digest ? (
+            <DailyLogCard
+              digest={digest}
+              date={today}
+              bumped={isJustSaved}
+              justSavedCount={justSavedCount}
+              onPressCTA={() => onOpenDailyLog?.()}
+              onPressPending={handlePending}
             />
-            <Text style={{ fontSize: type.sizes.sm, fontFamily: type.familySemi, color: t.ink }}>
-              {tx('home.allFarms')}
-            </Text>
-            <Icon.arrowDown size={14} color={t.inkSoft} />
-          </Pressable>
-        )}
-      </View>
-
-      {/* 2×2 stat grid — same dimensions whether loading or loaded */}
-      <View style={{ paddingHorizontal: space[5], paddingBottom: space[3] }}>
-        <View style={{ flexDirection: 'row', gap: GRID_GAP }}>
-          {isLoading ? (
-            <>
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-            </>
-          ) : (
-            <>
-              <StatCard
-                variant="info"
-                icon="fish"
-                title={tx('home.summary.fish')}
-                value={joinValue(HOME_SUMMARY.fish.value, HOME_SUMMARY.fish.unit)}
-                subtitle={HOME_SUMMARY.fish.caption}
-              />
-              <StatCard
-                variant="move"
-                icon="farm"
-                title={tx('home.summary.active')}
-                value={joinValue(HOME_SUMMARY.active.value, HOME_SUMMARY.active.unit)}
-                subtitle={HOME_SUMMARY.active.caption}
-              />
-            </>
-          )}
+          ) : null}
         </View>
-        <View style={{ height: GRID_GAP }} />
-        <View style={{ flexDirection: 'row', gap: GRID_GAP }}>
-          {isLoading ? (
-            <>
-              <StatCardSkeleton />
-              <StatCardSkeleton />
-            </>
-          ) : (
-            <>
-              <StatCard
-                variant="success"
-                icon="feed"
-                title={tx('home.summary.feed')}
-                value={joinValue(HOME_SUMMARY.feed.value, HOME_SUMMARY.feed.unit)}
-                subtitle={HOME_SUMMARY.feed.caption}
-              />
-              <StatCard
-                variant="danger"
-                icon="alert"
-                title={tx('home.summary.deaths')}
-                value={joinValue(HOME_SUMMARY.deaths.value, HOME_SUMMARY.deaths.unit)}
-                subtitle={HOME_SUMMARY.deaths.caption}
-              />
-            </>
-          )}
-        </View>
-      </View>
 
-      {/* "ยังไม่ได้บันทึกวันนี้" alert strip */}
-      <View style={{ paddingHorizontal: space[5], paddingBottom: space[2] }}>
-        {isLoading ? (
-          <AlertStripCardSkeleton />
-        ) : (
-          <AlertStripCard
-            tone={HOME_TASK.late > 0 ? 'danger' : 'warn'}
-            title={tx('home.task.stripPending')}
-            subtitle={`${HOME_TASK.pending} / ${HOME_TASK.total} บ่อ`}
-            emphasis={HOME_TASK.late > 0 ? `เลยกำหนด ${HOME_TASK.late} บ่อ` : undefined}
-            onPress={
-              HOME_TASK.pending > 0
-                ? () => {
-                    log('alert strip pressed', { task: HOME_TASK });
-                    onOpenPond?.(11);
-                  }
-                : undefined
-            }
-          />
-        )}
-      </View>
+        {/* (2b) SECONDARY actions — เติม / ย้าย / ขาย. Hidden in empty. */}
+        {!isEmpty ? (
+          <View style={{ paddingHorizontal: space[4], paddingBottom: space[3] + 2 }}>
+            {isLoading ? (
+              <SecondaryActionRowSkeleton />
+            ) : (
+              <SecondaryActionRow onPress={onOpenSecondaryAction} />
+            )}
+          </View>
+        ) : null}
 
-      {/* สิ่งที่ต้องดู */}
-      <SectionHeading
-        title={tx('home.alerts')}
-        count={isLoading ? undefined : HOME_ALERTS.length}
-      />
-      <View style={{ paddingHorizontal: space[5], gap: space[2] }}>
-        {isLoading
-          ? Array.from({ length: 3 }).map((_, i) => <AlertRowSkeleton key={`alert-sk-${i}`} />)
-          : HOME_ALERTS.map((a) => (
-              <AlertRow
-                key={a.id}
-                a={a}
-                onPress={() => {
-                  log('alert row pressed', { id: a.id, kind: a.kind, title: a.title });
-                  onOpenPond?.();
+        {/* (3) Honest small stats — only from real saved logs. Hidden in empty. */}
+        {!isEmpty ? (
+          <View style={{ paddingHorizontal: space[4], paddingBottom: space[2] }}>
+            {isLoading || !digest ? <TodayStripSkeleton /> : <TodayStrip digest={digest} />}
+          </View>
+        ) : null}
+
+        {/* (4) Recent activity */}
+        {!isEmpty ? (
+          <>
+            <SectionHeading
+              title="กิจกรรมล่าสุด"
+              rightLabel={!isLoading ? 'ดูประวัติทั้งหมด' : undefined}
+              onRightPress={() => log('seeAllActivity pressed')}
+            />
+            <View style={{ paddingHorizontal: space[4] }}>
+              <View
+                style={{
+                  backgroundColor: t.surface,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                  borderRadius: 18,
+                  overflow: 'hidden',
                 }}
-              />
-            ))}
-      </View>
+              >
+                {isLoading
+                  ? Array.from({ length: 5 }).map((_, i) => (
+                      <ActivityRowSkeleton key={`act-sk-${i}`} divider={i < 4} />
+                    ))
+                  : activity
+                      .slice(0, 6)
+                      .map((e, i, arr) => (
+                        <ActivityRow
+                          key={e.id}
+                          e={e}
+                          divider={i < arr.length - 1}
+                          onPress={() => handleActivity(e)}
+                        />
+                      ))}
+              </View>
+            </View>
+          </>
+        ) : null}
 
-      {/* กิจกรรมล่าสุด */}
-      <SectionHeading title={tx('home.activity')} />
-      <View style={{ paddingHorizontal: space[5], gap: space[2] }}>
-        {isLoading
-          ? Array.from({ length: 3 }).map((_, i) => <ActivityRowSkeleton key={`act-sk-${i}`} />)
-          : HOME_ACTIVITY.map((e) => <ActivityRow key={e.id} e={e} />)}
-        {!isLoading && (
-          <Pressable
-            onPress={() => {
-              log('seeAllActivity pressed');
-              onOpenPond?.();
-            }}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: space[1],
-              paddingVertical: space[2],
-              paddingHorizontal: space[1],
-              marginTop: space[1],
-            }}
-          >
-            <Text style={{ color: t.brand, fontSize: type.sizes.sm, fontFamily: type.familySemi }}>
-              {tx('home.seeAllActivity')}
-            </Text>
-            <Icon.chevR size={14} color={t.brand} />
-          </Pressable>
-        )}
-      </View>
+        {isEmpty ? <EmptyTrailing /> : null}
 
-      <View style={{ height: space[6] }} />
-    </ScrollView>
+        <View style={{ height: space[6] }} />
+      </ScrollView>
+
+      {isJustSaved && (showSavedToast ?? true) ? (
+        // The tab bar takes its own layout space (it doesn't overlay this
+        // view), so the toast only needs a small gap above the view's bottom
+        // edge — not the full scroll clearance.
+        <SavedToast
+          count={justSavedCount}
+          bottom={space[3]}
+          onPress={onPressSavedToast}
+          onDismiss={onDismissSavedToast}
+        />
+      ) : null}
+    </View>
   );
 }

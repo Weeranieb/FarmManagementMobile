@@ -7,7 +7,7 @@ import { Row } from '@/components/layout/Row';
 import { SheetShell } from '@/screens/account-info/components/SheetShell';
 import type { FeedCollectionModel, FeedKind } from '@/features/feed-collection';
 import { FEED_UNIT_BY_KIND, feedPaletteFor } from '../feedPalette';
-import { DateField } from './DateField';
+import { DateField } from '@/components/date-selector';
 import { feedGlyphFor } from './FeedIcons';
 
 export type AddFeedSubmitPayload = {

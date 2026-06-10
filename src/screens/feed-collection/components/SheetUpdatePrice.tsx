@@ -9,7 +9,7 @@ import { thaiDate } from '@/locale/thaiDate';
 import { SheetShell } from '@/screens/account-info/components/SheetShell';
 import type { FeedCollectionModel } from '@/features/feed-collection';
 import { feedPaletteFor } from '../feedPalette';
-import { DateField } from './DateField';
+import { DateField } from '@/components/date-selector';
 import { feedGlyphFor } from './FeedIcons';
 
 type Props = {
