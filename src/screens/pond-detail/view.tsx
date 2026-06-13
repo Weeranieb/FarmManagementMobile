@@ -124,6 +124,7 @@ export function PondDetailView({
       ) : null}
 
       <ScrollView
+        delaysContentTouches={false}
         contentContainerStyle={{ paddingBottom: 96 }}
         showsVerticalScrollIndicator={false}
       >

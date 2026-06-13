@@ -158,6 +158,7 @@ export function MoveView({
           trailing={<Pill tone="move">ขั้นที่ 2/2</Pill>}
         />
         <ScrollView
+          delaysContentTouches={false}
           contentContainerStyle={{ padding: 20, paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
         >
@@ -339,6 +340,7 @@ export function MoveView({
       />
 
       <ScrollView
+        delaysContentTouches={false}
         ref={scrollRef}
         contentContainerStyle={{ paddingBottom: 32 }}
       >

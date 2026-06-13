@@ -13,8 +13,15 @@ export const pondKeys = {
   activities: (pondId: number) => ['pond', pondId, 'activities'] as const,
 } as const;
 
-export function usePonds(farmId?: number) {
-  const enabled = useIsAuthenticated();
+export function usePonds(farmId?: number, options?: { enabled?: boolean }) {
+  const isAuth = useIsAuthenticated();
+  // Callers that scope by farm (Daily Log) can pass `enabled: false` while the
+  // farm is still resolving — otherwise a `farmId == null` render fires the
+  // unscoped `GET /pond` (no farmId), which the backend rejects AND which lands
+  // under the `['ponds']` key that no warm screen ever populated. The tablet's
+  // PondMaster intentionally calls `usePonds()` with no farm to list every
+  // pond, so the gate is opt-in (defaults to enabled).
+  const enabled = isAuth && (options?.enabled ?? true);
   return useQuery({
     queryKey: farmId == null ? pondKeys.all() : pondKeys.byFarm(farmId),
     queryFn: () => listPonds(farmId),

@@ -5,7 +5,6 @@ import type { ActivityItem } from './components/activity-row';
 import type { PendingPond } from './constants';
 
 type Props = {
-  showHeader?: boolean;
   /** Bottom scroll padding so the last row clears the floating toast/tab bar. */
   bottomClearance?: number;
   /** Drives loading / empty / default / justSaved states. */
@@ -23,10 +22,13 @@ type Props = {
   /** Tap the floating banner after a save. */
   onPressSavedToast?: () => void;
   onDismissSavedToast?: () => void;
+  /** Tap "ดูประวัติทั้งหมด" → full ประวัติกิจกรรม screen. */
+  onSeeHistory?: () => void;
+  /** Tap the avatar circle → Profile tab. */
+  onPressProfile?: () => void;
 };
 
 export function HomeScreen({
-  showHeader = true,
   bottomClearance,
   variant = 'default',
   justSavedCount = 3,
@@ -37,11 +39,12 @@ export function HomeScreen({
   onCreateFarm,
   onPressSavedToast,
   onDismissSavedToast,
+  onSeeHistory,
+  onPressProfile,
 }: Props) {
   const state = useHomeScreen({ variant, justSavedCount });
   return (
     <HomeView
-      showHeader={showHeader}
       bottomClearance={bottomClearance}
       justSavedCount={justSavedCount}
       showSavedToast={showSavedToast}
@@ -51,6 +54,8 @@ export function HomeScreen({
       onCreateFarm={onCreateFarm}
       onPressSavedToast={onPressSavedToast}
       onDismissSavedToast={onDismissSavedToast}
+      onSeeHistory={onSeeHistory}
+      onPressProfile={onPressProfile}
       {...state}
     />
   );

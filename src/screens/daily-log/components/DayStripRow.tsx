@@ -75,6 +75,7 @@ export function DayStripRow({ selectedDate, onSelectDate, daysWithDrafts }: Prop
       }}
     >
       <ScrollView
+        delaysContentTouches={false}
         ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}

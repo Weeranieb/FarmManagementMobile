@@ -87,7 +87,7 @@ export function ManageView({
       {showHeader ? (
         <TopBar title={tx('manage.title')} subtitle={tx('manage.subtitle')} />
       ) : null}
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
+      <ScrollView delaysContentTouches={false} contentContainerStyle={{ paddingBottom: 96 }}>
         <SectionLabel>{tx('manage.toolsLabel')}</SectionLabel>
         <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
           <Card padded={false}>

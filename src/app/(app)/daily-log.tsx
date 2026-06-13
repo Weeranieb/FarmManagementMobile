@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
 import { DailyLogScreen } from '@/screens/daily-log';
 import { DailyLogErrorBoundary } from '@/screens/daily-log/ErrorBoundary';
@@ -16,6 +17,7 @@ function parseRouteId(value: string | string[] | undefined): number | undefined 
 export default function DailyLogRoute() {
   const router = useRouter();
   const { t } = useTheme();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ farmId?: string; pondId?: string }>();
   const farmId = parseRouteId(params.farmId);
   const initialPondId = parseRouteId(params.pondId);
@@ -37,6 +39,7 @@ export default function DailyLogRoute() {
           farmId={farmId}
           initialPondId={initialPondId}
           onBack={() => router.back()}
+          bottomInset={insets.bottom}
         />
       </DailyLogErrorBoundary>
     </ThemedSafeAreaView>

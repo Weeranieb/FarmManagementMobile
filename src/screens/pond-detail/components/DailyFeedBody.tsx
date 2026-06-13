@@ -441,6 +441,7 @@ function DayStrip({
 
   return (
     <ScrollView
+      delaysContentTouches={false}
       ref={scrollRef}
       horizontal
       showsHorizontalScrollIndicator={false}

@@ -83,6 +83,7 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
       </View>
 
       <ScrollView
+        delaysContentTouches={false}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16 }}
         keyboardShouldPersistTaps="handled"

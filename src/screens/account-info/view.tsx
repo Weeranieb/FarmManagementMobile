@@ -80,7 +80,7 @@ export function AccountInfoView({
         }
       />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }} keyboardShouldPersistTaps="handled">
+      <ScrollView delaysContentTouches={false} contentContainerStyle={{ paddingBottom: 96 }} keyboardShouldPersistTaps="handled">
         <View style={{ paddingTop: 24, paddingBottom: 8, alignItems: 'center' }}>
           <Avatar initial={initial} name={displayName} />
         </View>

@@ -1,4 +1,4 @@
-import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space, type } from '@/theme/tokens';
 import { Skeleton, SkeletonShape } from '@/components/ui';
@@ -20,7 +20,6 @@ import { SectionHeading } from './components/section-heading';
 import { log, type HomeDigest, type PendingPond } from './constants';
 
 type Props = {
-  showHeader?: boolean;
   bottomClearance?: number;
   justSavedCount: number;
   refreshing: boolean;
@@ -29,6 +28,7 @@ type Props = {
   displayInitial: string;
   digest: HomeDigest | null;
   activity: ActivityItem[];
+  activityLoading: boolean;
   isLoading: boolean;
   isEmpty: boolean;
   isJustSaved: boolean;
@@ -41,10 +41,13 @@ type Props = {
   onCreateFarm?: () => void;
   onPressSavedToast?: () => void;
   onDismissSavedToast?: () => void;
+  /** Tap "ดูประวัติทั้งหมด" → full ประวัติกิจกรรม screen. */
+  onSeeHistory?: () => void;
+  /** Tap the avatar circle → Profile tab. */
+  onPressProfile?: () => void;
 };
 
 export function HomeView({
-  showHeader = true,
   bottomClearance,
   justSavedCount,
   refreshing,
@@ -53,6 +56,7 @@ export function HomeView({
   displayInitial,
   digest,
   activity,
+  activityLoading,
   isLoading,
   isEmpty,
   isJustSaved,
@@ -63,6 +67,8 @@ export function HomeView({
   onCreateFarm,
   onPressSavedToast,
   onDismissSavedToast,
+  onSeeHistory,
+  onPressProfile,
 }: Props) {
   const { t } = useTheme();
   const bottomPad = bottomClearance ?? space[10];
@@ -87,6 +93,11 @@ export function HomeView({
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
+        // iOS holds a touch ~150ms to detect a scroll before passing it to a
+        // child, which makes the tiles / CTA feel laggy to tap. Hand touches
+        // to children immediately; the scroll responder still takes over on a
+        // drag, so scrolling is unaffected.
+        delaysContentTouches={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -96,21 +107,6 @@ export function HomeView({
           />
         }
       >
-        {showHeader ? (
-          <View style={{ paddingHorizontal: space[5], paddingTop: space[2] }}>
-            <Text
-              style={{
-                fontSize: type.sizes.xs,
-                color: t.brandInk,
-                letterSpacing: 0.4,
-                fontFamily: type.familyBold,
-              }}
-            >
-              FarmOS
-            </Text>
-          </View>
-        ) : null}
-
         {/* (1) Greeting */}
         <View
           style={{
@@ -155,26 +151,37 @@ export function HomeView({
           {isLoading ? (
             <SkeletonShape width={40} height={40} radius={20} />
           ) : !isEmpty ? (
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: t.brandSoft,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+            // Chrome stays on the inner View; the Pressable carries no style so
+            // react-native-css-interop can't mangle the circle (see the
+            // Pressable note in daily-log-card.tsx).
+            <Pressable
+              onPress={onPressProfile}
+              accessibilityRole="button"
+              accessibilityLabel="โปรไฟล์"
+              hitSlop={8}
+              android_ripple={{ color: t.surfaceAlt, borderless: true }}
             >
-              <Text
+              <View
                 style={{
-                  color: t.brandInk,
-                  fontFamily: type.familyBold,
-                  fontSize: type.sizes.base,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: t.brandSoft,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                {displayInitial}
-              </Text>
-            </View>
+                <Text
+                  style={{
+                    color: t.brandInk,
+                    fontFamily: type.familyBold,
+                    fontSize: type.sizes.base,
+                  }}
+                >
+                  {displayInitial}
+                </Text>
+              </View>
+            </Pressable>
           ) : null}
         </View>
 
@@ -214,13 +221,18 @@ export function HomeView({
           </View>
         ) : null}
 
-        {/* (4) Recent activity */}
-        {!isEmpty ? (
+        {/* (4) Recent activity — live GET /activity feed (newest 6). The
+            section hides entirely when there are no discrete events yet
+            (honest empty state); the skeleton shows while the feed loads. */}
+        {!isEmpty && (activityLoading || activity.length > 0) ? (
           <>
             <SectionHeading
               title="กิจกรรมล่าสุด"
-              rightLabel={!isLoading ? 'ดูประวัติทั้งหมด' : undefined}
-              onRightPress={() => log('seeAllActivity pressed')}
+              rightLabel={!activityLoading ? 'ดูประวัติทั้งหมด' : undefined}
+              onRightPress={() => {
+                log('seeAllActivity pressed');
+                onSeeHistory?.();
+              }}
             />
             <View style={{ paddingHorizontal: space[4] }}>
               <View
@@ -232,7 +244,7 @@ export function HomeView({
                   overflow: 'hidden',
                 }}
               >
-                {isLoading
+                {activityLoading
                   ? Array.from({ length: 5 }).map((_, i) => (
                       <ActivityRowSkeleton key={`act-sk-${i}`} divider={i < 4} />
                     ))

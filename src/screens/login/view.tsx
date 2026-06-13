@@ -33,6 +33,7 @@ export function LoginView({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
+        delaysContentTouches={false}
         contentContainerStyle={{ flexGrow: 1, padding: 28, paddingTop: 64 }}
         keyboardShouldPersistTaps="handled"
       >

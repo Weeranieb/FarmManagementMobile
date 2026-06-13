@@ -87,6 +87,7 @@ export function MerchantSheet({
         </View>
       ) : (
         <ScrollView
+          delaysContentTouches={false}
           style={{ maxHeight: 480 }}
           contentContainerStyle={{ gap: 6, paddingBottom: 4 }}
           showsVerticalScrollIndicator={false}

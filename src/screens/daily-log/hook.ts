@@ -49,6 +49,10 @@ export type ActiveCell = { pondKey: string; col: ColKey } | null;
 
 export type UseDailyLogV6 = {
   ponds: PondRow[];
+  /** No pond list to render yet — the farm is resolving or the scoped pond
+   *  query is fetching cold. The view shows a table skeleton instead of an
+   *  empty grid. */
+  loading: boolean;
   selectedDate: Date;
   setSelectedDate: (d: Date) => void;
 
@@ -206,6 +210,11 @@ function latestNonZeroEntry(
 type UseDailyLogV6Options = {
   /** Focus this pond when rows load (pond detail → daily log drill-down). */
   initialPondId?: number;
+  /** Farms are still loading upstream, so a null `farmId` means "resolving"
+   *  (show the skeleton) rather than "this client has no farms" (show the
+   *  empty table). Without this the skeleton would hang forever for a
+   *  farmless account. */
+  farmsLoading?: boolean;
 };
 
 export function useDailyLogV6(
@@ -213,6 +222,7 @@ export function useDailyLogV6(
   options?: UseDailyLogV6Options,
 ): UseDailyLogV6 {
   const initialPondId = options?.initialPondId;
+  const farmsLoading = options?.farmsLoading ?? false;
   const initialFocusDone = useRef(false);
   // Call the low-level React Query hook directly. `usePondsData` would adapt
   // on every render, returning a fresh `raw.map(...)` array — that thrashes
@@ -220,7 +230,15 @@ export function useDailyLogV6(
   // Here `rawPonds` keeps a stable reference across renders.
   const isAuth = useIsAuthenticated();
   const qc = useQueryClient();
-  const { data: rawPonds, isError } = usePonds(farmId ?? undefined);
+  // Gate the pond fetch on a resolved farm. Until the screen knows which farm
+  // to show (opened from Home with no farmId → resolving `farms[0]`), firing
+  // `usePonds(undefined)` would hit the unscoped `['ponds']` key + a farmless
+  // `GET /pond` the backend rejects — surfacing as a blank table that only
+  // fills once the scoped, Home-warmed query takes over. Disabled here, the
+  // table renders a skeleton instead (see `loading`).
+  const pondsQuery = usePonds(farmId ?? undefined, { enabled: farmId != null });
+  const rawPonds = pondsQuery.data;
+  const isError = pondsQuery.isError;
 
   const pondModels = useMemo<PondModel[]>(() => {
     try {
@@ -233,6 +251,14 @@ export function useDailyLogV6(
       return [];
     }
   }, [isAuth, isError, rawPonds]);
+
+  // Skeleton gate: true while there's no pond list to render yet — either the
+  // farm is still resolving (null `farmId` *while farms load*) or the scoped
+  // pond query is fetching cold (nothing warm from Home/Farms). A farm that
+  // genuinely has zero ponds — or a client with no farms at all — settles to
+  // `false` so the empty table shows instead of a perpetual skeleton.
+  const loading =
+    (farmId == null && farmsLoading) || (pondsQuery.isLoading && pondModels.length === 0);
 
   const [overrides, setOverrides] = useState<OverrideMap>({});
   const [feedSelections, setFeedSelections] = useState<
@@ -692,6 +718,7 @@ export function useDailyLogV6(
 
   return {
     ponds,
+    loading,
     selectedDate,
     setSelectedDate,
     activeCell,

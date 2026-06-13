@@ -21,6 +21,7 @@ export function FilterTabs({ filter, counts, onChange }: Props) {
   const { t } = useTheme();
   return (
     <ScrollView
+      delaysContentTouches={false}
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 12, gap: 8 }}

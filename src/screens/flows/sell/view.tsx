@@ -155,6 +155,7 @@ function SellStep1({
       />
 
       <ScrollView
+        delaysContentTouches={false}
         ref={scrollRef}
         contentContainerStyle={{ padding: 0, paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
@@ -361,6 +362,7 @@ function SellStep2({
         trailing={<Pill tone="sell">ขั้นที่ 2/2</Pill>}
       />
       <ScrollView
+        delaysContentTouches={false}
         contentContainerStyle={{ padding: 20, paddingBottom: 160 }}
         showsVerticalScrollIndicator={false}
       >

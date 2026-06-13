@@ -24,15 +24,15 @@ export default function HomeRoute() {
   const { t } = useTheme();
   const params = useLocalSearchParams<{ justSaved?: string }>();
 
-  // Home opens in the just-saved demo state so the screen mirrors the
-  // Home Redesign spec (Farm OS/Home Redesign.html) 1:1 — 6/9 progress,
-  // "+3" pill, three remaining pending ponds (A3, B2, 3·เลย 1ว). When the
-  // app is wired to live data, flip the initial variant to 'default'.
-  const [variant, setVariant] = useState<HomeVariant>('justSaved');
-  const [justSavedCount, setJustSavedCount] = useState(3);
+  // Home opens on live data ('default'): the digest, today strip, pending list
+  // and activity feed are all fetched from the API. The just-saved framing
+  // (+N pill on the card + floating "บันทึกแล้ว" toast) is now reached only
+  // after a real Daily Log save navigates here with ?justSaved=N — see below.
+  const [variant, setVariant] = useState<HomeVariant>('default');
+  const [justSavedCount, setJustSavedCount] = useState(0);
   // Toast visibility is tracked separately so dismissing the toast doesn't
-  // collapse the rest of the just-saved state (+3 pill, filtered pending list).
-  const [savedToastVisible, setSavedToastVisible] = useState(true);
+  // collapse the rest of the just-saved state (+N pill, filtered pending list).
+  const [savedToastVisible, setSavedToastVisible] = useState(false);
 
   // Honour ?justSaved=N — set after a Daily Log save navigation.
   useEffect(() => {
@@ -53,7 +53,7 @@ export default function HomeRoute() {
   const onOpenDailyLog = useCallback(
     (pondId?: number) => {
       log('openDailyLog', { pondId });
-      router.push(pondId ? `/(app)/(tabs)/daily-log?pondId=${pondId}` : '/(app)/(tabs)/daily-log');
+      router.push(pondId ? `/(app)/daily-log?pondId=${pondId}` : '/(app)/daily-log');
     },
     [router],
   );
@@ -70,9 +70,9 @@ export default function HomeRoute() {
     (e: ActivityItem) => {
       log('openActivity', { id: e.id, recordType: e.recordType, recordId: e.recordId });
       // Phase 1 only has detail routes for fill/move/sell flows; daily-log
-      // tap routes to the daily-log tab for the relevant pond.
+      // tap routes to the daily-log screen for the relevant pond.
       if (e.recordType === 'dailyLog') {
-        router.push('/(app)/(tabs)/daily-log');
+        router.push('/(app)/daily-log');
         return;
       }
       if (!e.recordType) return;
@@ -84,6 +84,18 @@ export default function HomeRoute() {
   const onCreateFarm = useCallback(() => {
     log('create farm tapped');
     router.push('/(app)/farm' as never);
+  }, [router]);
+
+  const onSeeHistory = useCallback(() => {
+    log('see history tapped');
+    router.push('/(app)/activity-history' as never);
+  }, [router]);
+
+  const onPressProfile = useCallback(() => {
+    log('profile avatar tapped');
+    // navigate (not push) so we switch to the Profile tab rather than stacking
+    // a second copy of it on top of Home.
+    router.navigate('/(app)/(tabs)/profile');
   }, [router]);
 
   const onPressSavedToast = useCallback(() => {
@@ -109,6 +121,8 @@ export default function HomeRoute() {
         onCreateFarm={onCreateFarm}
         onPressSavedToast={onPressSavedToast}
         onDismissSavedToast={onDismissSavedToast}
+        onSeeHistory={onSeeHistory}
+        onPressProfile={onPressProfile}
       />
     </View>
   );
