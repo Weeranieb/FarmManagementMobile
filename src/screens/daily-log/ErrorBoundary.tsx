@@ -21,7 +21,7 @@ export class DailyLogErrorBoundary extends Component<Props, State> {
   render(): ReactNode {
     if (!this.state.error) return this.props.children;
     return (
-      <ScrollView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <ScrollView delaysContentTouches={false} style={{ flex: 1, backgroundColor: '#fff' }}>
         <View style={{ padding: 20 }}>
           <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>
             DailyLog render error

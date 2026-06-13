@@ -83,6 +83,7 @@ export function ChangePasswordSheet({ visible, onClose, onSubmit }: Props) {
       </View>
 
       <ScrollView
+        delaysContentTouches={false}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 20, gap: 14, paddingBottom: 12 }}
         keyboardShouldPersistTaps="handled"

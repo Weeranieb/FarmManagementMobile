@@ -74,6 +74,7 @@ export function FarmsView({
         )
       ) : null}
       <ScrollView
+        delaysContentTouches={false}
         contentContainerStyle={{ paddingTop: 16, paddingBottom: 96 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

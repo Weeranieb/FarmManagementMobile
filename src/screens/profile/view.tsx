@@ -74,7 +74,7 @@ export function ProfileView({
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       {showHeader ? <TopBar title={tx('profile.title')} /> : null}
-      <ScrollView contentContainerStyle={{ paddingBottom: 96 }}>
+      <ScrollView delaysContentTouches={false} contentContainerStyle={{ paddingBottom: 96 }}>
         <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4 }}>
           <Card style={{ paddingVertical: 16 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>

@@ -90,6 +90,7 @@ export function FeedCollectionView({
       ) : null}
 
       <ScrollView
+        delaysContentTouches={false}
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingTop: 12,

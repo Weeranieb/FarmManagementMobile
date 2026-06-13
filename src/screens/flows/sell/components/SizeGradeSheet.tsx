@@ -35,6 +35,7 @@ export function SizeGradeSheet({
         </View>
       ) : (
         <ScrollView
+          delaysContentTouches={false}
           contentContainerStyle={{ gap: 6, paddingBottom: 4 }}
           showsVerticalScrollIndicator={false}
         >

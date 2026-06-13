@@ -152,6 +152,7 @@ function FillStep1(props: Props) {
       />
 
       <ScrollView
+        delaysContentTouches={false}
         ref={scrollRef}
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
@@ -374,6 +375,7 @@ function FillStep2(props: Props) {
       />
 
       <ScrollView
+        delaysContentTouches={false}
         contentContainerStyle={{ padding: 20, paddingBottom: 160 }}
         showsVerticalScrollIndicator={false}
       >

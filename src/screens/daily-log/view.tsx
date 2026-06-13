@@ -1,5 +1,11 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  InteractionManager,
+  ScrollView,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { FarmModel } from '@/features/farm';
 import { AppBar } from './components/AppBar';
@@ -15,7 +21,7 @@ import { SaveBar } from './components/SaveBar';
 import { TableHeader } from './components/TableHeader';
 import { TableRow } from './components/TableRow';
 import { UnsavedChangesDialog } from './components/UnsavedChangesDialog';
-import { CHROME, CHROME_SCROLL, COLS, ROW_H, TABLE_W, thMonth } from './constants';
+import { CHROME, CHROME_SCROLL, COLS, NAME_W, ROW_H, TABLE_W, colW, thMonth } from './constants';
 import type { SaveResult, UseDailyLogV6 } from './hook';
 
 function formatSaveError(result: SaveResult): string {
@@ -40,6 +46,10 @@ type Props = {
   activeFarmId: number | null;
   onChangeFarm: (id: number) => void;
   onBack?: () => void;
+  /** Bottom safe-area inset — added under the floating SaveBar and to the
+   *  scroll content so the last row clears it. 0 on tablet (its pane already
+   *  sits inside a bottom-edge SafeAreaView). */
+  bottomInset?: number;
 };
 
 const SAVE_BAR_HEIGHT_PADDING = 96;
@@ -51,11 +61,13 @@ export function DailyLogView({
   activeFarmId,
   onChangeFarm,
   onBack,
+  bottomInset = 0,
 }: Props) {
   const { t } = useTheme();
 
   const {
     ponds,
+    loading,
     selectedDate,
     setSelectedDate,
     activeCell,
@@ -89,6 +101,16 @@ export function DailyLogView({
   // Plain useState (not Reanimated SharedValue) so the chrome animates
   // without any worklet compilation dependency.
   const [scrollT, setScrollT] = useState(0);
+  // Defer the heavy table body (each maintenance row paints ~14 rotated stripe
+  // Views — dozens of ponds × cols = hundreds of Views) until the push has
+  // presented. The first frame renders only the cheap chrome + skeleton, so the
+  // native slide starts immediately instead of waiting on the full grid commit;
+  // the real rows mount one tick later behind the skeleton.
+  const [contentReady, setContentReady] = useState(false);
+  useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() => setContentReady(true));
+    return () => handle.cancel();
+  }, []);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -326,11 +348,12 @@ export function DailyLogView({
 
       <View style={{ flex: 1 }}>
         <ScrollView
+          delaysContentTouches={false}
           ref={verticalRef}
           onScroll={onScroll}
           scrollEventThrottle={16}
           stickyHeaderIndices={[1]}
-          contentContainerStyle={{ paddingBottom: SAVE_BAR_HEIGHT_PADDING }}
+          contentContainerStyle={{ paddingBottom: SAVE_BAR_HEIGHT_PADDING + bottomInset }}
         >
           <CollapsingChrome
             scrollT={scrollT}
@@ -359,6 +382,7 @@ export function DailyLogView({
             }}
           >
             <ScrollView
+              delaysContentTouches={false}
               ref={headerHRef}
               horizontal
               scrollEnabled={false}
@@ -371,6 +395,7 @@ export function DailyLogView({
           </View>
 
           <ScrollView
+            delaysContentTouches={false}
             horizontal
             onScroll={onRowsHorizontalScroll}
             scrollEventThrottle={16}
@@ -378,15 +403,19 @@ export function DailyLogView({
             bounces={false}
           >
             <View style={{ width: tableWidth }}>
-              {ponds.map((pond, i) => (
-                <TableRow
-                  key={pond.key}
-                  pond={pond}
-                  idx={i}
-                  activeCell={activeCell}
-                  onCellTap={handleCellTap}
-                />
-              ))}
+              {loading || !contentReady ? (
+                <TableSkeleton />
+              ) : (
+                ponds.map((pond, i) => (
+                  <TableRow
+                    key={pond.key}
+                    pond={pond}
+                    idx={i}
+                    activeCell={activeCell}
+                    onCellTap={handleCellTap}
+                  />
+                ))
+              )}
             </View>
           </ScrollView>
         </ScrollView>
@@ -395,6 +424,7 @@ export function DailyLogView({
           dirtyCount={dirtyCount}
           invalidCount={invalidCount}
           onSavePress={() => setConfirmOpen(true)}
+          bottomInset={bottomInset}
         />
       </View>
 
@@ -451,6 +481,63 @@ export function DailyLogView({
         onClose={() => setMonthPickerOpen(false)}
         onConfirm={onMonthPickerConfirm}
       />
+    </View>
+  );
+}
+
+const SKELETON_ROWS = 6;
+
+/**
+ * Loading placeholder for the pond table. Shown while the farm/pond list is
+ * still resolving so the screen never lands as a blank grid — opened cold from
+ * Home, the table used to flash empty until the scoped, Home-warmed pond query
+ * took over. Mirrors TableRow's name-column + per-column layout so the swap to
+ * real rows is visually stable; rows fade down so it reads as a placeholder.
+ */
+function TableSkeleton() {
+  const { t } = useTheme();
+  const bar = t.surfaceSunk;
+  return (
+    <View>
+      {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
+        <View
+          key={i}
+          style={{
+            flexDirection: 'row',
+            minHeight: ROW_H,
+            borderBottomWidth: 1,
+            borderBottomColor: t.border,
+            opacity: 1 - i * 0.12,
+          }}
+        >
+          <View
+            style={{
+              width: NAME_W,
+              paddingHorizontal: 8,
+              paddingVertical: 6,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              borderRightWidth: 1,
+              borderRightColor: t.borderStrong,
+            }}
+          >
+            <View style={{ width: 3, height: 30, borderRadius: 2, backgroundColor: bar }} />
+            <View style={{ flex: 1, gap: 6 }}>
+              <View style={{ width: '70%', height: 12, borderRadius: 4, backgroundColor: bar }} />
+              <View style={{ width: '45%', height: 9, borderRadius: 4, backgroundColor: bar }} />
+            </View>
+          </View>
+          {COLS.map((c) => (
+            <View
+              key={c.key}
+              style={{ width: colW(c.key), alignItems: 'center', justifyContent: 'center' }}
+            >
+              <View style={{ width: 22, height: 12, borderRadius: 4, backgroundColor: bar }} />
+            </View>
+          ))}
+        </View>
+      ))}
     </View>
   );
 }

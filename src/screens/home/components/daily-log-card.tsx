@@ -5,6 +5,7 @@ import { Pill } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { thaiDate } from '@/locale/thaiDate';
+import { displayFarmName, displayPondName } from '@/utils/fmt';
 import type { HomeDigest, PendingPond } from '../constants';
 
 type Props = {
@@ -81,7 +82,9 @@ export function DailyLogCard({
         </View>
       ) : null}
 
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+      <View
+        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}
+      >
         <View style={{ gap: 4 }}>
           <Text
             style={{
@@ -278,6 +281,17 @@ function ProgressBar({ pct, done }: { pct: number; done: boolean }) {
   );
 }
 
+// Per farm: show this many pond chips, then collapse the rest into "อีก N บ่อ".
+const MAX_CHIPS_PER_FARM = 3;
+
+/**
+ * "ยังไม่ได้บันทึก" — pending ponds grouped by farm. Each farm shows its name,
+ * how many of its ponds are still un-logged, and up to three pond chips (late
+ * ponds lead so they stay visible when capped). This answers "which farm still
+ * needs me?" — the unit a farmer actually walks to — instead of a flat chip
+ * list. Per the final design, late ponds carry no red tint or "เลย Nว" text;
+ * every chip is the same neutral grey.
+ */
 function PendingList({
   pending,
   late: _late,
@@ -289,8 +303,22 @@ function PendingList({
 }) {
   const { t } = useTheme();
   if (pending.length === 0) return null;
-  const visible = pending.slice(0, 3);
-  const rest = pending.length - visible.length;
+
+  // Group by farm, preserving the order farms first appear in `pending` (which
+  // follows farm-list order). Within a farm, late ponds sort first.
+  const groups: { farm: string; ponds: PendingPond[] }[] = [];
+  const groupByFarm = new Map<string, { farm: string; ponds: PendingPond[] }>();
+  for (const p of pending) {
+    const key = p.farmName || '';
+    let group = groupByFarm.get(key);
+    if (!group) {
+      group = { farm: key, ponds: [] };
+      groupByFarm.set(key, group);
+      groups.push(group);
+    }
+    group.ponds.push(p);
+  }
+  groups.forEach((g) => g.ponds.sort((a, b) => (b.lateDays || 0) - (a.lateDays || 0)));
 
   return (
     <View style={{ marginTop: space[3] + 2 }}>
@@ -299,82 +327,101 @@ function PendingList({
           fontSize: type.sizes.xs,
           fontFamily: type.familySemi,
           color: t.inkMute,
-          marginBottom: 6,
+          marginBottom: 8,
           letterSpacing: 0.3,
         }}
       >
         ยังไม่ได้บันทึก
       </Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-        {visible.map((p) => {
-          const isLate = p.lateDays > 0;
+      <View style={{ gap: space[3] }}>
+        {groups.map((g) => {
+          const visible = g.ponds.slice(0, MAX_CHIPS_PER_FARM);
+          const rest = g.ponds.length - visible.length;
           return (
-            <View
-              key={p.id}
-              style={{
-                borderRadius: radii.pill,
-                backgroundColor: isLate ? t.dangerSoft : t.surfaceAlt,
-                borderWidth: 1,
-                borderColor: isLate ? `${t.danger}33` : t.border,
-                overflow: 'hidden',
-              }}
-            >
-              <Pressable
-                onPress={onPressPending ? () => onPressPending(p) : undefined}
-                android_ripple={{ color: t.border }}
-                style={{ paddingHorizontal: 10, paddingVertical: 6 }}
+            <View key={g.farm}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'baseline',
+                  gap: 6,
+                  marginBottom: 7,
+                }}
               >
-                {/* Single Text node — RN guarantees nested <Text> renders
-                    inline on one baseline, so "บ่อ 3" and "เลย 1ว" stay on
-                    the same line inside the chip the way the design shows. */}
                 <Text
-                  numberOfLines={1}
                   style={{
-                    color: isLate ? t.danger : t.ink,
                     fontSize: type.sizes.xs + 1,
-                    fontFamily: type.familySemi,
+                    fontFamily: type.familyBold,
+                    color: t.ink,
                   }}
                 >
-                  {p.name}
-                  {isLate ? (
+                  {displayFarmName(g.farm)}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: type.sizes.xs,
+                    fontFamily: type.familyNum,
+                    color: t.inkMute,
+                  }}
+                >
+                  {g.ponds.length} บ่อ
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {visible.map((p) => (
+                  <View
+                    key={p.id}
+                    style={{
+                      borderRadius: radii.pill,
+                      backgroundColor: t.surfaceAlt,
+                      borderWidth: 1,
+                      borderColor: t.border,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Pressable
+                      onPress={onPressPending ? () => onPressPending(p) : undefined}
+                      android_ripple={{ color: t.border }}
+                      style={{ paddingHorizontal: 10, paddingVertical: 6 }}
+                    >
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          color: t.ink,
+                          fontSize: type.sizes.xs + 1,
+                          fontFamily: type.familySemi,
+                        }}
+                      >
+                        {displayPondName(p.name)}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ))}
+                {rest > 0 ? (
+                  <View
+                    style={{
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: radii.pill,
+                      backgroundColor: t.surfaceAlt,
+                      borderWidth: 1,
+                      borderColor: t.border,
+                    }}
+                  >
                     <Text
                       style={{
-                        color: t.danger,
-                        fontSize: type.sizes.xs - 1,
-                        fontFamily: type.familyNum,
-                        opacity: 0.85,
+                        color: t.inkSoft,
+                        fontSize: type.sizes.xs + 1,
+                        fontFamily: type.familySemi,
                       }}
                     >
-                      {'  '}เลย {p.lateDays}ว
+                      อีก {rest} บ่อ
                     </Text>
-                  ) : null}
-                </Text>
-              </Pressable>
+                  </View>
+                ) : null}
+              </View>
             </View>
           );
         })}
-        {rest > 0 ? (
-          <View
-            style={{
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              borderRadius: radii.pill,
-              backgroundColor: t.surfaceAlt,
-              borderWidth: 1,
-              borderColor: t.border,
-            }}
-          >
-            <Text
-              style={{
-                color: t.inkSoft,
-                fontSize: type.sizes.xs + 1,
-                fontFamily: type.familySemi,
-              }}
-            >
-              +{rest} บ่อ
-            </Text>
-          </View>
-        ) : null}
       </View>
     </View>
   );

@@ -6,7 +6,7 @@ export default function FarmsRoute() {
   const router = useRouter();
   return (
     <ThemedSafeAreaView edges={['top']}>
-      <FarmsScreen onOpenFarm={(id) => router.push(`/(app)/(tabs)/farm/${id}`)} />
+      <FarmsScreen onOpenFarm={(id) => router.push(`/(app)/farm/${id}`)} />
     </ThemedSafeAreaView>
   );
 }

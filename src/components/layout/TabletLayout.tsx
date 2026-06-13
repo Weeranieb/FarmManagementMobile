@@ -100,7 +100,7 @@ export function TabletLayout() {
               onBack={() => setDetailMode('pond')}
             />
           ) : (
-            <HomeScreen showHeader={false} />
+            <HomeScreen />
           )}
         </View>
       </View>

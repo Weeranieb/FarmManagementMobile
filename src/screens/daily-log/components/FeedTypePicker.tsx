@@ -208,6 +208,7 @@ export function FeedTypePicker({
 
         {/* List */}
         <ScrollView
+          delaysContentTouches={false}
           style={{ maxHeight: 280 }}
           contentContainerStyle={{ paddingTop: 2, paddingBottom: 4 }}
           showsVerticalScrollIndicator={false}

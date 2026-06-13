@@ -15,7 +15,7 @@ export default function PondDetailRoute() {
         onAction={(kind) => router.push(`/(app)/flows/${kind}?pondId=${pondId}`)}
         onOpenDailyLog={({ farmId, pondId }) =>
           router.push({
-            pathname: '/(app)/(tabs)/daily-log',
+            pathname: '/(app)/daily-log',
             params: { farmId: String(farmId), pondId: String(pondId) },
           })
         }

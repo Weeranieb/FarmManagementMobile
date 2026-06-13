@@ -1,12 +1,19 @@
 // DTOs mirroring backend/src/internal/dto/daily-log. Keep in sync as the API evolves.
 
 export type DailyLogEntry = {
+  /** Row id — present on saved entries; absent on locally-built drafts. */
+  id?: number;
   day: number;
   fresh: number;
   pelletMorning: number;
   pelletEvening: number;
   deathFishCount: number;
   touristCatchCount: number;
+  // Per-entry unit price (฿/kg) the backend resolved from the feed collection
+  // for the entry's date. `omitempty` server-side → undefined when the feed
+  // type has no collection / price configured. Used to derive feed cost.
+  freshUnitPrice?: number;
+  pelletUnitPrice?: number;
 };
 
 export type DailyLogResponse = {
@@ -18,6 +25,9 @@ export type DailyLogResponse = {
   freshFeedCollectionName: string;
   pelletFeedCollectionId?: number;
   pelletFeedCollectionName: string;
+  // Display units for each feed type (e.g. "กก."). Omitted by older responses.
+  freshUnit?: string;
+  pelletUnit?: string;
   entries: DailyLogEntry[];
 };
 

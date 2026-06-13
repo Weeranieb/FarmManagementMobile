@@ -59,6 +59,7 @@ export function FeedPriceHistoryView({
       ) : null}
 
       <ScrollView
+        delaysContentTouches={false}
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}

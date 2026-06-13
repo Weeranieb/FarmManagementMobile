@@ -117,7 +117,7 @@ export function FarmPickerSheet({
           </View>
 
           {/* List */}
-          <ScrollView style={{ paddingVertical: 4 }}>
+          <ScrollView delaysContentTouches={false} style={{ paddingVertical: 4 }}>
             {farms.map((f) => {
               const letter = avatarLetter(f.name);
               return (
