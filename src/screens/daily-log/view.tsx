@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   InteractionManager,
+  RefreshControl,
   ScrollView,
   View,
   type NativeScrollEvent,
@@ -21,7 +22,17 @@ import { SaveBar } from './components/SaveBar';
 import { TableHeader } from './components/TableHeader';
 import { TableRow } from './components/TableRow';
 import { UnsavedChangesDialog } from './components/UnsavedChangesDialog';
-import { CHROME, CHROME_SCROLL, COLS, NAME_W, ROW_H, TABLE_W, colW, thMonthAbbr } from './constants';
+import {
+  CHROME,
+  CHROME_SCROLL,
+  COLS,
+  NAME_W,
+  ROW_H,
+  TABLE_W,
+  VIBRANT_BRAND,
+  colW,
+  thMonthAbbr,
+} from './constants';
 import type { SaveResult, UseDailyLogV6 } from './hook';
 
 function formatSaveError(result: SaveResult): string {
@@ -85,6 +96,7 @@ export function DailyLogView({
     advanceActive,
     saveAll,
     discardDirty,
+    refresh,
   } = state;
 
   const verticalRef = useRef<ScrollView>(null);
@@ -116,6 +128,16 @@ export function DailyLogView({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
 
   const dateLabel = useMemo(
     () =>
@@ -354,6 +376,14 @@ export function DailyLogView({
           scrollEventThrottle={16}
           stickyHeaderIndices={[1]}
           contentContainerStyle={{ paddingBottom: SAVE_BAR_HEIGHT_PADDING + bottomInset }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={VIBRANT_BRAND[600]}
+              colors={[VIBRANT_BRAND[600]]}
+            />
+          }
         >
           <CollapsingChrome
             scrollT={scrollT}

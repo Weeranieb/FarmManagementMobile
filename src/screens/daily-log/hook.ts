@@ -676,7 +676,13 @@ export function useDailyLogV6(
   }, [dKey]);
 
   const refresh = useCallback(async () => {
-    await qc.invalidateQueries({ queryKey: ['dailyLog'] });
+    // Pull-to-refresh: re-pull both the pond list (status / cycle changes) and
+    // every month's daily-log entries so the table reflects edits made on
+    // other devices since the screen was opened.
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ['ponds'] }),
+      qc.invalidateQueries({ queryKey: ['dailyLog'] }),
+    ]);
   }, [qc]);
 
   const dirtyCount = useMemo(() => ponds.filter((p) => p.state === 'dirty').length, [ponds]);
