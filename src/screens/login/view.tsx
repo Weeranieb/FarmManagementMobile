@@ -1,4 +1,12 @@
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { useRef } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Btn, Input } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -26,11 +34,12 @@ export function LoginView({
 }: Props) {
   const { t: tx } = useTranslation();
   const { t } = useTheme();
+  const passwordRef = useRef<TextInput>(null);
 
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: t.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
         delaysContentTouches={false}
@@ -89,6 +98,9 @@ export function LoginView({
                 onChangeText={setUsername}
                 autoCapitalize="none"
                 autoCorrect={false}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => passwordRef.current?.focus()}
               />
             </View>
             <View style={{ gap: 6 }}>
@@ -96,10 +108,15 @@ export function LoginView({
                 {tx('auth.password')}
               </Text>
               <Input
+                ref={passwordRef}
                 value={password}
                 onChangeText={setPassword}
                 passwordToggle
                 autoCapitalize="none"
+                returnKeyType="go"
+                onSubmitEditing={() => {
+                  if (!submitting) handleLogin();
+                }}
               />
             </View>
             <Btn tone="brand" size="lg" block onPress={handleLogin} disabled={submitting}>
