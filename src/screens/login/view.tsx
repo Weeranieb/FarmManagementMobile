@@ -1,12 +1,5 @@
 import { useRef } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, ScrollView, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Btn, Input } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -39,7 +32,7 @@ export function LoginView({
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: t.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior="padding"
     >
       <ScrollView
         delaysContentTouches={false}
