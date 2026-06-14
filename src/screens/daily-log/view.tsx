@@ -21,7 +21,7 @@ import { SaveBar } from './components/SaveBar';
 import { TableHeader } from './components/TableHeader';
 import { TableRow } from './components/TableRow';
 import { UnsavedChangesDialog } from './components/UnsavedChangesDialog';
-import { CHROME, CHROME_SCROLL, COLS, NAME_W, ROW_H, TABLE_W, colW, thMonth } from './constants';
+import { CHROME, CHROME_SCROLL, COLS, NAME_W, ROW_H, TABLE_W, colW, thMonthAbbr } from './constants';
 import type { SaveResult, UseDailyLogV6 } from './hook';
 
 function formatSaveError(result: SaveResult): string {
@@ -119,7 +119,7 @@ export function DailyLogView({
 
   const dateLabel = useMemo(
     () =>
-      `${selectedDate.getDate()} ${thMonth(selectedDate.getMonth()).slice(0, 3)}. ${selectedDate.getFullYear() + 543}`,
+      `${selectedDate.getDate()} ${thMonthAbbr(selectedDate.getMonth())} ${selectedDate.getFullYear() + 543}`,
     [selectedDate],
   );
 

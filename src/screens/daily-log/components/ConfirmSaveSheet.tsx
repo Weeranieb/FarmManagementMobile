@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
-import { VIBRANT_BRAND, fmtTh, thMonth } from '../constants';
+import { VIBRANT_BRAND, fmtTh, thMonthAbbr } from '../constants';
 import type { PondRow as PondRowType } from '../hook';
 
 type Props = {
@@ -48,7 +48,7 @@ export function ConfirmSaveSheet({ visible, ponds, selectedDate, onClose, onConf
   const dirty = ponds.filter((p) => p.state === 'dirty').length;
   const summary = buildSummary(ponds);
 
-  const dateLabel = `${selectedDate.getDate()} ${thMonth(selectedDate.getMonth()).slice(0, 3)}. ${selectedDate.getFullYear() + 543}`;
+  const dateLabel = `${selectedDate.getDate()} ${thMonthAbbr(selectedDate.getMonth())} ${selectedDate.getFullYear() + 543}`;
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
