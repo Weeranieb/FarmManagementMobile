@@ -140,7 +140,7 @@ function FillStep1(props: Props) {
           fromFab && !pond
             ? 'เลือกฟาร์มและบ่อ แล้วกรอกรายละเอียด'
             : pond
-              ? `${pond.name}${pond.farmName ? ` · ${pond.farmName}` : ''}`
+              ? `${displayPondName(pond.name)}${pond.farmName ? ` · ${displayFarmName(pond.farmName)}` : ''}`
               : undefined
         }
         leading={<FlowBackBtn step={1} onPress={goBack} />}

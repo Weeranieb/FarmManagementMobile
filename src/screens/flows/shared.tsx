@@ -75,25 +75,6 @@ export function FishPicker({
           </Pressable>
         );
       })}
-      <Pressable
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 4,
-          paddingHorizontal: 14,
-          paddingVertical: 10,
-          borderRadius: 9999,
-          backgroundColor: 'transparent',
-          borderWidth: 1.5,
-          borderColor: t.border,
-          borderStyle: 'dashed',
-        }}
-      >
-        <Icon.plus size={14} color={t.inkSoft} />
-        <Text style={{ color: t.inkSoft, fontFamily: type.familyMedium, fontSize: 14 }}>
-          เพิ่มชนิด
-        </Text>
-      </Pressable>
     </Row>
   );
 }

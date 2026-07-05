@@ -351,7 +351,9 @@ export function MoveView({
           fromFab && !fieldsReady
             ? 'เลือกฟาร์มและบ่อ แล้วกรอกรายละเอียด'
             : fromPond
-              ? `${fromPond.name}${fromPond.farmName ? ` · ${fromPond.farmName}` : ''}`
+              ? toPond && toPond.id !== fromPond.id
+                ? `${displayPondName(fromPond.name)} → ${displayPondName(toPond.name)}`
+                : `${displayPondName(fromPond.name)}${fromPond.farmName ? ` · ${displayFarmName(fromPond.farmName)}` : ''}`
               : undefined
         }
         leading={<FlowBackBtn step={1} onPress={goBack} />}
