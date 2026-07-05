@@ -5,7 +5,7 @@
 // Controlled: parent owns `rows` so it can persist across review → back nav
 // and feed into the mutation payload.
 
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type, type ThemePalette } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -171,6 +171,9 @@ export function AdditionalCostsEditor({ tone, rows, onChange }: Props) {
                   minWidth: 0,
                   height: 44,
                   paddingHorizontal: 12,
+                  paddingVertical: 0,
+                  textAlignVertical: 'center',
+                  ...Platform.select({ android: { includeFontPadding: false } }),
                   backgroundColor: t.surface,
                   borderWidth: 1.5,
                   borderColor: t.border,
@@ -204,6 +207,9 @@ export function AdditionalCostsEditor({ tone, rows, onChange }: Props) {
                   style={{
                     flex: 1,
                     minWidth: 0,
+                    paddingVertical: 0,
+                    textAlignVertical: 'center',
+                    ...Platform.select({ android: { includeFontPadding: false } }),
                     fontFamily: type.familyNumSemi,
                     fontSize: 15,
                     color: t.ink,

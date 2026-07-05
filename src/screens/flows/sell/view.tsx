@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Btn, Input, Pill, TopBar } from '@/components/ui';
@@ -244,18 +244,19 @@ function SellStep1({
                   marginBottom: 6,
                 }}
               >
-                หมายเหตุ
-                <Text style={{ fontFamily: type.family, color: t.inkMute }}> · ไม่บังคับ</Text>
+                โน้ต
               </Text>
               <TextInput
                 value={remark}
                 onChangeText={setRemark}
-                placeholder="เพิ่มหมายเหตุ…"
+                placeholder="เพิ่มโน้ต…"
                 placeholderTextColor={t.inkMute}
-                multiline
                 style={{
-                  minHeight: 80,
-                  padding: 12,
+                  height: 48,
+                  paddingHorizontal: 12,
+                  paddingVertical: 0,
+                  textAlignVertical: 'center',
+                  ...Platform.select({ android: { includeFontPadding: false } }),
                   borderRadius: radii.sm,
                   borderWidth: 1.5,
                   borderColor: t.border,
@@ -263,7 +264,6 @@ function SellStep1({
                   color: t.ink,
                   fontFamily: type.family,
                   fontSize: 14,
-                  textAlignVertical: 'top',
                 }}
               />
             </View>
@@ -485,7 +485,7 @@ function SellStep2({
         <GrandTotalBlock tone="sell" label="รายได้สุทธิ" value={fmt.baht(netRevenue)} />
 
         {remark ? (
-          <ReviewSection title="หมายเหตุ">
+          <ReviewSection title="โน้ต">
             <Text
               style={{
                 paddingVertical: 12,

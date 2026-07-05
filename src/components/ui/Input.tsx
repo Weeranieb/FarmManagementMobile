@@ -1,5 +1,6 @@
 import { forwardRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   TextInput,
   View,
@@ -76,6 +77,9 @@ export const Input = forwardRef<TextInput, Props>(function Input(
             color: t.ink,
             fontFamily: big ? type.familyNumSemi : type.family,
             fontSize: big ? 22 : 16,
+            paddingVertical: 0,
+            textAlignVertical: 'center',
+            ...Platform.select({ android: { includeFontPadding: false } }),
           },
           style,
         ]}

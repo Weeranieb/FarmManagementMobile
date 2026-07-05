@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { LayoutAnimation, Platform, Pressable, ScrollView, Text, TextInput, UIManager, View } from 'react-native';
+import { useRef } from 'react';
+import { Platform, ScrollView, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Btn, Input, Pill, TopBar } from '@/components/ui';
@@ -22,10 +22,6 @@ import {
   ReviewSection,
   WarningBanner,
 } from '../review';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 type Props = {
   fromFab: boolean;
@@ -270,20 +266,28 @@ function FillStep1(props: Props) {
               />
             </View>
 
-            <Collapsible
-              icon={<Icon.doc size={16} color={t.ink} />}
-              title="หมายเหตุ"
-              hint="ไม่บังคับ"
-            >
+            <View style={{ marginTop: 6, marginBottom: 14 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontFamily: type.familySemi,
+                  color: t.ink,
+                  marginBottom: 6,
+                }}
+              >
+                โน้ต
+              </Text>
               <TextInput
                 value={remark}
                 onChangeText={setRemark}
-                placeholder="เพิ่มหมายเหตุ…"
+                placeholder="เพิ่มโน้ต…"
                 placeholderTextColor={t.inkMute}
-                multiline
                 style={{
-                  minHeight: 80,
-                  padding: 12,
+                  height: 48,
+                  paddingHorizontal: 12,
+                  paddingVertical: 0,
+                  textAlignVertical: 'center',
+                  ...Platform.select({ android: { includeFontPadding: false } }),
                   borderRadius: radii.sm,
                   borderWidth: 1.5,
                   borderColor: t.border,
@@ -291,10 +295,9 @@ function FillStep1(props: Props) {
                   color: t.ink,
                   fontFamily: type.family,
                   fontSize: 14,
-                  textAlignVertical: 'top',
                 }}
               />
-            </Collapsible>
+            </View>
           </DimWrap>
         </View>
 
@@ -491,57 +494,6 @@ function FillStep2(props: Props) {
 
 function countNonEmpty(rows: CostRow[]): number {
   return rows.filter((r) => r.category.trim() || parseFloat(r.amount) > 0).length;
-}
-
-function Collapsible({
-  icon,
-  title,
-  hint,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  const { t } = useTheme();
-  const [open, setOpen] = useState(false);
-  const toggle = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setOpen((v) => !v);
-  };
-  return (
-    <View>
-      <Pressable
-        onPress={toggle}
-        style={{
-          paddingVertical: 14,
-          paddingHorizontal: 14,
-          borderRadius: radii.sm,
-          backgroundColor: t.surfaceAlt,
-          borderWidth: 1,
-          borderColor: t.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Row gap={8}>
-          {icon}
-          <Text style={{ fontFamily: type.familySemi, fontSize: 14, color: t.ink }}>{title}</Text>
-        </Row>
-        <Row gap={6}>
-          {hint ? (
-            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>{hint}</Text>
-          ) : null}
-          <View style={{ transform: [{ rotate: open ? '180deg' : '0deg' }] }}>
-            <Icon.arrowDown size={14} color={t.inkSoft} />
-          </View>
-        </Row>
-      </Pressable>
-      {open ? <View style={{ marginTop: 10 }}>{children}</View> : null}
-    </View>
-  );
 }
 
 function StockImpactRow({
