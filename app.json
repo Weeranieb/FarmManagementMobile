@@ -4,7 +4,7 @@
     "slug": "farmos-mobile",
     "scheme": "farmos",
     "version": "0.2.5",
-    "orientation": "default",
+    "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -16,21 +16,7 @@
     "ios": {
       "bundleIdentifier": "com.farmos.mobile",
       "supportsTablet": true,
-      "requireFullScreen": false,
-      "infoPlist": {
-        "UISupportedInterfaceOrientations": [
-          "UIInterfaceOrientationPortrait",
-          "UIInterfaceOrientationPortraitUpsideDown",
-          "UIInterfaceOrientationLandscapeLeft",
-          "UIInterfaceOrientationLandscapeRight"
-        ],
-        "UISupportedInterfaceOrientations~ipad": [
-          "UIInterfaceOrientationPortrait",
-          "UIInterfaceOrientationPortraitUpsideDown",
-          "UIInterfaceOrientationLandscapeLeft",
-          "UIInterfaceOrientationLandscapeRight"
-        ]
-      }
+      "requireFullScreen": false
     },
     "android": {
       "package": "com.farmos.mobile",

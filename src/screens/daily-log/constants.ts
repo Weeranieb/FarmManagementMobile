@@ -30,6 +30,18 @@ export const CHROME_SCROLL = CHROME.farm + CHROME.month + CHROME.day;
 /** @deprecated Use CHROME_SCROLL for onScroll collapse math. */
 export const CHROME_TOTAL = CHROME_SCROLL;
 
+/** Fraction of the screen height the numpad bottom-sheet occupies. */
+export const NUMPAD_HEIGHT_RATIO = 0.52;
+/**
+ * Numpad bottom-sheet height. Grows past the ratio to cover the home-indicator
+ * inset so the footer keeps its designed proportions and clears the safe area.
+ * Shared by Numpad (the sheet itself) and the daily-log view (so the table's
+ * bottom padding can lift the last rows above the sheet when it's open).
+ */
+export function numpadSheetHeight(screenH: number, insetBottom: number): number {
+  return Math.round(screenH * NUMPAD_HEIGHT_RATIO) + insetBottom;
+}
+
 export type ColKey = 'pm' | 'pe' | 'fresh' | 'death' | 'cat';
 export type GroupKey = 'pellet' | 'fresh' | 'death' | 'catch';
 

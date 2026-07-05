@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Dimensions,
   InteractionManager,
   RefreshControl,
   ScrollView,
@@ -31,6 +32,7 @@ import {
   TABLE_W,
   VIBRANT_BRAND,
   colW,
+  numpadSheetHeight,
   thMonthAbbr,
 } from './constants';
 import type { SaveResult, UseDailyLogV6 } from './hook';
@@ -65,6 +67,10 @@ type Props = {
 
 const SAVE_BAR_HEIGHT_PADDING = 96;
 
+// Gap kept between the active row and the top of the numpad sheet when we have
+// to scroll the row out from behind it.
+const NUMPAD_REVEAL_MARGIN = 12;
+
 export function DailyLogView({
   state,
   farmName,
@@ -94,6 +100,7 @@ export function DailyLogView({
     previousValueForActiveCell,
     lastUsedFeedIdForActiveCell,
     advanceActive,
+    activeCellIsLast,
     saveAll,
     discardDirty,
     refresh,
@@ -101,6 +108,9 @@ export function DailyLogView({
 
   const verticalRef = useRef<ScrollView>(null);
   const headerHRef = useRef<ScrollView>(null);
+  // Live vertical scroll offset, used to turn a measured row position into an
+  // absolute scrollTo target when the numpad covers the active row.
+  const scrollYRef = useRef(0);
 
   const tableWidth = TABLE_W;
 
@@ -154,6 +164,7 @@ export function DailyLogView({
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
+    scrollYRef.current = y;
     const next = Math.min(1, Math.max(0, y / CHROME_SCROLL));
     setScrollT((prev) => (Math.abs(prev - next) > 0.01 ? next : prev));
   }, []);
@@ -172,11 +183,30 @@ export function DailyLogView({
     verticalRef.current?.scrollTo({ y: target, animated: true });
   }, [ponds]);
 
+  // Keyboard-avoidance for the numpad, keyboard-style: the active row measures
+  // its own on-screen position when it becomes active (tap or ถัดไป). We only
+  // scroll if the numpad would cover it, and just enough to lift it clear —
+  // rows already visible (e.g. the first one) don't move, and the header chrome
+  // is left untouched so it never vanishes/reappears.
+  const onActiveRowMeasure = useCallback(
+    (pageY: number, height: number) => {
+      const screenH = Dimensions.get('window').height;
+      const sheetTop = screenH - numpadSheetHeight(screenH, bottomInset);
+      const rowBottom = pageY + height;
+      const limit = sheetTop - NUMPAD_REVEAL_MARGIN;
+      if (rowBottom <= limit) return; // already fully visible above the sheet
+      const target = Math.max(0, scrollYRef.current + (rowBottom - limit));
+      verticalRef.current?.scrollTo({ y: target, animated: true });
+    },
+    [bottomInset],
+  );
+
   const navigateMonth = useCallback(
     (delta: number) => {
       if (delta > 0 && nextMonthDisabled) return;
-      // Clamp the day to the target month's last day (e.g. May 31 → Apr 30
-      // instead of JS's silent rollover into May 1).
+      // Default to day 1 of the target month rather than carrying the
+      // current day-of-month forward — avoids landing on an arbitrary day
+      // (or JS's silent month-end rollover) when switching months.
       const next = new Date(selectedDate);
       next.setDate(1);
       next.setMonth(next.getMonth() + delta);
@@ -184,8 +214,6 @@ export function DailyLogView({
       const nextIdx = next.getFullYear() * 12 + next.getMonth();
       const nowIdx = now.getFullYear() * 12 + now.getMonth();
       if (nextIdx > nowIdx) return;
-      const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-      next.setDate(Math.min(selectedDate.getDate(), lastDay));
       setSelectedDate(next);
     },
     [selectedDate, setSelectedDate, nextMonthDisabled],
@@ -327,6 +355,21 @@ export function DailyLogView({
     return activePond.v[activeCell.col];
   }, [activeCell, activePond]);
 
+  // Live typed-value preview for the active cell — deliberately kept out of
+  // `overrides`/`setCellValue` so a keystroke doesn't rebuild the `ponds`
+  // array (and re-render every row) on every digit; only the one active
+  // row receives a changed prop (wired below). Committed to real state via
+  // `setCellValue` only on Next/Done, same as before this preview existed.
+  const [liveValue, setLiveValue] = useState<number | ''>('');
+  useEffect(() => {
+    if (!activeCell) {
+      setLiveValue('');
+      return;
+    }
+    setLiveValue(activePond ? activePond.v[activeCell.col] : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCell?.pondKey, activeCell?.col]);
+
   const rememberFeedPick = useCallback(
     (cell: NonNullable<typeof activeCell>, feedId: number | null) => {
       if (feedId == null) return;
@@ -357,6 +400,13 @@ export function DailyLogView({
     },
     [activeCell, rememberFeedPick, setCellValue, advanceActive],
   );
+
+  // Mirrors every keystroke into the table cell behind the sheet — local
+  // `liveValue` only, never `overrides`. The cell itself stays a Pressable
+  // (opens the numpad), never a direct text input.
+  const onNumpadChange = useCallback((value: number | '') => setLiveValue(value), []);
+
+  const onNumpadCancel = useCallback(() => setActiveCell(null), [setActiveCell]);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.surface }}>
@@ -442,7 +492,12 @@ export function DailyLogView({
                     pond={pond}
                     idx={i}
                     activeCell={activeCell}
+                    // `undefined` for every non-active row keeps that prop
+                    // reference-stable across keystrokes so React.memo skips
+                    // re-rendering rows the user isn't typing into.
+                    liveValue={pond.key === activeCell?.pondKey ? liveValue : undefined}
                     onCellTap={handleCellTap}
+                    onActiveMeasure={onActiveRowMeasure}
                   />
                 ))
               )}
@@ -466,7 +521,9 @@ export function DailyLogView({
           initialValue={activeValue}
           yesterday={previousValueForActiveCell}
           lastUsedFeedId={lastUsedFeedIdForActiveCell}
-          onCancel={() => setActiveCell(null)}
+          isLastCell={activeCellIsLast}
+          onChange={onNumpadChange}
+          onCancel={onNumpadCancel}
           onCommit={onNumpadCommit}
           onNext={onNumpadNext}
         />

@@ -99,6 +99,9 @@ export type UseDailyLogV6 = {
    *  when no prior entry exists. */
   lastUsedFeedIdForActiveCell: number | null;
   advanceActive: () => void;
+  /** No further cell to advance to — the numpad shows "เสร็จสิ้น" (finish)
+   *  rather than "ถัดไป" and closes on press. */
+  activeCellIsLast: boolean;
   saveAll: () => Promise<SaveResult>;
   discardDirty: () => void;
   refresh: () => Promise<void>;
@@ -123,6 +126,38 @@ type LocalOverride = { v: CellValues; dirtyCols: ReadonlySet<ColKey> };
 type OverrideMap = Record<string, Record<string, LocalOverride>>;
 
 const CELL_KEYS: readonly (keyof CellValues)[] = ['pm', 'pe', 'fresh', 'death', 'cat'];
+
+// Feed columns, in table order — the only columns "ถัดไป" auto-advances
+// through (เช้า → เย็น → เหยื่อสด). Death / catch are entered manually by
+// tapping; the snake never visits them.
+const FEED_COLS: readonly ColKey[] = COLS.filter(
+  (c) => c.group === 'pellet' || c.group === 'fresh',
+).map((c) => c.key);
+
+// Column-major snake across the feed columns: the next fillable pond down the
+// current column, then the first fillable pond at the top of the next feed
+// column. Returns null when there's nothing left to advance to — the end of
+// the last feed column, or a non-feed (death / catch) column — which the
+// caller treats as "finish, close the numpad".
+function nextFeedCell(cur: NonNullable<ActiveCell>, ponds: PondRow[]): ActiveCell {
+  const colIdx = FEED_COLS.indexOf(cur.col);
+  if (colIdx < 0) return null;
+  const pondIdx = ponds.findIndex((p) => p.key === cur.pondKey);
+  if (pondIdx < 0) return null;
+  // Down the current column to the next fillable pond.
+  for (let i = pondIdx + 1; i < ponds.length; i++) {
+    const p = ponds[i];
+    if (p && !p.disabled) return { pondKey: p.key, col: cur.col };
+  }
+  // End of column — wrap to the first fillable pond of the next feed column.
+  const nextCol = FEED_COLS[colIdx + 1];
+  if (nextCol == null) return null;
+  for (let i = 0; i < ponds.length; i++) {
+    const p = ponds[i];
+    if (p && !p.disabled) return { pondKey: p.key, col: nextCol };
+  }
+  return null;
+}
 
 // Numeric comparison helper: treats '' as 0 because the backend zero-fills
 // untouched cells. Cleared-back-to-empty matches an absent backend value.
@@ -479,6 +514,7 @@ export function useDailyLogV6(
         dirtyCols,
       });
     }
+    rows.sort((a, b) => Number(a.disabled) - Number(b.disabled));
     return rows;
   }, [pondModels, dayOverrides, entriesByPondId, dKey]);
 
@@ -546,18 +582,16 @@ export function useDailyLogV6(
   );
 
   const advanceActive = useCallback(() => {
-    setActiveCell((cur) => {
-      if (!cur) return null;
-      const idx = ponds.findIndex((p) => p.key === cur.pondKey);
-      if (idx < 0) return null;
-      // Skip maintenance ponds — they can't accept input.
-      for (let i = idx + 1; i < ponds.length; i++) {
-        const next = ponds[i];
-        if (next && !next.disabled) return { pondKey: next.key, col: cur.col };
-      }
-      return null;
-    });
+    // Snake through the feed columns; null closes the numpad (finish).
+    setActiveCell((cur) => (cur ? nextFeedCell(cur, ponds) : null));
   }, [ponds]);
+
+  // True when there's nowhere left to advance — the numpad's primary button
+  // should read "เสร็จสิ้น" and commit-then-close instead of "ถัดไป".
+  const activeCellIsLast = useMemo(
+    () => (activeCell ? nextFeedCell(activeCell, ponds) == null : false),
+    [activeCell, ponds],
+  );
 
   const saveAll = useCallback(async (): Promise<SaveResult> => {
     const bucket = overrides[dKey];
@@ -741,6 +775,7 @@ export function useDailyLogV6(
     previousValueForActiveCell,
     lastUsedFeedIdForActiveCell,
     advanceActive,
+    activeCellIsLast,
     saveAll,
     discardDirty,
     refresh,
