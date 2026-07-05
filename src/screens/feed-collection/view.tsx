@@ -1,10 +1,10 @@
 import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { SearchHeader, TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
-import { Col } from '@/components/layout/Row';
 import { FeedCard } from './components/FeedCard';
 import { FeedEmptyState } from './components/FeedEmptyState';
 import { SearchSuggestions } from './components/SearchSuggestions';
@@ -46,6 +46,31 @@ export function FeedCollectionView({
   const showSearchEmpty = searchOpen && trimmed.length > 0 && filtered.length === 0;
   const showSuggestions = searchOpen && trimmed.length === 0;
   const showResultCount = searchOpen && trimmed.length > 0 && filtered.length > 0;
+
+  const refreshControl = (
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      tintColor={t.brand}
+      {...(Platform.OS === 'android' ? { colors: [t.brand] } : {})}
+    />
+  );
+
+  const listHeader =
+    showResultCount || showSuggestions ? (
+      <>
+        {showResultCount ? (
+          <View style={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 6 }}>
+            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+              พบ{' '}
+              <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>{filtered.length}</Text>{' '}
+              รายการที่ตรงกับ &ldquo;{trimmed}&rdquo;
+            </Text>
+          </View>
+        ) : null}
+        {showSuggestions ? <SearchSuggestions onPick={onChangeQuery} /> : null}
+      </>
+    ) : null;
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -89,54 +114,49 @@ export function FeedCollectionView({
         )
       ) : null}
 
-      <ScrollView
-        delaysContentTouches={false}
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingTop: 12,
-          paddingBottom: isAdmin && !isEmpty ? 132 : 32,
-        }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={t.brand}
-            {...(Platform.OS === 'android' ? { colors: [t.brand] } : {})}
-          />
-        }
-      >
-        {showResultCount ? (
-          <View style={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 6 }}>
-            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-              พบ{' '}
-              <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>{filtered.length}</Text>{' '}
-              รายการที่ตรงกับ &ldquo;{trimmed}&rdquo;
-            </Text>
-          </View>
-        ) : null}
-
-        {showSuggestions ? <SearchSuggestions onPick={onChangeQuery} /> : null}
-
-        {isEmpty ? (
-          <FeedEmptyState isAdmin={isAdmin} onAdd={openAdd} />
-        ) : showSearchEmpty ? (
-          <SearchEmpty query={trimmed} />
-        ) : (
-          <Col gap={10} style={{ paddingHorizontal: 20, paddingTop: 4 }}>
-            {filtered.map((f) => (
+      {isEmpty || showSearchEmpty ? (
+        <ScrollView
+          delaysContentTouches={false}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingTop: 12, paddingBottom: 32 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={refreshControl}
+        >
+          {listHeader}
+          {isEmpty ? (
+            <FeedEmptyState isAdmin={isAdmin} onAdd={openAdd} />
+          ) : (
+            <SearchEmpty query={trimmed} />
+          )}
+        </ScrollView>
+      ) : (
+        <View style={{ flex: 1 }}>
+          <FlashList
+            data={filtered}
+            keyExtractor={(f) => String(f.id)}
+            renderItem={({ item }) => (
               <FeedCard
-                key={f.id}
-                feed={f}
+                feed={item}
                 isAdmin={isAdmin}
-                onMore={() => openActions(f)}
-                onChart={() => handleOpenHistory(f)}
+                onMore={() => openActions(item)}
+                onChart={() => handleOpenHistory(item)}
               />
-            ))}
-          </Col>
-        )}
-      </ScrollView>
+            )}
+            ItemSeparatorComponent={FeedSeparator}
+            ListHeaderComponent={listHeader}
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingTop: 12,
+              paddingBottom: isAdmin ? 132 : 32,
+            }}
+            delaysContentTouches={false}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={refreshControl}
+          />
+        </View>
+      )}
 
       {isAdmin && !isEmpty ? (
         <View
@@ -192,6 +212,11 @@ export function FeedCollectionView({
       />
     </View>
   );
+}
+
+/** 10px vertical gap between feed cards (replaces the old <Col gap={10}>). */
+function FeedSeparator() {
+  return <View style={{ height: 10 }} />;
 }
 
 function SearchEmpty({ query }: { query: string }) {

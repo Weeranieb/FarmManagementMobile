@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, View, Text, Dimensions } from 'react-native';
+import { Modal, Pressable, View, Text, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFeedCollectionsData } from '@/features/feed-collection';
@@ -137,7 +137,7 @@ export function Numpad({
   // commit-time concern, not a range error.
   const parsed = useMemo(() => parseValue(buf), [buf]);
   const isInvalid = isCellValueInvalid(parsed);
-  const screenH = Dimensions.get('window').height;
+  const { height: screenH } = useWindowDimensions();
   const sheetH = numpadSheetHeight(screenH, insets.bottom);
 
   if (!visible) return null;
