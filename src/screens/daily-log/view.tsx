@@ -50,7 +50,7 @@ function formatSaveError(result: SaveResult): string {
   return 'บันทึกไม่สำเร็จ — ตรวจสอบสัญญาณแล้วลองอีกครั้ง';
 }
 
-type Pending = { kind: 'month'; delta: number } | { kind: 'farm'; farmId: number };
+type Pending = { kind: 'month'; delta: number } | { kind: 'farm'; farmId: number } | { kind: 'back' };
 
 type Props = {
   state: UseDailyLogV6;
@@ -222,9 +222,10 @@ export function DailyLogView({
   const dispatchPending = useCallback(
     (p: Pending) => {
       if (p.kind === 'month') navigateMonth(p.delta);
-      else onChangeFarm(p.farmId);
+      else if (p.kind === 'farm') onChangeFarm(p.farmId);
+      else onBack?.();
     },
-    [navigateMonth, onChangeFarm],
+    [navigateMonth, onChangeFarm, onBack],
   );
 
   const requestMonthChange = useCallback(
@@ -241,6 +242,15 @@ export function DailyLogView({
 
   const onPrevMonth = useCallback(() => requestMonthChange(-1), [requestMonthChange]);
   const onNextMonth = useCallback(() => requestMonthChange(1), [requestMonthChange]);
+
+  const onBackPress = useCallback(() => {
+    if (dirtyCount > 0) {
+      setSaveError(null);
+      setPending({ kind: 'back' });
+      return;
+    }
+    onBack?.();
+  }, [dirtyCount, onBack]);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -414,7 +424,7 @@ export function DailyLogView({
         scrollT={scrollT}
         dirtyCount={dirtyCount}
         dateLabel={dateLabel}
-        onBack={onBack}
+        onBack={onBackPress}
         onPillPress={scrollToFirstDirty}
       />
 
@@ -545,7 +555,7 @@ export function DailyLogView({
       <UnsavedChangesDialog
         visible={pending !== null}
         dirtyCount={dirtyCount}
-        source={pending?.kind === 'farm' ? 'farm' : 'month'}
+        source={pending?.kind ?? 'month'}
         error={saveError}
         onDismiss={onGuardDismiss}
         onDiscard={onGuardDiscard}
