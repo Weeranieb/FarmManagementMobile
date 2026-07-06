@@ -5,20 +5,27 @@ import { Icon } from '@/components/icons';
 import { CELL_HIGHLIGHT, VIBRANT_BRAND } from '../constants';
 
 type Props = {
-  dirtyCount: number;
-  /** Number of rows holding an out-of-range value. When > 0 the save
-   *  button is disabled and the left-hand copy swaps to a red validation
-   *  warning — same rule as Daily Log v7 frame AA, just at the bar
-   *  level instead of the keypad. */
+  /** # of distinct days in the current month with drafts. */
+  daysCount: number;
+  /** # of (pond, day) edits in the current month — the unit save commits. */
+  editsCount: number;
+  /** # of month edits holding an out-of-range value. When > 0 the save button
+   *  is disabled and the left copy swaps to a red validation warning. */
   invalidCount?: number;
   onSavePress: () => void;
   bottomInset?: number;
 };
 
-export function SaveBar({ dirtyCount, invalidCount = 0, onSavePress, bottomInset = 0 }: Props) {
+export function SaveBar({
+  daysCount,
+  editsCount,
+  invalidCount = 0,
+  onSavePress,
+  bottomInset = 0,
+}: Props) {
   const { t } = useTheme();
   const hasInvalid = invalidCount > 0;
-  const enabled = dirtyCount > 0 && !hasInvalid;
+  const enabled = editsCount > 0 && !hasInvalid;
 
   return (
     <View
@@ -64,25 +71,46 @@ export function SaveBar({ dirtyCount, invalidCount = 0, onSavePress, bottomInset
             {hasInvalid ? 'ค่าผิดเงื่อนไข' : 'รออัปโหลด'}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 1 }}>
-            <Text
-              style={{
-                fontSize: 13,
-                fontFamily: type.familyNumBold,
-                color: hasInvalid ? CELL_HIGHLIGHT.errorInk : t.ink,
-              }}
-            >
-              {hasInvalid ? invalidCount : dirtyCount}
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                fontFamily: type.familyBold,
-                color: hasInvalid ? CELL_HIGHLIGHT.errorInk : t.ink,
-                marginLeft: 4,
-              }}
-            >
-              {hasInvalid ? 'บ่อต้องแก้ก่อน' : 'บ่อมีการแก้ไข'}
-            </Text>
+            {hasInvalid ? (
+              <>
+                <Text
+                  style={{ fontSize: 13, fontFamily: type.familyNumBold, color: CELL_HIGHLIGHT.errorInk }}
+                >
+                  {invalidCount}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontFamily: type.familyBold,
+                    color: CELL_HIGHLIGHT.errorInk,
+                    marginLeft: 4,
+                  }}
+                >
+                  รายการต้องแก้ก่อน
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={{ fontSize: 13, fontFamily: type.familyNumBold, color: t.ink }}>
+                  {daysCount}
+                </Text>
+                <Text
+                  style={{ fontSize: 13, fontFamily: type.familyBold, color: t.ink, marginLeft: 4 }}
+                >
+                  วัน ·
+                </Text>
+                <Text
+                  style={{ fontSize: 13, fontFamily: type.familyNumBold, color: t.ink, marginLeft: 4 }}
+                >
+                  {editsCount}
+                </Text>
+                <Text
+                  style={{ fontSize: 13, fontFamily: type.familyBold, color: t.ink, marginLeft: 4 }}
+                >
+                  รายการ
+                </Text>
+              </>
+            )}
           </View>
         </View>
         <Pressable
@@ -105,7 +133,7 @@ export function SaveBar({ dirtyCount, invalidCount = 0, onSavePress, bottomInset
           }}
           accessibilityRole="button"
           accessibilityState={{ disabled: !enabled }}
-          accessibilityLabel={`บันทึกทั้งหมด ${dirtyCount}`}
+          accessibilityLabel={`บันทึกทั้งเดือน ${editsCount} รายการ`}
         >
           <Icon.check size={15} color={enabled ? '#fff' : t.borderStrong} />
           <Text
@@ -115,7 +143,7 @@ export function SaveBar({ dirtyCount, invalidCount = 0, onSavePress, bottomInset
               color: enabled ? '#fff' : t.borderStrong,
             }}
           >
-            บันทึกทั้งหมด
+            บันทึกทั้งเดือน
           </Text>
           <View
             style={{
@@ -132,7 +160,7 @@ export function SaveBar({ dirtyCount, invalidCount = 0, onSavePress, bottomInset
                 color: enabled ? '#fff' : t.borderStrong,
               }}
             >
-              {dirtyCount}
+              {editsCount}
             </Text>
           </View>
         </Pressable>

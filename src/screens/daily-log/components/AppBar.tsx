@@ -14,6 +14,10 @@ type Props = {
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
+// Left inset that aligns secondary rows (the eyebrow kicker) with the title:
+// row padding (14) + back button (36) + row gap (6).
+const TITLE_INSET = 56;
+
 export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: Props) {
   const { t } = useTheme();
 
@@ -29,6 +33,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
     <View
       style={{
         backgroundColor: t.surface,
+        paddingTop: 8,
         borderBottomWidth: dividerT > 0 ? StyleSheet.hairlineWidth : 0,
         borderBottomColor: t.border,
         shadowColor: '#0f172a',
@@ -39,10 +44,35 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
         zIndex: 10,
       }}
     >
+      {/* Eyebrow kicker — collapses on scroll. Indented to sit above the title. */}
+      <View
+        style={{
+          height: eyebrowH,
+          opacity: eyebrowOp,
+          overflow: 'hidden',
+          paddingLeft: TITLE_INSET,
+          paddingRight: 14,
+        }}
+      >
+        <Text
+          numberOfLines={1}
+          style={{
+            fontSize: 10.5,
+            color: t.inkMute,
+            textTransform: 'uppercase',
+            letterSpacing: 0.7,
+            fontFamily: type.familyBold,
+          }}
+        >
+          Daily log · วันนี้
+        </Text>
+      </View>
+
+      {/* Main row — back · title/date · pill, all centered on a single line */}
       <View
         style={{
           paddingHorizontal: 14,
-          paddingVertical: 8,
+          paddingBottom: 8,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
@@ -64,69 +94,65 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
           <Icon.back size={20} color={t.inkSoft} />
         </Pressable>
 
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <View style={{ height: eyebrowH, opacity: eyebrowOp, overflow: 'hidden' }}>
-            <Text
+        <View
+          style={{
+            flex: 1,
+            minWidth: 0,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 7,
+          }}
+        >
+          <Text
+            numberOfLines={1}
+            style={{
+              flexShrink: 1,
+              fontFamily: type.familyBold,
+              letterSpacing: 0.1,
+              color: t.ink,
+              fontSize: 16,
+            }}
+          >
+            บันทึกข้อมูลรายวัน
+          </Text>
+
+          {dateOp > 0.02 ? (
+            <View
               style={{
-                fontSize: 10.5,
-                color: t.inkMute,
-                textTransform: 'uppercase',
-                letterSpacing: 0.7,
-                fontFamily: type.familyBold,
+                flexShrink: 0,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                opacity: dateOp,
               }}
             >
-              Daily log · วันนี้
-            </Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
-            <Text
-              numberOfLines={1}
-              style={{
-                fontFamily: type.familyBold,
-                letterSpacing: 0.1,
-                color: t.ink,
-                fontSize: 16,
-              }}
-            >
-              บันทึกข้อมูลรายวัน
-            </Text>
-
-            {dateOp > 0.02 ? (
               <View
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  opacity: dateOp,
+                  width: 3,
+                  height: 3,
+                  borderRadius: 999,
+                  backgroundColor: t.borderStrong,
+                }}
+              />
+              <Text
+                numberOfLines={1}
+                style={{
+                  fontFamily: type.familyNumSemi,
+                  fontSize: 13,
+                  color: t.inkSoft,
                 }}
               >
-                <View
-                  style={{
-                    width: 3,
-                    height: 3,
-                    borderRadius: 999,
-                    backgroundColor: t.borderStrong,
-                  }}
-                />
-                <Text
-                  style={{
-                    fontFamily: type.familyNumSemi,
-                    fontSize: 13,
-                    color: t.inkSoft,
-                  }}
-                >
-                  {dateLabel}
-                </Text>
-              </View>
-            ) : null}
-          </View>
+                {dateLabel}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {dirtyCount > 0 ? (
           <Pressable
             onPress={onPillPress}
             style={{
+              flexShrink: 0,
               flexDirection: 'row',
               alignItems: 'center',
               gap: 6,

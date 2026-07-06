@@ -15,6 +15,12 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Perf: don't render a tab until first focus (already the v7 default,
+        // set explicitly for intent) and suspend blurred tabs from re-rendering
+        // in the background (freezeOnBlur is off by default). Backed by
+        // react-native-screens; iOS + Android only.
+        lazy: true,
+        freezeOnBlur: true,
         tabBarActiveTintColor: t.brand,
         tabBarInactiveTintColor: t.inkSoft,
         tabBarStyle: {

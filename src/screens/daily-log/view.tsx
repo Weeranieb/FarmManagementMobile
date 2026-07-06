@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Dimensions,
   InteractionManager,
+  RefreshControl,
   ScrollView,
   View,
   type NativeScrollEvent,
@@ -10,7 +12,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 import type { FarmModel } from '@/features/farm';
 import { AppBar } from './components/AppBar';
 import { CollapsingChrome } from './components/CollapsingChrome';
-import { ConfirmSaveSheet } from './components/ConfirmSaveSheet';
+import { ConfirmMonthSaveSheet } from './components/ConfirmMonthSaveSheet';
+import { SaveStatusToast, type SaveToastStatus } from './components/SaveStatusToast';
 import { FarmPickerSheet, type FarmOption } from './components/FarmPickerSheet';
 import {
   MonthYearPickerSheet,
@@ -21,7 +24,18 @@ import { SaveBar } from './components/SaveBar';
 import { TableHeader } from './components/TableHeader';
 import { TableRow } from './components/TableRow';
 import { UnsavedChangesDialog } from './components/UnsavedChangesDialog';
-import { CHROME, CHROME_SCROLL, COLS, NAME_W, ROW_H, TABLE_W, colW, thMonth } from './constants';
+import {
+  CHROME,
+  CHROME_SCROLL,
+  COLS,
+  NAME_W,
+  ROW_H,
+  TABLE_W,
+  VIBRANT_BRAND,
+  colW,
+  numpadSheetHeight,
+  thMonthAbbr,
+} from './constants';
 import type { SaveResult, UseDailyLogV6 } from './hook';
 
 function formatSaveError(result: SaveResult): string {
@@ -37,7 +51,7 @@ function formatSaveError(result: SaveResult): string {
   return 'บันทึกไม่สำเร็จ — ตรวจสอบสัญญาณแล้วลองอีกครั้ง';
 }
 
-type Pending = { kind: 'month'; delta: number } | { kind: 'farm'; farmId: number };
+type Pending = { kind: 'month'; delta: number } | { kind: 'farm'; farmId: number } | { kind: 'back' };
 
 type Props = {
   state: UseDailyLogV6;
@@ -53,6 +67,10 @@ type Props = {
 };
 
 const SAVE_BAR_HEIGHT_PADDING = 96;
+
+// Gap kept between the active row and the top of the numpad sheet when we have
+// to scroll the row out from behind it.
+const NUMPAD_REVEAL_MARGIN = 12;
 
 export function DailyLogView({
   state,
@@ -74,21 +92,30 @@ export function DailyLogView({
     setActiveCell,
     dirtyCount,
     savedCount,
-    invalidCount,
     total,
     unsavedMonths,
     daysWithDrafts,
+    monthEditsCount,
+    monthDaysCount,
+    monthPondCount,
+    monthInvalidCount,
+    monthSummary,
     setCellValue,
     setFeedSelection,
     previousValueForActiveCell,
     lastUsedFeedIdForActiveCell,
     advanceActive,
+    activeCellIsLast,
     saveAll,
     discardDirty,
+    refresh,
   } = state;
 
   const verticalRef = useRef<ScrollView>(null);
   const headerHRef = useRef<ScrollView>(null);
+  // Live vertical scroll offset, used to turn a measured row position into an
+  // absolute scrollTo target when the numpad covers the active row.
+  const scrollYRef = useRef(0);
 
   const tableWidth = TABLE_W;
 
@@ -112,14 +139,29 @@ export function DailyLogView({
     return () => handle.cancel();
   }, []);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saveToast, setSaveToast] = useState<{
+    status: SaveToastStatus;
+    days: number;
+    failedCount: number;
+  } | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
 
   const dateLabel = useMemo(
     () =>
-      `${selectedDate.getDate()} ${thMonth(selectedDate.getMonth()).slice(0, 3)}. ${selectedDate.getFullYear() + 543}`,
+      `${selectedDate.getDate()} ${thMonthAbbr(selectedDate.getMonth())} ${selectedDate.getFullYear() + 543}`,
     [selectedDate],
   );
 
@@ -132,6 +174,7 @@ export function DailyLogView({
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const y = e.nativeEvent.contentOffset.y;
+    scrollYRef.current = y;
     const next = Math.min(1, Math.max(0, y / CHROME_SCROLL));
     setScrollT((prev) => (Math.abs(prev - next) > 0.01 ? next : prev));
   }, []);
@@ -150,11 +193,30 @@ export function DailyLogView({
     verticalRef.current?.scrollTo({ y: target, animated: true });
   }, [ponds]);
 
+  // Keyboard-avoidance for the numpad, keyboard-style: the active row measures
+  // its own on-screen position when it becomes active (tap or ถัดไป). We only
+  // scroll if the numpad would cover it, and just enough to lift it clear —
+  // rows already visible (e.g. the first one) don't move, and the header chrome
+  // is left untouched so it never vanishes/reappears.
+  const onActiveRowMeasure = useCallback(
+    (pageY: number, height: number) => {
+      const screenH = Dimensions.get('window').height;
+      const sheetTop = screenH - numpadSheetHeight(screenH, bottomInset);
+      const rowBottom = pageY + height;
+      const limit = sheetTop - NUMPAD_REVEAL_MARGIN;
+      if (rowBottom <= limit) return; // already fully visible above the sheet
+      const target = Math.max(0, scrollYRef.current + (rowBottom - limit));
+      verticalRef.current?.scrollTo({ y: target, animated: true });
+    },
+    [bottomInset],
+  );
+
   const navigateMonth = useCallback(
     (delta: number) => {
       if (delta > 0 && nextMonthDisabled) return;
-      // Clamp the day to the target month's last day (e.g. May 31 → Apr 30
-      // instead of JS's silent rollover into May 1).
+      // Default to day 1 of the target month rather than carrying the
+      // current day-of-month forward — avoids landing on an arbitrary day
+      // (or JS's silent month-end rollover) when switching months.
       const next = new Date(selectedDate);
       next.setDate(1);
       next.setMonth(next.getMonth() + delta);
@@ -162,8 +224,6 @@ export function DailyLogView({
       const nextIdx = next.getFullYear() * 12 + next.getMonth();
       const nowIdx = now.getFullYear() * 12 + now.getMonth();
       if (nextIdx > nowIdx) return;
-      const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-      next.setDate(Math.min(selectedDate.getDate(), lastDay));
       setSelectedDate(next);
     },
     [selectedDate, setSelectedDate, nextMonthDisabled],
@@ -172,25 +232,38 @@ export function DailyLogView({
   const dispatchPending = useCallback(
     (p: Pending) => {
       if (p.kind === 'month') navigateMonth(p.delta);
-      else onChangeFarm(p.farmId);
+      else if (p.kind === 'farm') onChangeFarm(p.farmId);
+      else onBack?.();
     },
-    [navigateMonth, onChangeFarm],
+    [navigateMonth, onChangeFarm, onBack],
   );
 
   const requestMonthChange = useCallback(
     (delta: number) => {
-      if (dirtyCount > 0) {
+      // Guard on the whole month's drafts, not just the visible day — leaving
+      // a month with any unsaved edit prompts save/discard so drafts can't be
+      // stranded on a day the user can't see.
+      if (monthEditsCount > 0) {
         setSaveError(null);
         setPending({ kind: 'month', delta });
         return;
       }
       navigateMonth(delta);
     },
-    [dirtyCount, navigateMonth],
+    [monthEditsCount, navigateMonth],
   );
 
   const onPrevMonth = useCallback(() => requestMonthChange(-1), [requestMonthChange]);
   const onNextMonth = useCallback(() => requestMonthChange(1), [requestMonthChange]);
+
+  const onBackPress = useCallback(() => {
+    if (monthEditsCount > 0) {
+      setSaveError(null);
+      setPending({ kind: 'back' });
+      return;
+    }
+    onBack?.();
+  }, [monthEditsCount, onBack]);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -219,14 +292,14 @@ export function DailyLogView({
       const target = year * 12 + monthIdx;
       const delta = target - cur;
       if (delta === 0) return;
-      if (dirtyCount > 0) {
+      if (monthEditsCount > 0) {
         setSaveError(null);
         setPending({ kind: 'month', delta });
         return;
       }
       navigateMonth(delta);
     },
-    [selectedDate, dirtyCount, navigateMonth],
+    [selectedDate, monthEditsCount, navigateMonth],
   );
 
   const onFarmPress = useCallback(() => setPickerOpen(true), []);
@@ -235,14 +308,14 @@ export function DailyLogView({
     (id: number) => {
       setPickerOpen(false);
       if (id === activeFarmId) return;
-      if (dirtyCount > 0) {
+      if (monthEditsCount > 0) {
         setSaveError(null);
         setPending({ kind: 'farm', farmId: id });
         return;
       }
       onChangeFarm(id);
     },
-    [activeFarmId, dirtyCount, onChangeFarm],
+    [activeFarmId, monthEditsCount, onChangeFarm],
   );
 
   const onGuardDismiss = useCallback(() => {
@@ -259,12 +332,15 @@ export function DailyLogView({
   }, [pending, discardDirty, dispatchPending]);
 
   const onGuardSaveAndExit = useCallback(async () => {
+    // A background save is already in flight — don't fire a second concurrent
+    // saveAll for the same month.
+    if (saveToast?.status === 'saving') return;
     // Refuse to save while any row carries an out-of-range value — same
     // rule the SaveBar enforces, just at the guard layer too so the user
     // can't sneak a bad upsert through the "บันทึกแล้วออก" path. The
     // dialog stays open with an inline error so they can fix the value
     // before navigating.
-    if (invalidCount > 0) {
+    if (monthInvalidCount > 0) {
       setSaveError('แก้ไขค่าที่ผิดเงื่อนไขก่อนบันทึก');
       return;
     }
@@ -277,7 +353,26 @@ export function DailyLogView({
     } else {
       setSaveError(formatSaveError(result));
     }
-  }, [pending, invalidCount, saveAll, dispatchPending]);
+  }, [pending, monthInvalidCount, saveAll, dispatchPending, saveToast]);
+
+  // Non-blocking save: close the sheet immediately and report the server
+  // round-trip through the status toast (saving → success / error). Pessimistic
+  // — rows stay "unsaved" until the server confirms (saveAll drops overrides
+  // only on success), so nothing looks committed before it actually is.
+  const runSave = useCallback(async () => {
+    if (saveToast?.status === 'saving') return; // single-flight guard
+    const days = monthDaysCount; // snapshot before overrides drop on success
+    setConfirmOpen(false);
+    setSaveToast({ status: 'saving', days, failedCount: 0 });
+    const result = await saveAll();
+    setSaveToast(
+      result.ok
+        ? { status: 'success', days, failedCount: 0 }
+        : { status: 'error', days, failedCount: result.failedCount },
+    );
+  }, [saveToast, monthDaysCount, saveAll]);
+
+  const dismissToast = useCallback(() => setSaveToast(null), []);
 
   const pickerFarms = useMemo<FarmOption[]>(
     () =>
@@ -304,6 +399,21 @@ export function DailyLogView({
     if (!activeCell || !activePond) return '';
     return activePond.v[activeCell.col];
   }, [activeCell, activePond]);
+
+  // Live typed-value preview for the active cell — deliberately kept out of
+  // `overrides`/`setCellValue` so a keystroke doesn't rebuild the `ponds`
+  // array (and re-render every row) on every digit; only the one active
+  // row receives a changed prop (wired below). Committed to real state via
+  // `setCellValue` only on Next/Done, same as before this preview existed.
+  const [liveValue, setLiveValue] = useState<number | ''>('');
+  useEffect(() => {
+    if (!activeCell) {
+      setLiveValue('');
+      return;
+    }
+    setLiveValue(activePond ? activePond.v[activeCell.col] : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCell?.pondKey, activeCell?.col]);
 
   const rememberFeedPick = useCallback(
     (cell: NonNullable<typeof activeCell>, feedId: number | null) => {
@@ -336,13 +446,20 @@ export function DailyLogView({
     [activeCell, rememberFeedPick, setCellValue, advanceActive],
   );
 
+  // Mirrors every keystroke into the table cell behind the sheet — local
+  // `liveValue` only, never `overrides`. The cell itself stays a Pressable
+  // (opens the numpad), never a direct text input.
+  const onNumpadChange = useCallback((value: number | '') => setLiveValue(value), []);
+
+  const onNumpadCancel = useCallback(() => setActiveCell(null), [setActiveCell]);
+
   return (
     <View style={{ flex: 1, backgroundColor: t.surface }}>
       <AppBar
         scrollT={scrollT}
         dirtyCount={dirtyCount}
         dateLabel={dateLabel}
-        onBack={onBack}
+        onBack={onBackPress}
         onPillPress={scrollToFirstDirty}
       />
 
@@ -354,6 +471,14 @@ export function DailyLogView({
           scrollEventThrottle={16}
           stickyHeaderIndices={[1]}
           contentContainerStyle={{ paddingBottom: SAVE_BAR_HEIGHT_PADDING + bottomInset }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={VIBRANT_BRAND[600]}
+              colors={[VIBRANT_BRAND[600]]}
+            />
+          }
         >
           <CollapsingChrome
             scrollT={scrollT}
@@ -412,7 +537,12 @@ export function DailyLogView({
                     pond={pond}
                     idx={i}
                     activeCell={activeCell}
+                    // `undefined` for every non-active row keeps that prop
+                    // reference-stable across keystrokes so React.memo skips
+                    // re-rendering rows the user isn't typing into.
+                    liveValue={pond.key === activeCell?.pondKey ? liveValue : undefined}
                     onCellTap={handleCellTap}
+                    onActiveMeasure={onActiveRowMeasure}
                   />
                 ))
               )}
@@ -420,12 +550,24 @@ export function DailyLogView({
           </ScrollView>
         </ScrollView>
 
-        <SaveBar
-          dirtyCount={dirtyCount}
-          invalidCount={invalidCount}
-          onSavePress={() => setConfirmOpen(true)}
-          bottomInset={bottomInset}
-        />
+        {saveToast ? (
+          <SaveStatusToast
+            status={saveToast.status}
+            days={saveToast.days}
+            failedCount={saveToast.failedCount}
+            bottom={bottomInset}
+            onRetry={runSave}
+            onDismiss={dismissToast}
+          />
+        ) : (
+          <SaveBar
+            daysCount={monthDaysCount}
+            editsCount={monthEditsCount}
+            invalidCount={monthInvalidCount}
+            onSavePress={() => setConfirmOpen(true)}
+            bottomInset={bottomInset}
+          />
+        )}
       </View>
 
       {activeCell && activePond ? (
@@ -436,29 +578,27 @@ export function DailyLogView({
           initialValue={activeValue}
           yesterday={previousValueForActiveCell}
           lastUsedFeedId={lastUsedFeedIdForActiveCell}
-          onCancel={() => setActiveCell(null)}
+          isLastCell={activeCellIsLast}
+          onChange={onNumpadChange}
+          onCancel={onNumpadCancel}
           onCommit={onNumpadCommit}
           onNext={onNumpadNext}
         />
       ) : null}
 
       {confirmOpen ? (
-        <ConfirmSaveSheet
+        <ConfirmMonthSaveSheet
           visible={confirmOpen}
-          ponds={ponds}
-          selectedDate={selectedDate}
+          summary={monthSummary}
           onClose={() => setConfirmOpen(false)}
-          onConfirm={() => {
-            void saveAll();
-            setConfirmOpen(false);
-          }}
+          onConfirm={runSave}
         />
       ) : null}
 
       <UnsavedChangesDialog
         visible={pending !== null}
-        dirtyCount={dirtyCount}
-        source={pending?.kind === 'farm' ? 'farm' : 'month'}
+        dirtyCount={monthPondCount}
+        source={pending?.kind ?? 'month'}
         error={saveError}
         onDismiss={onGuardDismiss}
         onDiscard={onGuardDiscard}

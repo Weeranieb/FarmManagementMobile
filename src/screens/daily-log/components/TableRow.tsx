@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { Pressable, View, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
@@ -23,10 +23,19 @@ type Props = {
   pond: PondRow;
   idx: number;
   activeCell: ActiveCell;
+  /** Live numpad buffer for this row's active cell — `undefined` for every
+   *  row except the one currently being typed into. Kept out of `pond.v` /
+   *  `overrides` on purpose: this changes every keystroke, and stuffing it
+   *  into shared state would rebuild `ponds` and re-render every row instead
+   *  of just this one. */
+  liveValue?: number | '';
   onCellTap: (pondKey: string, col: ColKey) => void;
+  /** Called with this row's on-screen position (window Y + height) when it
+   *  becomes the active row, so the screen can lift it clear of the numpad. */
+  onActiveMeasure?: (pageY: number, height: number) => void;
 };
 
-function TableRowImpl({ pond, idx, activeCell, onCellTap }: Props) {
+function TableRowImpl({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
   // Any locked row — whether `status === 'maintenance'` or `notYetActive`
   // (cycle hasn't started yet on the selected day) — uses the same striped
   // + central-lock visual so the table reads as a single "can't enter data
@@ -36,11 +45,21 @@ function TableRowImpl({ pond, idx, activeCell, onCellTap }: Props) {
     return <LockedRow pond={pond} />;
   }
 
-  return <ActiveRow pond={pond} idx={idx} activeCell={activeCell} onCellTap={onCellTap} />;
+  return (
+    <ActiveRow
+      pond={pond}
+      idx={idx}
+      activeCell={activeCell}
+      liveValue={liveValue}
+      onCellTap={onCellTap}
+      onActiveMeasure={onActiveMeasure}
+    />
+  );
 }
 
-function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
+function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
   const { t } = useTheme();
+  const rowRef = useRef<View>(null);
 
   const accentByState = {
     saved: t.fill,
@@ -51,6 +70,19 @@ function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
   const zebra = idx % 2 === 1 ? TABLE_SURFACE.zebra : TABLE_SURFACE.even;
   const rowActive = activeCell?.pondKey === pond.key;
   const rowBg = rowActive ? VIBRANT_BRAND[50] : zebra;
+
+  // Report this row's on-screen position when it becomes active (tap or ถัดไป)
+  // so the screen can scroll it clear of the numpad if it's covered. Keyed on
+  // `rowActive` only, so typing digits doesn't re-measure.
+  useEffect(() => {
+    if (!rowActive) return;
+    const id = requestAnimationFrame(() => {
+      rowRef.current?.measureInWindow((_x, y, _w, h) => {
+        if (h > 0) onActiveMeasure?.(y, h);
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [rowActive, onActiveMeasure]);
   // Row-label sync (Daily Log v7 frame Y / Z / AA — the highlighted cell's
   // row pulls the pond label cell into focus too). Stripe gets thicker + a
   // soft brand ring, label text gets extra tracking. Color swaps to red on
@@ -72,6 +104,7 @@ function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
 
   return (
     <View
+      ref={rowRef}
       style={{
         flexDirection: 'row',
         minHeight: ROW_H,
@@ -157,8 +190,10 @@ function ActiveRow({ pond, idx, activeCell, onCellTap }: Props) {
         const g = GROUP_LIGHT[c.group];
         const cellDisabled =
           (c.group === 'pellet' && !pond.hasPellet) || (c.group === 'fresh' && !pond.hasFresh);
-        const value = pond.v[c.key];
         const isActive = activeCell?.pondKey === pond.key && activeCell?.col === c.key;
+        // While this exact cell is being typed into, mirror the numpad's
+        // live buffer instead of the committed value — see `liveValue` doc.
+        const value = isActive && liveValue !== undefined ? liveValue : pond.v[c.key];
         // Zero == "no data" — mirrors saveAll's `hasAnyData` filter in hook.ts
         // so the cell visually agrees with what the backend will treat as a
         // skipped column.

@@ -4,61 +4,50 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
-import { VIBRANT_BRAND, fmtTh, thMonth } from '../constants';
-import type { PondRow as PondRowType } from '../hook';
+import { GROUP_LIGHT, VIBRANT_BRAND, fmtTh, thMonth } from '../constants';
+import type { MonthSummary } from '../hook';
 
 type Props = {
   visible: boolean;
-  ponds: PondRowType[];
-  selectedDate: Date;
+  summary: MonthSummary;
   onClose: () => void;
+  /** Fires the (non-blocking) save. The parent closes this sheet immediately
+   *  and reports the server round-trip via a status toast. */
   onConfirm: () => void;
 };
 
-type SummaryRow = {
-  key: 'pellet' | 'fresh' | 'death';
-  label: string;
-  unit: string;
-  total: number;
-  edits: number;
-};
+// Label + unit come from GROUP_LIGHT so the sheet never drifts from the table
+// header / numpad (e.g. เหยื่อสด → "ลัง").
+const FEED_ROWS = (['pellet', 'fresh', 'death'] as const).map((key) => ({
+  key,
+  label: GROUP_LIGHT[key].title,
+  unit: GROUP_LIGHT[key].unit,
+}));
 
-function buildSummary(ponds: PondRowType[]): SummaryRow[] {
-  const dirty = ponds.filter((p) => p.state === 'dirty');
-  const num = (x: number | '') => (typeof x === 'number' ? x : 0);
-
-  const pelletEdits = dirty.filter((p) => num(p.v.pm) > 0 || num(p.v.pe) > 0).length;
-  const freshEdits = dirty.filter((p) => num(p.v.fresh) > 0).length;
-  const deathEdits = dirty.filter((p) => num(p.v.death) > 0).length;
-
-  const pelletTotal = dirty.reduce((acc, p) => acc + num(p.v.pm) + num(p.v.pe), 0);
-  const freshTotal = dirty.reduce((acc, p) => acc + num(p.v.fresh), 0);
-  const deathTotal = dirty.reduce((acc, p) => acc + num(p.v.death), 0);
-
-  return [
-    { key: 'pellet', label: 'อาหารเม็ด', unit: 'kg', total: pelletTotal, edits: pelletEdits },
-    { key: 'fresh', label: 'เหยื่อสด', unit: 'kg', total: freshTotal, edits: freshEdits },
-    { key: 'death', label: 'ปลาตาย', unit: 'ตัว', total: deathTotal, edits: deathEdits },
-  ];
+function monthLabel(month: string): string {
+  // month = "YYYY-MM" → "กรกฎาคม 2569"
+  const year = Number(month.slice(0, 4));
+  const monthIdx = Number(month.slice(5, 7)) - 1;
+  return `${thMonth(monthIdx)} ${year + 543}`;
 }
 
-export function ConfirmSaveSheet({ visible, ponds, selectedDate, onClose, onConfirm }: Props) {
+export function ConfirmMonthSaveSheet({ visible, summary, onClose, onConfirm }: Props) {
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
-  const dirty = ponds.filter((p) => p.state === 'dirty').length;
-  const summary = buildSummary(ponds);
-
-  const dateLabel = `${selectedDate.getDate()} ${thMonth(selectedDate.getMonth()).slice(0, 3)}. ${selectedDate.getFullYear() + 543}`;
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="none"
+      onRequestClose={onClose}
+    >
       <View style={{ flex: 1 }}>
         <Animated.View
           entering={FadeIn.duration(150)}
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(11,18,32,.42)',
-          }}
+          style={{ flex: 1, backgroundColor: 'rgba(11,18,32,.42)' }}
         >
           <Pressable style={{ flex: 1 }} onPress={onClose} />
         </Animated.View>
@@ -77,9 +66,7 @@ export function ConfirmSaveSheet({ visible, ponds, selectedDate, onClose, onConf
           }}
         >
           <View style={{ alignItems: 'center', paddingTop: 7, paddingBottom: 4 }}>
-            <View
-              style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: t.border }}
-            />
+            <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: t.border }} />
           </View>
 
           {/* Header */}
@@ -105,28 +92,22 @@ export function ConfirmSaveSheet({ visible, ponds, selectedDate, onClose, onConf
                 justifyContent: 'center',
               }}
             >
-              <Icon.check size={20} color={VIBRANT_BRAND[700]} />
+              <Icon.calendar size={20} color={VIBRANT_BRAND[700]} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                style={{
-                  fontSize: 17,
-                  fontFamily: type.familyBold,
-                  color: t.ink,
-                  lineHeight: 22,
-                }}
-              >
-                ยืนยันการบันทึก
+              <Text style={{ fontSize: 17, fontFamily: type.familyBold, color: t.ink, lineHeight: 22 }}>
+                บันทึกข้อมูลเดือน{monthLabel(summary.month)}
               </Text>
               <Text style={{ fontSize: 12.5, color: t.inkSoft, marginTop: 2, lineHeight: 17 }}>
-                บันทึก{' '}
-                <Text
-                  style={{ fontFamily: type.familyNumBold, color: t.ink }}
-                >
-                  {dirty}
+                แก้ไข{' '}
+                <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>
+                  {summary.daysEdited}
                 </Text>{' '}
-                บ่อ ที่แก้ไขในวันที่{' '}
-                <Text style={{ fontFamily: type.familyBold, color: t.ink }}>{dateLabel}</Text>
+                วัน ·{' '}
+                <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>
+                  {summary.pondCount}
+                </Text>{' '}
+                บ่อ
               </Text>
             </View>
             <Pressable
@@ -147,7 +128,7 @@ export function ConfirmSaveSheet({ visible, ponds, selectedDate, onClose, onConf
             </Pressable>
           </View>
 
-          {/* Summary card */}
+          {/* Summary card — totals by feed type */}
           <View
             style={{
               marginHorizontal: 14,
@@ -159,59 +140,41 @@ export function ConfirmSaveSheet({ visible, ponds, selectedDate, onClose, onConf
               overflow: 'hidden',
             }}
           >
-            {summary.map((r, i) => (
-              <View
-                key={r.key}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                  paddingHorizontal: 14,
-                  paddingVertical: 11,
-                  borderTopWidth: i ? 1 : 0,
-                  borderTopColor: t.border,
-                  backgroundColor: t.surface,
-                }}
-              >
+            {FEED_ROWS.map((r, i) => {
+              const cell = summary[r.key];
+              return (
                 <View
+                  key={r.key}
                   style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 7,
-                    backgroundColor: t.surfaceAlt,
-                    borderWidth: 1,
-                    borderColor: t.border,
+                    flexDirection: 'row',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    gap: 10,
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    borderTopWidth: i ? 1 : 0,
+                    borderTopColor: t.border,
+                    backgroundColor: t.surface,
                   }}
                 >
                   <Text
-                    style={{
-                      fontSize: 11,
-                      fontFamily: type.familyNumBold,
-                      color: t.ink,
-                    }}
+                    style={{ flex: 1, fontSize: 13.5, fontFamily: type.familySemi, color: t.ink }}
                   >
-                    {r.edits}
+                    {r.label}
+                    {cell.days > 0 ? (
+                      <Text style={{ fontSize: 11.5, color: t.inkMute, fontFamily: type.familyNum }}>
+                        {'  '}({fmtTh(cell.days)} วัน)
+                      </Text>
+                    ) : null}
+                  </Text>
+                  <Text style={{ fontSize: 15, fontFamily: type.familyNumBold, color: t.ink }}>
+                    {fmtTh(cell.total)}{' '}
+                    <Text style={{ fontSize: 11, color: t.inkSoft, fontFamily: type.familySemi }}>
+                      {r.unit}
+                    </Text>
                   </Text>
                 </View>
-                <Text
-                  style={{ flex: 1, fontSize: 13.5, fontFamily: type.familySemi, color: t.ink }}
-                >
-                  {r.label}
-                </Text>
-                <Text
-                  style={{ fontSize: 14, fontFamily: type.familyNumBold, color: t.ink }}
-                >
-                  {fmtTh(r.total)}{' '}
-                  <Text
-                    style={{ fontSize: 11, color: t.inkSoft, fontFamily: type.familySemi }}
-                  >
-                    {r.unit}
-                  </Text>
-                </Text>
-              </View>
-            ))}
+              );
+            })}
           </View>
 
           {/* Offline note */}
@@ -237,13 +200,7 @@ export function ConfirmSaveSheet({ visible, ponds, selectedDate, onClose, onConf
           </View>
 
           {/* Actions */}
-          <View
-            style={{
-              paddingHorizontal: 14,
-              flexDirection: 'row',
-              gap: 10,
-            }}
-          >
+          <View style={{ paddingHorizontal: 14, flexDirection: 'row', gap: 10 }}>
             <Pressable
               onPress={onClose}
               style={{
@@ -272,10 +229,11 @@ export function ConfirmSaveSheet({ visible, ponds, selectedDate, onClose, onConf
                 justifyContent: 'center',
                 gap: 8,
               }}
+              accessibilityRole="button"
             >
               <Icon.check size={16} color="#fff" />
               <Text style={{ color: '#fff', fontSize: 15, fontFamily: type.familyBold }}>
-                บันทึก {dirty} บ่อ
+                บันทึก {fmtTh(summary.daysEdited)} วัน
               </Text>
             </Pressable>
           </View>

@@ -120,15 +120,12 @@ export function FeedTypePicker({
           }}
         />
 
-        {/* Header — muted Thai label + total count */}
+        {/* Header — muted Thai label */}
         <View
           style={{
             paddingHorizontal: 14,
             paddingTop: 11,
             paddingBottom: 6,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
           }}
         >
           <Text
@@ -140,15 +137,6 @@ export function FeedTypePicker({
             }}
           >
             เลือกอาหาร
-          </Text>
-          <Text
-            style={{
-              fontSize: 10.5,
-              fontFamily: type.familyNumSemi,
-              color: t.inkMute,
-            }}
-          >
-            {feeds.length}
           </Text>
         </View>
 
@@ -292,33 +280,6 @@ export function FeedTypePicker({
             })
           )}
         </ScrollView>
-
-        {/* Footer — subtle link to feed-management */}
-        <View
-          style={{
-            paddingHorizontal: 14,
-            paddingTop: 4,
-            paddingBottom: 12,
-            borderTopWidth: 1,
-            borderTopColor: t.border,
-          }}
-        >
-          <Pressable
-            style={{ paddingTop: 8, alignSelf: 'flex-start' }}
-            accessibilityRole="link"
-            accessibilityLabel="เพิ่มอาหารใหม่"
-          >
-            <Text
-              style={{
-                color: VIBRANT_BRAND[700],
-                fontSize: 12.5,
-                fontFamily: type.familySemi,
-              }}
-            >
-              + เพิ่มอาหารใหม่
-            </Text>
-          </Pressable>
-        </View>
       </Animated.View>
     </>
   );

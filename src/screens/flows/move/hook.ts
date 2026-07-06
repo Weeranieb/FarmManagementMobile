@@ -87,6 +87,7 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
   const [additionalCosts, setAdditionalCosts] = useState<CostRow[]>([EMPTY_COST_ROW]);
   const [date, setDate] = useState<Date>(() => new Date());
   const [markToClose, setMarkToClose] = useState(false);
+  const [remark, setRemark] = useState('');
 
   // Re-seed fishType only when the source pond changes (not on every render —
   // adaptPond rebuilds fishTypes each render so depending on the array would
@@ -97,13 +98,14 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromPond?.id]);
 
-  // Picker options: canonical standard species, then any non-standard ones
-  // the source pond happens to carry. Selection is highlighted in place; the
-  // standard prefix keeps ordering predictable.
+  // Picker options are limited to species the source pond actually holds
+  // (per the API) — you can only move fish that are already there. Standard
+  // species are ordered first for a predictable chip order; any non-standard
+  // species the pond carries is appended after.
   const fishTypeOptions = useMemo(() => {
     const pondTypes = fromPond?.fishTypes ?? [];
     return [
-      ...STANDARD_FISH_TYPES,
+      ...STANDARD_FISH_TYPES.filter((t) => pondTypes.includes(t)),
       ...pondTypes.filter((t) => !STANDARD_FISH_TYPES.includes(t)),
     ];
   }, [fromPond]);
@@ -172,6 +174,7 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
         activityDate: toIsoDate(date),
         ...(wireCosts.length > 0 ? { additionalCosts: wireCosts } : {}),
         ...(markToClose ? { markToClose: true } : {}),
+        ...(remark.trim() ? { remark: remark.trim() } : {}),
       });
       onClose?.();
     } catch (err) {
@@ -251,6 +254,8 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
     setDate,
     markToClose,
     setMarkToClose,
+    remark,
+    setRemark,
     step,
     setStep,
     after,

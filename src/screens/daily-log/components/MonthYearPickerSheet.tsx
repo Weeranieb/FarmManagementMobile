@@ -92,7 +92,14 @@ export function MonthYearPickerSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="none"
+      onRequestClose={onClose}
+    >
       <View style={{ flex: 1 }}>
         <Animated.View
           entering={FadeIn.duration(150)}

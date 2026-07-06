@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Btn, Input, Pill, TopBar } from '@/components/ui';
@@ -63,6 +63,8 @@ type Props = {
   setDate: (d: Date) => void;
   markToClose: boolean;
   setMarkToClose: (v: boolean) => void;
+  remark: string;
+  setRemark: (v: string) => void;
   step: 1 | 2;
   setStep: (s: 1 | 2) => void;
   after: { from: number; to: number };
@@ -113,6 +115,8 @@ export function MoveView({
   setDate,
   markToClose,
   setMarkToClose,
+  remark,
+  setRemark,
   step,
   setStep,
   after,
@@ -261,6 +265,21 @@ export function MoveView({
             <AdditionalCostsList rows={additionalCosts} />
           </ReviewSection>
 
+          {remark ? (
+            <ReviewSection title="โน้ต">
+              <Text
+                style={{
+                  paddingVertical: 12,
+                  fontSize: 14,
+                  color: t.ink,
+                  fontFamily: type.family,
+                }}
+              >
+                {remark}
+              </Text>
+            </ReviewSection>
+          ) : null}
+
           <MoveCostSplitPanel
             fromLabel={fromLabel}
             toLabel={toLabel}
@@ -332,7 +351,9 @@ export function MoveView({
           fromFab && !fieldsReady
             ? 'เลือกฟาร์มและบ่อ แล้วกรอกรายละเอียด'
             : fromPond
-              ? `${fromPond.name}${fromPond.farmName ? ` · ${fromPond.farmName}` : ''}`
+              ? toPond && toPond.id !== fromPond.id
+                ? `${displayPondName(fromPond.name)} → ${displayPondName(toPond.name)}`
+                : `${displayPondName(fromPond.name)}${fromPond.farmName ? ` · ${displayFarmName(fromPond.farmName)}` : ''}`
               : undefined
         }
         leading={<FlowBackBtn step={1} onPress={goBack} />}
@@ -484,6 +505,39 @@ export function MoveView({
                 tone="move"
                 rows={additionalCosts}
                 onChange={setAdditionalCosts}
+              />
+            </View>
+
+            <View style={{ marginTop: 6, marginBottom: 14 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontFamily: type.familySemi,
+                  color: t.ink,
+                  marginBottom: 6,
+                }}
+              >
+                โน้ต
+              </Text>
+              <TextInput
+                value={remark}
+                onChangeText={setRemark}
+                placeholder="เพิ่มโน้ต…"
+                placeholderTextColor={t.inkMute}
+                style={{
+                  height: 48,
+                  paddingHorizontal: 12,
+                  paddingVertical: 0,
+                  textAlignVertical: 'center',
+                  ...Platform.select({ android: { includeFontPadding: false } }),
+                  borderRadius: radii.sm,
+                  borderWidth: 1.5,
+                  borderColor: t.border,
+                  backgroundColor: t.surface,
+                  color: t.ink,
+                  fontFamily: type.family,
+                  fontSize: 14,
+                }}
               />
             </View>
 

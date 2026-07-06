@@ -1,4 +1,5 @@
 import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Icon } from '@/components/icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
@@ -34,6 +35,15 @@ export function ActivityHistoryView({
 }: Props) {
   const { t } = useTheme();
   const bottomPad = bottomClearance ?? space[10];
+
+  const refreshControl = (
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      tintColor={t.brand}
+      {...(Platform.OS === 'android' ? { colors: [t.brand] } : {})}
+    />
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -103,36 +113,46 @@ export function ActivityHistoryView({
         <FilterChips filter={filter} counts={counts} disabled={isLoading} onChange={setFilter} />
       ) : null}
 
-      {/* ── Scroll body ───────────────────────────────────────────── */}
-      <ScrollView
-        delaysContentTouches={false}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: bottomPad }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={t.brand}
-            {...(Platform.OS === 'android' ? { colors: [t.brand] } : {})}
+      {/* ── Body ──────────────────────────────────────────────────── */}
+      {/* Data path is virtualized (FlashList) so off-screen day groups
+          aren't rendered; non-list states keep a plain ScrollView so
+          pull-to-refresh still works. */}
+      {isLoading || isEmpty || filteredEmpty ? (
+        <ScrollView
+          delaysContentTouches={false}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: bottomPad }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        >
+          {isLoading ? (
+            <HistorySkeleton />
+          ) : isEmpty ? (
+            <EmptyAll />
+          ) : (
+            <EmptyFiltered kind={filter} onClear={() => setFilter('all')} />
+          )}
+        </ScrollView>
+      ) : (
+        <View style={{ flex: 1 }}>
+          <FlashList
+            data={groups}
+            keyExtractor={(g) => g.dateKey}
+            renderItem={({ item, index }) => (
+              <DayGroup group={item} first={index === 0} onPressItem={onOpenActivity} />
+            )}
+            ListFooterComponent={<EndCap count={filteredCount} />}
+            contentContainerStyle={{
+              paddingHorizontal: space[4],
+              paddingTop: space[2],
+              paddingBottom: bottomPad,
+            }}
+            delaysContentTouches={false}
+            showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
           />
-        }
-      >
-        {isLoading ? (
-          <HistorySkeleton />
-        ) : isEmpty ? (
-          <EmptyAll />
-        ) : filteredEmpty ? (
-          <EmptyFiltered kind={filter} onClear={() => setFilter('all')} />
-        ) : (
-          <View style={{ paddingHorizontal: space[4], paddingTop: space[2] }}>
-            {groups.map((g, gi) => (
-              <DayGroup key={g.dateKey} group={g} first={gi === 0} onPressItem={onOpenActivity} />
-            ))}
-            <EndCap count={filteredCount} />
-          </View>
-        )}
-      </ScrollView>
+        </View>
+      )}
     </View>
   );
 }

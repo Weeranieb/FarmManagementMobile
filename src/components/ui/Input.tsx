@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   TextInput,
   View,
@@ -21,17 +22,20 @@ type Props = TextInputProps & {
   passwordToggle?: boolean;
 };
 
-export function Input({
-  suffix,
-  big,
-  containerStyle,
-  style,
-  onFocus,
-  onBlur,
-  passwordToggle,
-  secureTextEntry,
-  ...rest
-}: Props) {
+export const Input = forwardRef<TextInput, Props>(function Input(
+  {
+    suffix,
+    big,
+    containerStyle,
+    style,
+    onFocus,
+    onBlur,
+    passwordToggle,
+    secureTextEntry,
+    ...rest
+  },
+  ref,
+) {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
   const [focused, setFocused] = useState(false);
@@ -55,6 +59,7 @@ export function Input({
       ]}
     >
       <TextInput
+        ref={ref}
         {...rest}
         secureTextEntry={effectiveSecure}
         placeholderTextColor={t.inkMute}
@@ -72,6 +77,9 @@ export function Input({
             color: t.ink,
             fontFamily: big ? type.familyNumSemi : type.family,
             fontSize: big ? 22 : 16,
+            paddingVertical: 0,
+            textAlignVertical: 'center',
+            ...Platform.select({ android: { includeFontPadding: false } }),
           },
           style,
         ]}
@@ -105,4 +113,4 @@ export function Input({
       ) : null}
     </View>
   );
-}
+});

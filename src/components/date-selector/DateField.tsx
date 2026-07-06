@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Dimensions, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -25,8 +24,11 @@ function startOfToday(): Date {
 
 /**
  * Interactive date picker control — shows the chosen date in a button-styled
- * row, opens the native picker on tap (Android dialog, iOS custom calendar in a
- * bottom sheet with a "เสร็จ" confirm button). Defaults to today as maximum (no future dates).
+ * row, and on tap opens a custom Thai (Buddhist-era) calendar in a bottom sheet
+ * with a "เสร็จ" confirm button. The same sheet is used on both iOS and Android
+ * so the date UX (and พ.ศ. year) is identical across platforms — Android no
+ * longer falls back to the OS-native Gregorian dialog. Defaults to today as
+ * maximum (no future dates).
  */
 export function DateField({ value, onChange, minimumDate, maximumDate }: Props) {
   const { t } = useTheme();
@@ -34,7 +36,7 @@ export function DateField({ value, onChange, minimumDate, maximumDate }: Props) 
   const sheetHeight = Dimensions.get('window').height * SHEET_HEIGHT_PCT;
   const maxDate = useMemo(() => maximumDate ?? startOfToday(), [maximumDate]);
   const [open, setOpen] = useState(false);
-  // iOS calendar edits a draft date so the user can confirm with "เสร็จ".
+  // The calendar edits a draft date so the user can confirm with "เสร็จ".
   const [draft, setDraft] = useState<Date>(value);
 
   const openPicker = () => {
@@ -42,14 +44,7 @@ export function DateField({ value, onChange, minimumDate, maximumDate }: Props) 
     setOpen(true);
   };
 
-  const handleAndroidChange = (event: DateTimePickerEvent, selected?: Date) => {
-    setOpen(false);
-    if (event.type === 'set' && selected) {
-      onChange(clampDate(selected, minimumDate, maxDate));
-    }
-  };
-
-  const confirmIos = () => {
+  const confirmPick = () => {
     onChange(clampDate(draft, minimumDate, maxDate));
     setOpen(false);
   };
@@ -83,24 +78,12 @@ export function DateField({ value, onChange, minimumDate, maximumDate }: Props) 
         <Icon.chevR size={16} color={t.inkSoft} />
       </Pressable>
 
-      {open && Platform.OS === 'android' ? (
-        <DateTimePicker
-          value={clampDate(value, minimumDate, maxDate)}
-          mode="date"
-          display="default"
-          minimumDate={minimumDate}
-          maximumDate={maxDate}
-          onChange={handleAndroidChange}
-        />
-      ) : null}
-
-      {Platform.OS === 'ios' ? (
-        <Modal
-          visible={open}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setOpen(false)}
-        >
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
           <View style={{ flex: 1, justifyContent: 'flex-end' }}>
             <Pressable
               onPress={() => setOpen(false)}
@@ -144,7 +127,7 @@ export function DateField({ value, onChange, minimumDate, maximumDate }: Props) 
                   </Text>
                 </View>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                  <Pressable onPress={confirmIos} hitSlop={10}>
+                  <Pressable onPress={confirmPick} hitSlop={10}>
                     <Text style={{ color: t.brand, fontFamily: type.familyBold, fontSize: 15 }}>
                       เสร็จ
                     </Text>
@@ -162,7 +145,6 @@ export function DateField({ value, onChange, minimumDate, maximumDate }: Props) 
             </View>
           </View>
         </Modal>
-      ) : null}
     </>
   );
 }

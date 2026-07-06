@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type, radii } from '@/theme/tokens';
 import { Card, TopBar } from '@/components/ui';
@@ -30,6 +30,8 @@ type Props = {
   tab: PondDetailTab;
   setTab: (t: PondDetailTab) => void;
   onPondOverflow: () => void;
+  refresh: () => Promise<void>;
+  refreshing: boolean;
   onBack?: () => void;
   onAction?: (kind: 'fill' | 'move' | 'sell') => void;
   onOpenDailyLog?: (ctx: { farmId: number; pondId: number }) => void;
@@ -45,6 +47,8 @@ export function PondDetailView({
   tab,
   setTab,
   onPondOverflow,
+  refresh,
+  refreshing,
   onBack,
   onAction,
   onOpenDailyLog,
@@ -127,6 +131,14 @@ export function PondDetailView({
         delaysContentTouches={false}
         contentContainerStyle={{ paddingBottom: 96 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            tintColor={t.brand}
+            colors={[t.brand]}
+          />
+        }
       >
         <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12 }}>
           <Card padded={false}>

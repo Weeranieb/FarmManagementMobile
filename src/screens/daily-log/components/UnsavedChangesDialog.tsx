@@ -36,7 +36,14 @@ export function UnsavedChangesDialog({
   const { t, shadowLg } = useTheme();
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onDismiss}>
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="none"
+      onRequestClose={onDismiss}
+    >
       <View style={{ flex: 1 }}>
         <Animated.View
           entering={FadeIn.duration(150)}

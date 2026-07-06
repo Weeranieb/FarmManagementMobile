@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, View, Text, Dimensions } from 'react-native';
+import { Modal, Pressable, View, Text, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFeedCollectionsData } from '@/features/feed-collection';
@@ -14,6 +14,7 @@ import {
   VIBRANT_BRAND,
   fmtTh,
   isCellValueInvalid,
+  numpadSheetHeight,
   thMonthAbbr,
   type ColKey,
   type GroupKey,
@@ -34,6 +35,12 @@ type Props = {
    *  so re-entering data for a pond keeps the feed type it was last logged
    *  with. */
   lastUsedFeedId?: number | null;
+  /** No further cell to advance to — the primary button reads "เสร็จสิ้น"
+   *  and commits-then-closes instead of advancing with "ถัดไป". */
+  isLastCell?: boolean;
+  /** Fires on every keystroke (parsed value, may be out of range) so the
+   *  table cell behind the sheet can mirror what's being typed live. */
+  onChange?: (value: number | '') => void;
   onCancel: () => void;
   /** `feedId` is the feed-collection ID the user (or the auto-default) had
    *  selected at the moment of commit. null for columns that don't carry a
@@ -67,6 +74,8 @@ export function Numpad({
   initialValue,
   yesterday,
   lastUsedFeedId,
+  isLastCell = false,
+  onChange,
   onCancel,
   onCommit,
   onNext,
@@ -128,15 +137,15 @@ export function Numpad({
   // commit-time concern, not a range error.
   const parsed = useMemo(() => parseValue(buf), [buf]);
   const isInvalid = isCellValueInvalid(parsed);
-  const screenH = Dimensions.get('window').height;
-  // Grow the sheet to cover the home-indicator inset so the footer keeps its
-  // designed proportions and still clears the device safe area.
-  const sheetH = Math.round(screenH * 0.52) + insets.bottom;
+  const { height: screenH } = useWindowDimensions();
+  const sheetH = numpadSheetHeight(screenH, insets.bottom);
 
   if (!visible) return null;
 
   const handleKey = (key: string) => {
-    setBuf((prev) => applyKey(prev, key, integerOnly));
+    const next = applyKey(buf, key, integerOnly);
+    setBuf(next);
+    onChange?.(parseValue(next));
   };
 
   const handleCancel = () => {
@@ -159,11 +168,21 @@ export function Numpad({
       : { dot: '#5478c2', tintA: '#eaf0fb' };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={handleCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="none"
+      onRequestClose={handleCancel}
+    >
       <View style={{ flex: 1 }}>
         <Animated.View
           entering={FadeIn.duration(120)}
-          style={{ flex: 1, backgroundColor: 'rgba(11,18,32,.25)' }}
+          // Light scrim — the daily-log view scrolls the row being edited to
+          // sit above this sheet, so the backdrop is kept faint enough that
+          // the pinned row (and its blue active-cell highlight) reads clearly.
+          style={{ flex: 1, backgroundColor: 'rgba(11,18,32,.12)' }}
         >
           <Pressable style={{ flex: 1 }} onPress={handleCommit} />
         </Animated.View>
@@ -188,142 +207,150 @@ export function Numpad({
             <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: t.border }} />
           </View>
 
-          {/* feed type chip — top right · 2-line tile (eyebrow + feed name) */}
-          {supportsFeedType && cur ? (
-            <Pressable
-              onPress={() => setPickerOpen(true)}
-              style={{
-                position: 'absolute',
-                top: 6,
-                right: 14,
-                paddingTop: 6,
-                paddingBottom: 7,
-                paddingLeft: 11,
-                paddingRight: 10,
-                borderRadius: 13,
-                backgroundColor: t.surface,
-                borderWidth: 1,
-                borderColor: t.border,
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 9,
-                maxWidth: 200,
-                zIndex: 5,
-                shadowColor: '#0f172a',
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 2 },
-                elevation: 4,
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="เลือกชนิดอาหาร"
-            >
-              {/* Brand color dot with halo */}
-              <View
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 999,
-                  backgroundColor: chipDot.dot,
-                  borderWidth: 3,
-                  borderColor: chipDot.tintA,
-                }}
-              />
-              <View style={{ minWidth: 0, flexShrink: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 9,
-                    fontFamily: type.familyBold,
-                    color: t.inkMute,
-                    letterSpacing: 0.55,
-                    textTransform: 'uppercase',
-                    lineHeight: 14,
-                  }}
-                >
-                  {g.title}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    marginTop: 2,
-                    fontSize: 13,
-                    fontFamily: type.familyBold,
-                    color: t.ink,
-                    lineHeight: 18,
-                  }}
-                >
-                  {cur.name}
-                </Text>
-              </View>
-              <Icon.arrowDown size={12} color={t.inkMute} />
-            </Pressable>
-          ) : null}
-
-          {/* header: context + value */}
+          {/* header: pond context + typed value on the left, feed-type
+              selector as a full-height tile on the right */}
           <View
             style={{
               paddingHorizontal: 16,
               paddingTop: 4,
               paddingBottom: 10,
-              paddingRight: supportsFeedType ? 200 : 16,
               flexDirection: 'row',
-              alignItems: 'center',
+              alignItems: 'stretch',
               gap: 10,
             }}
           >
             <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 9,
-                backgroundColor: g.tint,
-                borderWidth: 1,
-                borderColor: g.edge,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+              style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 }}
             >
-              <GroupIcon group={group} size={14} color={g.ink} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
+              <View
                 style={{
-                  fontSize: 12,
-                  fontFamily: type.familyBold,
-                  color: t.inkSoft,
-                  letterSpacing: 0.2,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 9,
+                  backgroundColor: g.tint,
+                  borderWidth: 1,
+                  borderColor: g.edge,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-                numberOfLines={1}
               >
-                บ่อ {pondId} · {slotLabel}
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
+                <GroupIcon group={group} size={14} color={g.ink} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
                   style={{
-                    fontSize: 34,
-                    lineHeight: 36,
-                    fontFamily: type.familyNumBold,
-                    color: isInvalid ? CELL_HIGHLIGHT.errorInk : t.ink,
-                    letterSpacing: -1,
+                    fontSize: 12,
+                    fontFamily: type.familyBold,
+                    color: t.inkSoft,
+                    letterSpacing: 0.2,
                   }}
+                  numberOfLines={1}
                 >
-                  {displayValue}
+                  บ่อ {pondId} · {slotLabel}
                 </Text>
-                <Text style={{ fontSize: 14, color: t.inkSoft, fontFamily: type.familySemi }}>
-                  {g.unit}
-                </Text>
-                {yesterday != null && !isInvalid ? (
-                  <Text style={{ fontSize: 12, color: t.inkSoft, marginLeft: 8 }}>
-                    เดิม{' '}
-                    <Text style={{ fontFamily: type.familyNumBold, color: t.inkSoft }}>
-                      {fmtTh(yesterday.value)}
-                    </Text>
-                    {' · '}
-                    {yesterday.date.getDate()} {thMonthAbbr(yesterday.date.getMonth())}
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4 }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 34,
+                      lineHeight: 36,
+                      fontFamily: type.familyNumBold,
+                      color: isInvalid ? CELL_HIGHLIGHT.errorInk : t.ink,
+                      letterSpacing: -1,
+                    }}
+                  >
+                    {displayValue}
                   </Text>
-                ) : null}
+                  <Text style={{ fontSize: 14, color: t.inkSoft, fontFamily: type.familySemi }}>
+                    {g.unit}
+                  </Text>
+                  {yesterday != null && !isInvalid ? (
+                    <Text style={{ fontSize: 12, color: t.inkSoft, marginLeft: 8 }}>
+                      เดิม{' '}
+                      <Text style={{ fontFamily: type.familyNumBold, color: t.inkSoft }}>
+                        {fmtTh(yesterday.value)}
+                      </Text>
+                      {' · '}
+                      {yesterday.date.getDate()} {thMonthAbbr(yesterday.date.getMonth())}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
             </View>
+
+            {/* feed-type selector — full-height tile (eyebrow + feed name) */}
+            {supportsFeedType && cur ? (
+              <Pressable
+                onPress={() => setPickerOpen(true)}
+                style={{
+                  alignSelf: 'stretch',
+                  justifyContent: 'center',
+                  paddingVertical: 8,
+                  paddingLeft: 11,
+                  paddingRight: 10,
+                  borderRadius: 13,
+                  backgroundColor: t.surface,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 9,
+                  maxWidth: 200,
+                  shadowColor: '#0f172a',
+                  shadowOpacity: 0.1,
+                  shadowRadius: 8,
+                  shadowOffset: { width: 0, height: 2 },
+                  elevation: 4,
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="เลือกชนิดอาหาร"
+              >
+                {/* Brand color dot with halo */}
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 999,
+                    backgroundColor: chipDot.dot,
+                    borderWidth: 3,
+                    borderColor: chipDot.tintA,
+                  }}
+                />
+                <View style={{ minWidth: 0, flexShrink: 1 }}>
+                  {/* Eyebrow shows the feed category, but drop it when it would
+                      just repeat the feed name (e.g. fresh feed named "เหยื่อสด")
+                      so the chip isn't "เหยื่อสด / เหยื่อสด". */}
+                  {cur.name !== g.title ? (
+                    <Text
+                      style={{
+                        fontSize: 9,
+                        fontFamily: type.familyBold,
+                        color: t.inkMute,
+                        letterSpacing: 0.55,
+                        textTransform: 'uppercase',
+                        lineHeight: 14,
+                      }}
+                    >
+                      {g.title}
+                    </Text>
+                  ) : null}
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      marginTop: cur.name !== g.title ? 2 : 0,
+                      fontSize: 13,
+                      fontFamily: type.familyBold,
+                      color: t.ink,
+                      lineHeight: 18,
+                    }}
+                  >
+                    {cur.name}
+                  </Text>
+                </View>
+                <Icon.arrowDown size={12} color={t.inkMute} />
+              </Pressable>
+            ) : null}
           </View>
 
           {/* Inline validation hint — Daily Log v7 frame AA. Replaces the
@@ -467,7 +494,7 @@ export function Numpad({
               </Text>
             </Pressable>
             <Pressable
-              onPress={handleNext}
+              onPress={isLastCell ? handleCommit : handleNext}
               disabled={isInvalid}
               style={{
                 flex: 1,
@@ -482,9 +509,13 @@ export function Numpad({
               }}
             >
               <Text style={{ fontFamily: type.familyBold, fontSize: 15, color: '#fff' }}>
-                ถัดไป
+                {isLastCell ? 'เสร็จสิ้น' : 'ถัดไป'}
               </Text>
-              <Icon.chevR size={16} color="#fff" />
+              {isLastCell ? (
+                <Icon.check size={16} color="#fff" stroke={2.6} />
+              ) : (
+                <Icon.chevR size={16} color="#fff" />
+              )}
             </Pressable>
           </View>
 
