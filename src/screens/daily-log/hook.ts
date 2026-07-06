@@ -83,6 +83,19 @@ export type UseDailyLogV6 = {
    *  the amber dot on day pills in the date strip so users can find their
    *  way back to a day with pending edits. */
   daysWithDrafts: ReadonlySet<string>;
+  /** # of (pond, day) drafts in the CURRENT month — drives the SaveBar
+   *  enable/badge and the "รายการ" count. Save-all commits the whole month. */
+  monthEditsCount: number;
+  /** # of distinct days in the current month that carry any draft. */
+  monthDaysCount: number;
+  /** # of distinct ponds edited across the current month. */
+  monthPondCount: number;
+  /** # of (pond, day) drafts in the current month holding an out-of-range
+   *  value. Blocks save month-wide (SaveBar + navigation guard) so a bad
+   *  value on a non-visible day can't ship. */
+  monthInvalidCount: number;
+  /** By-feed-type roll-up of the current month's drafts for the confirm sheet. */
+  monthSummary: MonthSummary;
 
   setCellValue: (pondKey: string, col: ColKey, value: number | '') => void;
   /** Record the user's feed-collection pick (from the numpad picker) for a
@@ -115,6 +128,18 @@ export type SaveResult = {
   /** Wrapped backend detail when present — e.g. "freshFeedCollectionId is
    *  required when logging fresh feed amounts". */
   errorDetails?: string;
+};
+
+/** By-feed-type roll-up of the current month's drafts, shown in the confirm
+ *  sheet before a month-wide save. `days` on each feed = how many distinct
+ *  days that feed type was logged on (for the "(X วัน)" caption). */
+export type MonthSummary = {
+  month: string; // "YYYY-MM"
+  daysEdited: number;
+  pondCount: number;
+  pellet: { total: number; days: number };
+  fresh: { total: number; days: number };
+  death: { total: number; days: number };
 };
 
 const EMPTY_VALUES: CellValues = { pm: '', pe: '', fresh: '', death: '', cat: '' };
@@ -186,6 +211,11 @@ function monthKey(d: Date): string {
 function dateKey(d: Date): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
+
+// Slice a dKey ("YYYY-MM-DD") back into its month key ("YYYY-MM") and 1-based
+// day number — used to group/filter overrides by month for the month-wide save.
+const dKeyMonth = (dk: string): string => dk.slice(0, 7);
+const dKeyDay = (dk: string): number => Number(dk.slice(8, 10));
 
 // Pond `startDate` from the API is an ISO timestamp. Normalize to the same
 // YYYY-MM-DD key dateKey() emits so we can compare against the selected day
@@ -594,39 +624,54 @@ export function useDailyLogV6(
   );
 
   const saveAll = useCallback(async (): Promise<SaveResult> => {
-    const bucket = overrides[dKey];
-    if (!bucket) return { ok: true, failedCount: 0 };
-    // Every override is dirty by construction (setCellValue drops overrides
-    // that match the backend ref). Skip entries that would post {0,0,0,0,0}
-    // for a pond with no prior backend record — defensive filter against
-    // any legacy/in-flight state that slipped through.
-    const dirtyEntries = Object.entries(bucket).filter(([pondKey, o]) => {
-      const hasAnyData = CELL_KEYS.some((k) => {
-        const v = o.v[k];
-        return v !== '' && Number(v) !== 0;
-      });
-      if (hasAnyData) return true;
-      // No new data — only worth saving if we're overwriting an existing
-      // backend record (e.g. user cleared cells they previously entered).
-      return entriesByPondId.has(Number(pondKey));
-    });
-    if (dirtyEntries.length === 0) return { ok: true, failedCount: 0 };
-
-    // Patch-upsert one entry per pond. The backend (BulkUpsert at
-    // backend/src/internal/service/daily_log_service.go:272) merges entries
-    // into the month, leaving other days untouched. Feed collection IDs are
-    // echoed from the cached GET so the validator (`validateBulkIDs`) has
-    // something to match against non-zero fresh/pellet amounts.
-    const results = await Promise.allSettled(
-      dirtyEntries.map(async ([pondKey, ovr]) => {
+    // Gather every drafted (pond, day) in the CURRENT month, grouped by pond.
+    // Each pond becomes ONE multi-day upsert: the backend (BulkUpsert at
+    // backend/src/internal/service/daily_log_service.go:272) merges the
+    // entries[] into the month and leaves other days untouched. Feed IDs are
+    // pond-level, so one pair of IDs covers all of the pond's days.
+    const byPond = new Map<string, DailyLogEntry[]>();
+    // Snapshot of the values sent per (pond, day), so the post-save drop can
+    // skip any override the user re-edited mid-flight (save is non-blocking —
+    // the table stays editable while the request is in the air).
+    const sentByKey = new Map<string, CellValues>();
+    for (const [dk, bucket] of Object.entries(overrides)) {
+      if (dKeyMonth(dk) !== month) continue;
+      const entryDay = dKeyDay(dk);
+      for (const [pondKey, ovr] of Object.entries(bucket)) {
+        // Every override is dirty by construction (setCellValue drops overrides
+        // matching the backend ref). Defensive: skip a {0,0,0,0,0} draft unless
+        // it overwrites an existing backend entry on THAT day (user cleared
+        // previously-saved cells). Read the per-day backend state from the
+        // cached monthly GET, not the selected-day `entriesByPondId`.
+        const hasAnyData = CELL_KEYS.some((k) => {
+          const v = ovr.v[k];
+          return v !== '' && Number(v) !== 0;
+        });
+        if (!hasAnyData) {
+          const cached = qc.getQueryData<DailyLogResponse>(
+            dailyLogKeys.month(Number(pondKey), month),
+          );
+          const hadEntry = cached?.entries.some((e) => e.day === entryDay) ?? false;
+          if (!hadEntry) continue;
+        }
         const entry: DailyLogEntry = {
-          day,
+          day: entryDay,
           fresh: Number(ovr.v.fresh) || 0,
           pelletMorning: Number(ovr.v.pm) || 0,
           pelletEvening: Number(ovr.v.pe) || 0,
           deathFishCount: Number(ovr.v.death) || 0,
           touristCatchCount: Number(ovr.v.cat) || 0,
         };
+        const list = byPond.get(pondKey);
+        if (list) list.push(entry);
+        else byPond.set(pondKey, [entry]);
+        sentByKey.set(`${pondKey} ${dk}`, ovr.v);
+      }
+    }
+    if (byPond.size === 0) return { ok: true, failedCount: 0 };
+
+    const results = await Promise.allSettled(
+      Array.from(byPond.entries()).map(async ([pondKey, entries]) => {
         const feeds = feedCollectionsByPondId.get(Number(pondKey));
         const userPick = feedSelections[pondKey];
         const payload = {
@@ -635,7 +680,7 @@ export function useDailyLogV6(
           // the source of truth at the moment of save.
           freshFeedCollectionId: userPick?.fresh ?? feeds?.fresh,
           pelletFeedCollectionId: userPick?.pellet ?? feeds?.pellet,
-          entries: [entry],
+          entries,
         };
         try {
           const response = await upsertDailyLogMonth(Number(pondKey), payload);
@@ -660,9 +705,8 @@ export function useDailyLogV6(
     for (const r of results) {
       if (r.status === 'fulfilled') {
         successKeys.add(r.value.pondKey);
-        // Prime the React Query cache with the upsert response so the row
-        // renders saved values without waiting for a refetch round-trip —
-        // avoids flashing stale backend values during the override drop.
+        // Prime the React Query cache with the (multi-day) upsert response so
+        // rows render saved values without a refetch round-trip.
         qc.setQueryData(dailyLogKeys.month(Number(r.value.pondKey), month), r.value.response);
       } else {
         failedCount += 1;
@@ -678,36 +722,56 @@ export function useDailyLogV6(
     }
 
     if (successKeys.size > 0) {
-      // Drop overrides for successful ponds — the cache update above means
-      // the row will read freshly-saved values from React Query. Failed
-      // ponds keep their override (still dirty) so the user can retry.
+      // Drop successfully-saved ponds' overrides across EVERY current-month day
+      // (one upsert saved all of them). Failed ponds keep all their day
+      // overrides so the user can retry. Other months are left untouched.
       setOverrides((prev) => {
-        const cur = prev[dKey];
-        if (!cur) return prev;
-        const nextBucket: Record<string, LocalOverride> = {};
-        for (const [k, o] of Object.entries(cur)) {
-          if (!successKeys.has(k)) nextBucket[k] = o;
+        let changed = false;
+        const next: OverrideMap = {};
+        for (const [dk, bucket] of Object.entries(prev)) {
+          if (dKeyMonth(dk) !== month) {
+            next[dk] = bucket;
+            continue;
+          }
+          const nextBucket: Record<string, LocalOverride> = {};
+          for (const [pondKey, o] of Object.entries(bucket)) {
+            if (successKeys.has(pondKey)) {
+              // Drop only if the value is still exactly what we sent — if the
+              // user re-edited this cell while the save was in flight, keep the
+              // override dirty so their edit isn't silently discarded.
+              const sent = sentByKey.get(`${pondKey} ${dk}`);
+              const unchanged =
+                sent != null && CELL_KEYS.every((k) => valuesEqual(o.v[k], sent[k]));
+              if (unchanged) {
+                changed = true;
+                continue;
+              }
+            }
+            nextBucket[pondKey] = o;
+          }
+          if (Object.keys(nextBucket).length > 0) next[dk] = nextBucket;
+          else changed = true;
         }
-        if (Object.keys(nextBucket).length === 0) {
-          const { [dKey]: _omit, ...rest } = prev;
-          return rest;
-        }
-        return { ...prev, [dKey]: nextBucket };
+        return changed ? next : prev;
       });
     }
 
     return { ok: failedCount === 0, failedCount, errorCode, errorMessage, errorDetails };
-  }, [overrides, dKey, month, day, qc, entriesByPondId, feedCollectionsByPondId, feedSelections]);
+  }, [overrides, month, qc, feedCollectionsByPondId, feedSelections]);
 
   const discardDirty = useCallback(() => {
-    // All overrides are dirty by construction — drop the day's bucket
-    // entirely. Saved values reappear from the React Query cache.
+    // Guard "discard" — drop every draft in the CURRENT month (all its days).
+    // Saved values reappear from the React Query cache. Other months untouched.
     setOverrides((prev) => {
-      if (!prev[dKey]) return prev;
-      const { [dKey]: _omit, ...rest } = prev;
-      return rest;
+      let changed = false;
+      const next: OverrideMap = {};
+      for (const [dk, bucket] of Object.entries(prev)) {
+        if (dKeyMonth(dk) === month) changed = true;
+        else next[dk] = bucket;
+      }
+      return changed ? next : prev;
     });
-  }, [dKey]);
+  }, [month]);
 
   const refresh = useCallback(async () => {
     // Pull-to-refresh: re-pull both the pond list (status / cycle changes) and
@@ -756,6 +820,66 @@ export function useDailyLogV6(
   const total = useMemo(() => ponds.filter((p) => !p.disabled).length, [ponds]);
   const maintenanceCount = useMemo(() => ponds.filter((p) => p.maintenance).length, [ponds]);
 
+  // Single walk over the CURRENT month's drafts producing everything the
+  // month-wide save UI needs: the SaveBar counters, the save-gate invalid
+  // count, and the by-feed-type summary for the confirm sheet. Recomputes only
+  // when overrides / month change — live typing bypasses `overrides` via
+  // `liveValue`, so this stays off the keystroke path (same trigger as the
+  // unsavedMonths / daysWithDrafts walks above).
+  const monthPending = useMemo(() => {
+    const num = (x: number | '') => (typeof x === 'number' ? x : 0);
+    const days = new Set<string>();
+    const pondSet = new Set<string>();
+    let editsCount = 0;
+    let invalidCount = 0;
+    let pelletTotal = 0;
+    let freshTotal = 0;
+    let deathTotal = 0;
+    const pelletDays = new Set<string>();
+    const freshDays = new Set<string>();
+    const deathDays = new Set<string>();
+
+    for (const [dk, bucket] of Object.entries(overrides)) {
+      if (dKeyMonth(dk) !== month) continue;
+      for (const [pondKey, ovr] of Object.entries(bucket)) {
+        editsCount += 1;
+        days.add(dk);
+        pondSet.add(pondKey);
+        if (COLS.some((c) => isCellValueInvalid(ovr.v[c.key]))) invalidCount += 1;
+        const pellet = num(ovr.v.pm) + num(ovr.v.pe);
+        const fresh = num(ovr.v.fresh);
+        const death = num(ovr.v.death);
+        if (pellet > 0) {
+          pelletTotal += pellet;
+          pelletDays.add(dk);
+        }
+        if (fresh > 0) {
+          freshTotal += fresh;
+          freshDays.add(dk);
+        }
+        if (death > 0) {
+          deathTotal += death;
+          deathDays.add(dk);
+        }
+      }
+    }
+
+    const summary: MonthSummary = {
+      month,
+      daysEdited: days.size,
+      pondCount: pondSet.size,
+      pellet: { total: pelletTotal, days: pelletDays.size },
+      fresh: { total: freshTotal, days: freshDays.size },
+      death: { total: deathTotal, days: deathDays.size },
+    };
+    return { editsCount, daysCount: days.size, pondCount: pondSet.size, invalidCount, summary };
+  }, [overrides, month]);
+  const monthEditsCount = monthPending.editsCount;
+  const monthDaysCount = monthPending.daysCount;
+  const monthPondCount = monthPending.pondCount;
+  const monthInvalidCount = monthPending.invalidCount;
+  const monthSummary = monthPending.summary;
+
   return {
     ponds,
     loading,
@@ -770,6 +894,11 @@ export function useDailyLogV6(
     maintenanceCount,
     unsavedMonths,
     daysWithDrafts,
+    monthEditsCount,
+    monthDaysCount,
+    monthPondCount,
+    monthInvalidCount,
+    monthSummary,
     setCellValue,
     setFeedSelection,
     previousValueForActiveCell,

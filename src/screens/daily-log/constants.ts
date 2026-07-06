@@ -74,7 +74,7 @@ export type GroupMeta = {
 
 export const GROUP_LIGHT: Record<GroupKey, GroupMeta> = {
   pellet: { title: 'อาหารเม็ด', unit: 'kg', tint: '#eef4ff', edge: '#d9e6fb', ink: '#1f4cb0' },
-  fresh: { title: 'เหยื่อสด', unit: 'kg', tint: '#ecf7ee', edge: '#cfe7d4', ink: '#216c34' },
+  fresh: { title: 'เหยื่อสด', unit: 'ลัง', tint: '#ecf7ee', edge: '#cfe7d4', ink: '#216c34' },
   death: { title: 'ปลาตาย', unit: 'ตัว', tint: '#fdf3df', edge: '#efdcae', ink: '#8a5a04' },
   catch: { title: 'ตกปลา', unit: 'ตัว', tint: '#f1f3f9', edge: '#dde1ec', ink: '#4a5675' },
 };

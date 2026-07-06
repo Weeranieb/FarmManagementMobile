@@ -168,7 +168,14 @@ export function Numpad({
       : { dot: '#5478c2', tintA: '#eaf0fb' };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={handleCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="none"
+      onRequestClose={handleCancel}
+    >
       <View style={{ flex: 1 }}>
         <Animated.View
           entering={FadeIn.duration(120)}

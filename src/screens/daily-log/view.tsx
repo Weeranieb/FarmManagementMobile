@@ -12,7 +12,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 import type { FarmModel } from '@/features/farm';
 import { AppBar } from './components/AppBar';
 import { CollapsingChrome } from './components/CollapsingChrome';
-import { ConfirmSaveSheet } from './components/ConfirmSaveSheet';
+import { ConfirmMonthSaveSheet } from './components/ConfirmMonthSaveSheet';
+import { SaveStatusToast, type SaveToastStatus } from './components/SaveStatusToast';
 import { FarmPickerSheet, type FarmOption } from './components/FarmPickerSheet';
 import {
   MonthYearPickerSheet,
@@ -91,10 +92,14 @@ export function DailyLogView({
     setActiveCell,
     dirtyCount,
     savedCount,
-    invalidCount,
     total,
     unsavedMonths,
     daysWithDrafts,
+    monthEditsCount,
+    monthDaysCount,
+    monthPondCount,
+    monthInvalidCount,
+    monthSummary,
     setCellValue,
     setFeedSelection,
     previousValueForActiveCell,
@@ -134,6 +139,11 @@ export function DailyLogView({
     return () => handle.cancel();
   }, []);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saveToast, setSaveToast] = useState<{
+    status: SaveToastStatus;
+    days: number;
+    failedCount: number;
+  } | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
@@ -230,27 +240,30 @@ export function DailyLogView({
 
   const requestMonthChange = useCallback(
     (delta: number) => {
-      if (dirtyCount > 0) {
+      // Guard on the whole month's drafts, not just the visible day — leaving
+      // a month with any unsaved edit prompts save/discard so drafts can't be
+      // stranded on a day the user can't see.
+      if (monthEditsCount > 0) {
         setSaveError(null);
         setPending({ kind: 'month', delta });
         return;
       }
       navigateMonth(delta);
     },
-    [dirtyCount, navigateMonth],
+    [monthEditsCount, navigateMonth],
   );
 
   const onPrevMonth = useCallback(() => requestMonthChange(-1), [requestMonthChange]);
   const onNextMonth = useCallback(() => requestMonthChange(1), [requestMonthChange]);
 
   const onBackPress = useCallback(() => {
-    if (dirtyCount > 0) {
+    if (monthEditsCount > 0) {
       setSaveError(null);
       setPending({ kind: 'back' });
       return;
     }
     onBack?.();
-  }, [dirtyCount, onBack]);
+  }, [monthEditsCount, onBack]);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -279,14 +292,14 @@ export function DailyLogView({
       const target = year * 12 + monthIdx;
       const delta = target - cur;
       if (delta === 0) return;
-      if (dirtyCount > 0) {
+      if (monthEditsCount > 0) {
         setSaveError(null);
         setPending({ kind: 'month', delta });
         return;
       }
       navigateMonth(delta);
     },
-    [selectedDate, dirtyCount, navigateMonth],
+    [selectedDate, monthEditsCount, navigateMonth],
   );
 
   const onFarmPress = useCallback(() => setPickerOpen(true), []);
@@ -295,14 +308,14 @@ export function DailyLogView({
     (id: number) => {
       setPickerOpen(false);
       if (id === activeFarmId) return;
-      if (dirtyCount > 0) {
+      if (monthEditsCount > 0) {
         setSaveError(null);
         setPending({ kind: 'farm', farmId: id });
         return;
       }
       onChangeFarm(id);
     },
-    [activeFarmId, dirtyCount, onChangeFarm],
+    [activeFarmId, monthEditsCount, onChangeFarm],
   );
 
   const onGuardDismiss = useCallback(() => {
@@ -319,12 +332,15 @@ export function DailyLogView({
   }, [pending, discardDirty, dispatchPending]);
 
   const onGuardSaveAndExit = useCallback(async () => {
+    // A background save is already in flight — don't fire a second concurrent
+    // saveAll for the same month.
+    if (saveToast?.status === 'saving') return;
     // Refuse to save while any row carries an out-of-range value — same
     // rule the SaveBar enforces, just at the guard layer too so the user
     // can't sneak a bad upsert through the "บันทึกแล้วออก" path. The
     // dialog stays open with an inline error so they can fix the value
     // before navigating.
-    if (invalidCount > 0) {
+    if (monthInvalidCount > 0) {
       setSaveError('แก้ไขค่าที่ผิดเงื่อนไขก่อนบันทึก');
       return;
     }
@@ -337,7 +353,26 @@ export function DailyLogView({
     } else {
       setSaveError(formatSaveError(result));
     }
-  }, [pending, invalidCount, saveAll, dispatchPending]);
+  }, [pending, monthInvalidCount, saveAll, dispatchPending, saveToast]);
+
+  // Non-blocking save: close the sheet immediately and report the server
+  // round-trip through the status toast (saving → success / error). Pessimistic
+  // — rows stay "unsaved" until the server confirms (saveAll drops overrides
+  // only on success), so nothing looks committed before it actually is.
+  const runSave = useCallback(async () => {
+    if (saveToast?.status === 'saving') return; // single-flight guard
+    const days = monthDaysCount; // snapshot before overrides drop on success
+    setConfirmOpen(false);
+    setSaveToast({ status: 'saving', days, failedCount: 0 });
+    const result = await saveAll();
+    setSaveToast(
+      result.ok
+        ? { status: 'success', days, failedCount: 0 }
+        : { status: 'error', days, failedCount: result.failedCount },
+    );
+  }, [saveToast, monthDaysCount, saveAll]);
+
+  const dismissToast = useCallback(() => setSaveToast(null), []);
 
   const pickerFarms = useMemo<FarmOption[]>(
     () =>
@@ -515,12 +550,24 @@ export function DailyLogView({
           </ScrollView>
         </ScrollView>
 
-        <SaveBar
-          dirtyCount={dirtyCount}
-          invalidCount={invalidCount}
-          onSavePress={() => setConfirmOpen(true)}
-          bottomInset={bottomInset}
-        />
+        {saveToast ? (
+          <SaveStatusToast
+            status={saveToast.status}
+            days={saveToast.days}
+            failedCount={saveToast.failedCount}
+            bottom={bottomInset}
+            onRetry={runSave}
+            onDismiss={dismissToast}
+          />
+        ) : (
+          <SaveBar
+            daysCount={monthDaysCount}
+            editsCount={monthEditsCount}
+            invalidCount={monthInvalidCount}
+            onSavePress={() => setConfirmOpen(true)}
+            bottomInset={bottomInset}
+          />
+        )}
       </View>
 
       {activeCell && activePond ? (
@@ -540,21 +587,17 @@ export function DailyLogView({
       ) : null}
 
       {confirmOpen ? (
-        <ConfirmSaveSheet
+        <ConfirmMonthSaveSheet
           visible={confirmOpen}
-          ponds={ponds}
-          selectedDate={selectedDate}
+          summary={monthSummary}
           onClose={() => setConfirmOpen(false)}
-          onConfirm={() => {
-            void saveAll();
-            setConfirmOpen(false);
-          }}
+          onConfirm={runSave}
         />
       ) : null}
 
       <UnsavedChangesDialog
         visible={pending !== null}
-        dirtyCount={dirtyCount}
+        dirtyCount={monthPondCount}
         source={pending?.kind ?? 'month'}
         error={saveError}
         onDismiss={onGuardDismiss}

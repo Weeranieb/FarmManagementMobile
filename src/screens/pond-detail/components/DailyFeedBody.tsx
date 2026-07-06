@@ -60,8 +60,14 @@ function feedPrice(
   return c?.price ?? fallback;
 }
 
-function totalKg(e: DailyLogEntry): number {
-  return n(e.pelletMorning) + n(e.pelletEvening) + n(e.fresh);
+function pelletKg(e: DailyLogEntry): number {
+  return n(e.pelletMorning) + n(e.pelletEvening);
+}
+
+// เหยื่อสด is measured in ลัง (crates), not kg — format it on its own so it's
+// never summed into the kg feed totals.
+function fmtLang(v: number): string {
+  return `${Number(v).toLocaleString('en-US', { maximumFractionDigits: 1 })} ลัง`;
 }
 
 export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
@@ -190,7 +196,7 @@ export function DailyFeedBody({ pondId, onOpenDailyLog }: Props) {
           <Row gap={0} style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
             <SummaryStat label="อาหารเม็ด" v={fmt.kg(monthStats.pellet)} toneKey="brand" />
             <Divider />
-            <SummaryStat label="เหยื่อสด" v={fmt.kg(monthStats.fresh)} toneKey="success" />
+            <SummaryStat label="เหยื่อสด" v={fmtLang(monthStats.fresh)} toneKey="success" />
             <Divider />
             <SummaryStat
               label="ปลาตาย"
@@ -215,7 +221,8 @@ function TodayBanner({
 }) {
   const { t, mode } = useTheme();
   if (entry) {
-    const total = totalKg(entry);
+    const pellet = pelletKg(entry);
+    const fresh = n(entry.fresh);
     const deaths = n(entry.deathFishCount);
     return (
       <View
@@ -248,8 +255,10 @@ function TodayBanner({
             บันทึกวันนี้แล้ว
           </Text>
           <Text style={{ fontSize: 12, color: t.inkSoft, fontFamily: type.family }}>
-            <Text>ให้อาหารรวม </Text>
-            <Text style={{ fontFamily: type.familyNumSemi, color: t.ink }}>{fmt.kg(total)}</Text>
+            <Text>ให้อาหาร </Text>
+            <Text style={{ fontFamily: type.familyNumSemi, color: t.ink }}>{fmt.kg(pellet)}</Text>
+            <Text> · </Text>
+            <Text style={{ fontFamily: type.familyNumSemi, color: t.ink }}>{fmtLang(fresh)}</Text>
             {deaths > 0 ? (
               <>
                 <Text> · ตาย </Text>
@@ -543,7 +552,7 @@ function SelectedDayHeader({
         </Text>
         {entry ? (
           <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>
-            อาหารรวม {fmt.kg(totalKg(entry))}
+            อาหารเม็ด {fmt.kg(pelletKg(entry))} · เหยื่อสด {fmtLang(n(entry.fresh))}
           </Text>
         ) : null}
       </Col>
@@ -607,7 +616,7 @@ function SelectedDayDetail({
       <Sep />
       <ReadRowSingle
         title="เหยื่อสด"
-        subtitle={`${freshName}${freshName ? ' · ' : ''}฿${freshPrice}/กก.`}
+        subtitle={`${freshName}${freshName ? ' · ' : ''}฿${freshPrice}/ลัง`}
         value={f}
         price={freshPrice}
       />
@@ -731,14 +740,14 @@ function ReadRowSingle({
         </Row>
         <Col gap={1} align="flex-end">
           <Text style={{ fontFamily: type.familyNumBold, fontSize: 16, color: t.ink }}>
-            {fmt.kg(v)}
+            {fmtLang(v)}
           </Text>
           <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}>
             {fmt.baht(v * price)}
           </Text>
         </Col>
       </Row>
-      <ReadCell label="วันนี้" v={v} unit="กก." />
+      <ReadCell label="วันนี้" v={v} unit="ลัง" />
     </View>
   );
 }
