@@ -17,14 +17,12 @@ function tonePair(id: SecondaryActionId, t: ThemePalette) {
   return { soft: t.sellSoft, ink: t.sellInk };
 }
 
-const ICON_BOX = 34;
-const TILE_MIN_HEIGHT = 92;
-const TILE_PADDING = 12;
+const GLYPH_BOX = 54;
 
 function Glyph({ id, color }: { id: SecondaryActionId; color: string }) {
-  if (id === 'fill') return <Icon.plus size={18} color={color} stroke={2.2} />;
-  if (id === 'move') return <Icon.swap size={18} color={color} />;
-  return <Icon.tag size={18} color={color} />;
+  if (id === 'fill') return <Icon.plus size={24} color={color} stroke={2.2} />;
+  if (id === 'move') return <Icon.swap size={24} color={color} />;
+  return <Icon.tag size={24} color={color} />;
 }
 
 const ITEMS: { id: SecondaryActionId; label: string }[] = [
@@ -34,57 +32,35 @@ const ITEMS: { id: SecondaryActionId; label: string }[] = [
 ];
 
 /**
- * Three equal-weight tiles under the primary Daily Log card. Icon chip pinned
- * top-left, label bottom-left.
+ * Quick actions — เติม / ย้าย / ขาย. Each is a soft, semantic-colored glyph
+ * button (green fill / blue move / purple sell) with the label beneath, sitting
+ * directly on the page — deliberately NOT boxed in bordered cards, so the row
+ * reads as light "shortcuts" subordinate to the Daily Log hero above, and the
+ * semantic action colors carry the identity instead of five look-alike cards.
  *
- * Two rendering constraints shape this markup:
- * 1. Visual chrome (background / border / shadow) lives on the outer <View>,
- *    NOT the Pressable — react-native-css-interop (NativeWind's JSX runtime)
- *    silently drops style props passed to Pressable as a function style.
- *    For the same reason the Pressable style below must stay a STATIC object.
- * 2. `minHeight` sits on the Pressable itself: a `flex: 1` child inside a
- *    parent sized only by `minHeight` collapses to content height in Yoga,
- *    which crammed the chip + label to the top of the tile.
+ * NativeWind/css-interop note: function-form Pressable styles get their props
+ * dropped by the JSX runtime, so the Pressable style stays a static object.
  */
 export function SecondaryActionRow({ onPress }: Props) {
-  const { t, shadow } = useTheme();
+  const { t } = useTheme();
   return (
-    <View style={{ flexDirection: 'row', gap: space[2] }}>
+    <View style={{ flexDirection: 'row' }}>
       {ITEMS.map((it) => {
         const tone = tonePair(it.id, t);
         return (
-          <View
-            key={it.id}
-            style={[
-              {
-                flex: 1,
-                backgroundColor: t.surface,
-                borderWidth: 1,
-                borderColor: t.borderStrong,
-                borderRadius: radii.md,
-                overflow: 'hidden',
-              },
-              shadow,
-            ]}
-          >
+          <View key={it.id} style={{ flex: 1, borderRadius: radii.md, overflow: 'hidden' }}>
             <Pressable
               onPress={onPress ? () => onPress(it.id) : undefined}
               accessibilityRole="button"
               accessibilityLabel={it.label}
-              android_ripple={{ color: t.surfaceAlt }}
-              style={{
-                minHeight: TILE_MIN_HEIGHT - 2,
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                padding: TILE_PADDING,
-                gap: space[4] + 2,
-              }}
+              android_ripple={{ color: tone.soft }}
+              style={{ alignItems: 'center', paddingVertical: space[2], gap: 8 }}
             >
               <View
                 style={{
-                  width: ICON_BOX,
-                  height: ICON_BOX,
-                  borderRadius: radii.sm,
+                  width: GLYPH_BOX,
+                  height: GLYPH_BOX,
+                  borderRadius: radii.lg,
                   backgroundColor: tone.soft,
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -95,10 +71,9 @@ export function SecondaryActionRow({ onPress }: Props) {
               <Text
                 numberOfLines={1}
                 style={{
-                  fontSize: type.sizes.sm + 1,
-                  fontFamily: type.familyBold,
+                  fontSize: type.sizes.sm,
+                  fontFamily: type.familySemi,
                   color: t.ink,
-                  letterSpacing: -0.1,
                 }}
               >
                 {it.label}
@@ -112,29 +87,12 @@ export function SecondaryActionRow({ onPress }: Props) {
 }
 
 export function SecondaryActionRowSkeleton() {
-  const { t, shadow } = useTheme();
   return (
-    <View style={{ flexDirection: 'row', gap: space[2] }}>
+    <View style={{ flexDirection: 'row' }}>
       {[0, 1, 2].map((i) => (
-        <View
-          key={i}
-          style={[
-            {
-              flex: 1,
-              minHeight: TILE_MIN_HEIGHT,
-              backgroundColor: t.surface,
-              borderWidth: 1,
-              borderColor: t.borderStrong,
-              borderRadius: radii.md,
-              padding: TILE_PADDING,
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-            },
-            shadow,
-          ]}
-        >
-          <Skeleton width={ICON_BOX} height={ICON_BOX} radius={radii.sm} />
-          <Skeleton width={60} height={12} />
+        <View key={i} style={{ flex: 1, alignItems: 'center', paddingVertical: space[2], gap: 8 }}>
+          <Skeleton width={GLYPH_BOX} height={GLYPH_BOX} radius={radii.lg} />
+          <Skeleton width={54} height={12} />
         </View>
       ))}
     </View>

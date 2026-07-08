@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle } from 'react-native-svg';
 import { Icon } from '@/components/icons';
 import { Pill } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -26,8 +26,6 @@ type Props = {
 // runtime — backgrounds, borders, even flexDirection vanish at runtime. Every
 // Pressable in this file therefore takes a STATIC style only; visual chrome
 // (background / border / radius / shadow) lives on a wrapper <View>.
-
-const WASH_HEIGHT = 110;
 
 /**
  * Primary above-the-fold card. Answers the user's first morning question —
@@ -62,26 +60,6 @@ export function DailyLogCard({
         shadow,
       ]}
     >
-      {/* Soft brand wash fading down from the card top while still pending —
-          matches the design's linear-gradient(brandSoft → surface) so there is
-          no hard edge mid-card. */}
-      {!allDone ? (
-        <View
-          pointerEvents="none"
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: WASH_HEIGHT }}
-        >
-          <Svg width="100%" height={WASH_HEIGHT}>
-            <Defs>
-              <LinearGradient id="dailyLogWash" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={t.brandSoft} stopOpacity={1} />
-                <Stop offset="1" stopColor={t.surface} stopOpacity={1} />
-              </LinearGradient>
-            </Defs>
-            <Rect x="0" y="0" width="100%" height={WASH_HEIGHT} fill="url(#dailyLogWash)" />
-          </Svg>
-        </View>
-      ) : null}
-
       <View
         style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}
       >
@@ -125,58 +103,50 @@ export function DailyLogCard({
         ) : null}
       </View>
 
-      {/* Progress numerator + bar */}
-      <View style={{ marginTop: space[3] + 2 }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
-            <Text
-              style={{
-                fontFamily: type.familyNumBold,
-                fontSize: 32,
-                color: allDone ? t.statusActive : t.ink,
-                letterSpacing: -1,
-                lineHeight: 34,
-              }}
-            >
-              {loggedCount}
-            </Text>
-            <Text
-              style={{
-                fontSize: type.sizes.lg,
-                fontFamily: type.familyNumMedium,
-                color: t.inkSoft,
-              }}
-            >
-              / {activeCount}
-            </Text>
-            <Text
-              style={{
-                fontSize: type.sizes.sm,
-                color: t.inkMute,
-                marginLeft: 4,
-                fontFamily: type.family,
-              }}
-            >
-              บ่อบันทึกแล้ว
-            </Text>
-          </View>
+      {/* Progress — a bold numerator paired with a completion ring, replacing
+          the flat linear bar + pastel wash (both generic templated tells). */}
+      <View
+        style={{
+          marginTop: space[3] + 2,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
           <Text
             style={{
-              fontFamily: type.familyNumSemi,
-              fontSize: type.sizes.xs + 1,
-              color: t.inkMute,
+              fontFamily: type.familyNumBold,
+              fontSize: 36,
+              color: allDone ? t.statusActive : t.ink,
+              letterSpacing: -1,
+              lineHeight: 38,
             }}
           >
-            {pct}%
+            {loggedCount}
+          </Text>
+          <Text
+            style={{
+              fontSize: type.sizes.lg,
+              fontFamily: type.familyNumMedium,
+              color: t.inkSoft,
+            }}
+          >
+            / {activeCount}
+          </Text>
+          <Text
+            style={{
+              fontSize: type.sizes.sm,
+              color: t.inkMute,
+              marginLeft: 4,
+              fontFamily: type.family,
+            }}
+            numberOfLines={1}
+          >
+            บ่อบันทึกแล้ว
           </Text>
         </View>
-        <ProgressBar pct={pct} done={allDone} />
+        <ProgressRing pct={pct} done={allDone} />
       </View>
 
       {allDone ? (
@@ -257,26 +227,50 @@ export function DailyLogCard({
   );
 }
 
-function ProgressBar({ pct, done }: { pct: number; done: boolean }) {
+function ProgressRing({ pct, done }: { pct: number; done: boolean }) {
   const { t } = useTheme();
+  const size = 56;
+  const stroke = 5;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const filled = (circumference * Math.min(Math.max(pct, 0), 100)) / 100;
+  const color = done ? t.statusActive : t.brand;
   return (
-    <View
-      style={{
-        marginTop: space[2] + 2,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: t.surfaceAlt,
-        overflow: 'hidden',
-      }}
-    >
-      <View
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg
+        width={size}
+        height={size}
+        style={{ position: 'absolute', transform: [{ rotate: '-90deg' }] }}
+      >
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={t.surfaceSunk}
+          strokeWidth={stroke}
+          fill="none"
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={color}
+          strokeWidth={stroke}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${filled} ${circumference}`}
+        />
+      </Svg>
+      <Text
         style={{
-          width: `${pct}%`,
-          height: '100%',
-          borderRadius: 4,
-          backgroundColor: done ? t.statusActive : t.brand,
+          fontFamily: type.familyNumBold,
+          fontSize: 12.5,
+          color: done ? t.statusActive : t.inkSoft,
+          letterSpacing: -0.3,
         }}
-      />
+      >
+        {pct}%
+      </Text>
     </View>
   );
 }

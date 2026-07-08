@@ -52,23 +52,29 @@ function tonePair(kind: ActivityKind, t: ThemePalette) {
 }
 
 function Glyph({ kind, color }: { kind: ActivityKind; color: string }) {
-  if (kind === 'feed') return <Icon.feed size={16} color={color} />;
-  if (kind === 'fill') return <Icon.plus size={16} color={color} stroke={2.2} />;
-  if (kind === 'move') return <Icon.swap size={16} color={color} />;
-  if (kind === 'sell') return <Icon.tag size={16} color={color} />;
-  return <Icon.cycle size={16} color={color} />;
+  if (kind === 'feed') return <Icon.feed size={18} color={color} />;
+  if (kind === 'fill') return <Icon.plus size={18} color={color} stroke={2.2} />;
+  if (kind === 'move') return <Icon.swap size={18} color={color} />;
+  if (kind === 'sell') return <Icon.tag size={18} color={color} />;
+  return <Icon.cycle size={18} color={color} />;
 }
 
 /**
  * Activity feed row. Every row routes to its source record so the user has a
  * way back to what they just saved. Fresh state (within ~30 s of a save) is
- * signalled by a brand-tint background + a 3 px left brand stripe — the meta
- * line carries the "เมื่อสักครู่" timestamp; we deliberately don't add a
- * redundant "เพิ่งบันทึก" label.
+ * signalled by a brand-tint background + a 3 px left brand stripe.
+ *
+ * Hierarchy, not chrome: the pond is the title, the kind is a small
+ * semantic-colored word (not a second pastel pill echoing the icon), the
+ * transaction detail is the body, and the meta is one muted line. No per-row
+ * chevron — the whole row is pressable and gives touch feedback.
  */
 export function ActivityRow({ e, divider = false, onPress }: Props) {
   const { t } = useTheme();
   const tone = tonePair(e.kind, t);
+
+  const meta =
+    e.whenLabel + (e.by ? ` · โดย${e.by}` : '') + (e.extra ? ` · ${e.extra}` : '');
 
   const body = (
     <View
@@ -76,7 +82,7 @@ export function ActivityRow({ e, divider = false, onPress }: Props) {
         flexDirection: 'row',
         gap: space[3],
         paddingVertical: space[3],
-        paddingHorizontal: space[3],
+        paddingHorizontal: space[4],
         backgroundColor: e.fresh ? t.brandSoft : 'transparent',
         borderBottomWidth: divider ? 1 : 0,
         borderBottomColor: t.border,
@@ -100,96 +106,46 @@ export function ActivityRow({ e, divider = false, onPress }: Props) {
 
       <View
         style={{
-          width: 32,
-          height: 32,
-          borderRadius: radii.sm,
+          width: 38,
+          height: 38,
+          borderRadius: radii.md,
           backgroundColor: tone.soft,
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          marginTop: 2,
+          marginTop: 1,
         }}
       >
         <Glyph kind={e.kind} color={tone.ink} />
       </View>
 
-      <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-          <Text
-            style={{
-              fontSize: type.sizes.sm,
-              fontFamily: type.familyBold,
-              color: t.ink,
-            }}
-          >
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
+          <Text style={{ fontSize: type.sizes.md, fontFamily: type.familyBold, color: t.ink }}>
             {e.pond}
           </Text>
-          <View
-            style={{
-              paddingHorizontal: 6,
-              paddingVertical: 1,
-              borderRadius: radii.xs,
-              backgroundColor: tone.soft,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: type.sizes.xs,
-                color: tone.ink,
-                fontFamily: type.familySemi,
-              }}
-            >
-              {KIND_LABEL[e.kind]}
-            </Text>
-          </View>
+          <Text style={{ fontSize: type.sizes.xs, fontFamily: type.familySemi, color: tone.ink }}>
+            {KIND_LABEL[e.kind]}
+          </Text>
         </View>
 
         <Text
           style={{
             fontSize: type.sizes.sm,
-            color: t.ink,
+            color: t.inkSoft,
             fontFamily: type.familyNum,
-            lineHeight: 18,
+            lineHeight: 19,
           }}
         >
           {e.text}
         </Text>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-          <Text
-            style={{
-              fontSize: type.sizes.xs,
-              color: t.inkMute,
-              fontFamily: type.familyNum,
-            }}
-          >
-            {e.whenLabel}
-          </Text>
-          {e.by ? (
-            <>
-              <Text style={{ fontSize: type.sizes.xs, color: t.inkMute }}>·</Text>
-              <Text
-                style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.family }}
-              >
-                โดย{e.by}
-              </Text>
-            </>
-          ) : null}
-          {e.extra ? (
-            <>
-              <Text style={{ fontSize: type.sizes.xs, color: t.inkMute }}>·</Text>
-              <Text
-                style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.family }}
-              >
-                {e.extra}
-              </Text>
-            </>
-          ) : null}
-        </View>
-      </View>
-
-      <View style={{ alignSelf: 'center' }}>
-        <Icon.chevR size={16} color={t.inkMute} stroke={1.8} />
+        <Text
+          numberOfLines={1}
+          style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.family }}
+        >
+          {meta}
+        </Text>
       </View>
     </View>
   );
