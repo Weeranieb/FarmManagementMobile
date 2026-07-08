@@ -15,7 +15,6 @@ import { useAuthStore } from '@/features/auth';
 import { toIsoDate } from '@/shared/time';
 import {
   additionalCostsTotal,
-  EMPTY_COST_ROW,
   type CostRow,
 } from '../additional-costs';
 
@@ -101,7 +100,7 @@ export function useSellFlow(initialPondId: number | undefined, onClose?: () => v
   const [step, setStep] = useState<1 | 2>(1);
   const [rows, setRows] = useState<SellRow[]>(() => [emptyRow()]);
   const [merchantId, setMerchantId] = useState<number | null>(null);
-  const [additionalCosts, setAdditionalCosts] = useState<CostRow[]>([EMPTY_COST_ROW]);
+  const [additionalCosts, setAdditionalCosts] = useState<CostRow[]>([]);
   const [date, setDate] = useState<Date>(() => new Date());
   const [markToClose, setMarkToClose] = useState(false);
   const [remark, setRemark] = useState('');

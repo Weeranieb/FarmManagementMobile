@@ -11,7 +11,6 @@ import { useAuthStore } from '@/features/auth';
 import { toIsoDate } from '@/shared/time';
 import {
   additionalCostsTotal,
-  EMPTY_COST_ROW,
   type CostRow,
 } from '../additional-costs';
 
@@ -84,7 +83,7 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
   const [pricePerUnit, setPricePerUnit] = useState('');
   const [avgWeightKg, setAvgWeightKg] = useState('');
   const [fishType, setFishType] = useState<string>('kaphong');
-  const [additionalCosts, setAdditionalCosts] = useState<CostRow[]>([EMPTY_COST_ROW]);
+  const [additionalCosts, setAdditionalCosts] = useState<CostRow[]>([]);
   const [date, setDate] = useState<Date>(() => new Date());
   const [markToClose, setMarkToClose] = useState(false);
   const [remark, setRemark] = useState('');
