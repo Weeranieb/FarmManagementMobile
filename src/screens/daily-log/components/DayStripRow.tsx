@@ -93,6 +93,7 @@ export function DayStripRow({ selectedDate, onSelectDate, daysWithDrafts }: Prop
             <Pressable
               key={i}
               onPress={() => onSelectDate(d.date)}
+              disabled={isFuture}
               style={{
                 width: PILL_WIDTH,
                 height: DAY_PILL_H,
@@ -103,6 +104,7 @@ export function DayStripRow({ selectedDate, onSelectDate, daysWithDrafts }: Prop
                 backgroundColor: isSelected ? VIBRANT_BRAND[600] : t.surface,
                 borderWidth: isSelected ? 0 : 1,
                 borderColor: isToday ? VIBRANT_BRAND[600] : t.border,
+                opacity: isFuture ? 0.4 : 1,
                 shadowColor: '#0f172a',
                 shadowOffset: { width: 0, height: isSelected ? 1 : 0 },
                 shadowOpacity: isSelected ? 0.08 : 0.04,
@@ -111,12 +113,13 @@ export function DayStripRow({ selectedDate, onSelectDate, daysWithDrafts }: Prop
               }}
               accessibilityRole="button"
               accessibilityLabel={d.date.toDateString()}
+              accessibilityState={{ disabled: isFuture, selected: isSelected }}
             >
               <Text
                 style={{
                   fontSize: 10,
                   fontFamily: type.familySemi,
-                  color: isSelected ? '#fff' : isFuture ? t.inkMute : t.inkSoft,
+                  color: isSelected ? '#fff' : t.inkSoft,
                   letterSpacing: 0.3,
                 }}
               >
@@ -126,7 +129,7 @@ export function DayStripRow({ selectedDate, onSelectDate, daysWithDrafts }: Prop
                 style={{
                   fontSize: 18,
                   fontFamily: type.familyNumBold,
-                  color: isSelected ? '#fff' : isFuture ? t.inkMute : t.ink,
+                  color: isSelected ? '#fff' : t.ink,
                   marginTop: 1,
                 }}
               >
