@@ -1,8 +1,10 @@
 import { ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
-import { type } from '@/theme/tokens';
-import { Card, Pill, TopBar } from '@/components/ui';
+import { radii, space, type } from '@/theme/tokens';
+import { Card, TopBar } from '@/components/ui';
+import { Icon } from '@/components/icons';
+import { Row, Col } from '@/components/layout/Row';
 import { ListRow } from '@/screens/profile/components/ListRow';
 import { thaiDate } from '@/locale/thaiDate';
 
@@ -19,18 +21,49 @@ function SectionLabel({ children }: { children: string }) {
   return (
     <Text
       style={{
-        fontSize: 12,
+        fontSize: type.sizes.sm,
         fontFamily: type.familyBold,
         color: t.inkSoft,
-        letterSpacing: 0.6,
-        textTransform: 'uppercase',
-        paddingHorizontal: 20,
-        paddingTop: 18,
-        paddingBottom: 8,
+        paddingHorizontal: space[5],
+        paddingTop: space[5],
+        paddingBottom: space[2],
       }}
     >
       {children}
     </Text>
+  );
+}
+
+/** The one live tool — elevated to a hero card so the actionable item has
+ *  real weight against the muted "coming soon" list below. */
+function FeedToolCard({ label, sub, onPress }: { label: string; sub: string; onPress: () => void }) {
+  const { t } = useTheme();
+  return (
+    <Card onPress={onPress}>
+      <Row gap={space[3]} align="center">
+        <View
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: radii.md,
+            backgroundColor: t.brandSoft,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon.feed size={22} color={t.brandInk} />
+        </View>
+        <Col gap={2} style={{ flex: 1, minWidth: 0 }}>
+          <Text style={{ fontSize: type.sizes.md, fontFamily: type.familyBold, color: t.ink }}>
+            {label}
+          </Text>
+          <Text style={{ fontSize: type.sizes.sm, fontFamily: type.family, color: t.inkMute }}>
+            {sub}
+          </Text>
+        </Col>
+        <Icon.chevR size={18} color={t.inkSoft} />
+      </Row>
+    </Card>
   );
 }
 
@@ -53,14 +86,14 @@ export function ManageView({
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
-            paddingHorizontal: 32,
+            paddingHorizontal: space[7],
           }}
         >
           <Text
             style={{
               textAlign: 'center',
               color: t.inkSoft,
-              fontSize: 14,
+              fontSize: type.sizes.base,
               lineHeight: 22,
               fontFamily: type.family,
             }}
@@ -87,41 +120,44 @@ export function ManageView({
       {showHeader ? (
         <TopBar title={tx('manage.title')} subtitle={tx('manage.subtitle')} />
       ) : null}
-      <ScrollView delaysContentTouches={false} contentContainerStyle={{ paddingBottom: 96 }}>
+      <ScrollView delaysContentTouches={false} contentContainerStyle={{ paddingBottom: space[10] }}>
         <SectionLabel>{tx('manage.toolsLabel')}</SectionLabel>
-        <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
+        <View style={{ paddingHorizontal: space[5] }}>
+          <FeedToolCard
+            label={tx('manage.rowFeedCollection')}
+            sub={feedSub}
+            onPress={openFeedCollection}
+          />
+        </View>
+
+        {/* Coming-soon tools — grouped under their own header so the "เร็วๆ นี้"
+            state is stated once (was previously duplicated as both the row
+            subtitle and a trailing pill). */}
+        <SectionLabel>{tx('manage.comingSoonLabel')}</SectionLabel>
+        <View style={{ paddingHorizontal: space[5] }}>
           <Card padded={false}>
-            <ListRow
-              icon="feed"
-              label={tx('manage.rowFeedCollection')}
-              sub={feedSub}
-              onPress={openFeedCollection}
-            />
             <ListRow
               icon="merchant"
               label={tx('manage.rowMerchants')}
-              sub={tx('manage.comingSoon')}
+              sub={tx('manage.rowMerchantsSub')}
               disabled
-              trailing={<Pill tone="ghost">{tx('manage.comingSoon')}</Pill>}
             />
             <ListRow
               icon="worker"
               label={tx('manage.rowWorkers')}
-              sub={tx('manage.comingSoon')}
+              sub={tx('manage.rowWorkersSub')}
               disabled
-              trailing={<Pill tone="ghost">{tx('manage.comingSoon')}</Pill>}
               last
             />
           </Card>
         </View>
 
-        <View style={{ paddingHorizontal: 24, paddingTop: 4, paddingBottom: 12 }}>
+        <View style={{ paddingHorizontal: space[6], paddingTop: space[4], paddingBottom: space[3] }}>
           <Text
             style={{
-              fontSize: 11,
+              fontSize: type.sizes.xs,
               color: t.inkMute,
               lineHeight: 18,
-              letterSpacing: 0.1,
               fontFamily: type.family,
             }}
           >
