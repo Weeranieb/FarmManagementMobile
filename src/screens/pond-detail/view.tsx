@@ -1,7 +1,7 @@
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type, radii } from '@/theme/tokens';
-import { Card, TopBar } from '@/components/ui';
+import { TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { StatusBadge } from '@/components/domain/StatusPip';
@@ -140,48 +140,7 @@ export function PondDetailView({
           />
         }
       >
-        <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12 }}>
-          <Card padded={false}>
-            <View style={{ paddingVertical: 14, paddingHorizontal: 16 }}>
-              <Row justify="space-between" style={{ marginBottom: 10 }}>
-                <Row gap={6}>
-                  <StatusBadge s={pond.status} />
-                  {!isMaintenance ? <FishChips types={pond.fishTypes} /> : null}
-                </Row>
-                {!isMaintenance && pond.startDate ? (
-                  <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-                    เริ่มรอบ {thaiDate.short(new Date(pond.startDate))}
-                  </Text>
-                ) : null}
-              </Row>
-              {!isMaintenance ? (
-                <Row gap={0}>
-                  <PondStat label="ปลาในบ่อ" v={fmt.num(pond.totalFish)} sub="ตัว" />
-                  <Divider />
-                  <PondStat label="อายุรอบ" v={String(pond.ageDays ?? 0)} sub="วัน" />
-                  <Divider />
-                  <PondStat label="ต้นทุน" v="฿62K" accent={t.inkSoft} />
-                </Row>
-              ) : (
-                <Col gap={4}>
-                  <Text style={{ fontSize: 14, color: t.inkSoft, fontFamily: type.family }}>
-                    บ่อนี้ปิดอยู่
-                  </Text>
-                  {pond.latestActivityDate && pond.latestActivityType ? (
-                    <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-                      รอบล่าสุด: {LATEST_ACTIVITY_LABEL[pond.latestActivityType]}{' '}
-                      {thaiDate.ago(new Date(pond.latestActivityDate), today)}
-                    </Text>
-                  ) : (
-                    <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-                      ยังไม่มีกิจกรรม
-                    </Text>
-                  )}
-                </Col>
-              )}
-            </View>
-          </Card>
-        </View>
+        <PondHeader pond={pond} isMaintenance={isMaintenance} />
 
         <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
           <Row gap={8}>
@@ -252,9 +211,7 @@ export function PondDetailView({
         {tab === 'feed' ? (
           <DailyFeedBody
             pondId={pond.id}
-            onOpenDailyLog={() =>
-              onOpenDailyLog?.({ farmId: pond.farmId, pondId: pond.id })
-            }
+            onOpenDailyLog={() => onOpenDailyLog?.({ farmId: pond.farmId, pondId: pond.id })}
           />
         ) : (
           <HistoryBody pondId={pond.id} />
@@ -284,38 +241,116 @@ function BackBtn({ onBack }: { onBack: () => void }) {
   );
 }
 
-function PondStat({
-  label,
-  v,
-  sub,
-  accent,
-}: {
-  label: string;
-  v: string;
-  sub?: string;
-  accent?: string;
-}) {
+/**
+ * Editorial pond header (replaces the boxed status card). Active ponds lead with
+ * the fish-in-pond hero number + age; closed ponds get a tight one-line strip.
+ */
+function PondHeader({ pond, isMaintenance }: { pond: PondModel; isMaintenance: boolean }) {
   const { t } = useTheme();
+
+  if (isMaintenance) {
+    return (
+      <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 14 }}>
+        <Row gap={12} align="flex-start">
+          <StatusBadge s={pond.status} />
+          <Col gap={2} style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              style={{ fontFamily: type.familySemi, fontSize: type.sizes.base, color: t.inkSoft }}
+            >
+              บ่อนี้ปิดอยู่
+            </Text>
+            {pond.latestActivityDate && pond.latestActivityType ? (
+              <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family }}>
+                รอบล่าสุด: {LATEST_ACTIVITY_LABEL[pond.latestActivityType]}{' '}
+                {thaiDate.ago(new Date(pond.latestActivityDate), today)}
+              </Text>
+            ) : (
+              <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family }}>
+                ยังไม่มีกิจกรรม
+              </Text>
+            )}
+          </Col>
+        </Row>
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-        <Text style={{ fontFamily: type.familyNumBold, fontSize: 18, color: accent ?? t.ink }}>
-          {v}
-        </Text>
-        {sub ? (
-          <Text
-            style={{ fontSize: 11, color: t.inkMute, marginLeft: 3, fontFamily: type.familyMedium }}
-          >
-            {sub}
+    <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 }}>
+      <Row justify="space-between" align="center" style={{ marginBottom: 14 }}>
+        <Row gap={8}>
+          <StatusBadge s={pond.status} />
+          <FishChips types={pond.fishTypes} />
+        </Row>
+        {pond.startDate ? (
+          <Text style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.family }}>
+            เริ่มรอบ {thaiDate.short(new Date(pond.startDate))}
           </Text>
         ) : null}
-      </View>
-      <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>{label}</Text>
+      </Row>
+      <Row align="flex-end" justify="space-between">
+        <View>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text
+              style={{
+                fontFamily: type.familyNumBold,
+                fontSize: type.sizes.hero,
+                color: t.ink,
+                lineHeight: 40,
+              }}
+            >
+              {fmt.num(pond.totalFish)}
+            </Text>
+            <Text
+              style={{
+                fontSize: type.sizes.sm,
+                fontFamily: type.familyMedium,
+                color: t.inkMute,
+                marginLeft: 6,
+              }}
+            >
+              ตัว
+            </Text>
+          </View>
+          <Text
+            style={{
+              fontSize: type.sizes.sm,
+              color: t.inkMute,
+              fontFamily: type.family,
+              marginTop: 2,
+            }}
+          >
+            ปลาในบ่อ
+          </Text>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text style={{ fontFamily: type.familyNumSemi, fontSize: type.sizes.lg, color: t.ink }}>
+              {pond.ageDays ?? 0}
+            </Text>
+            <Text
+              style={{
+                fontSize: type.sizes.sm,
+                fontFamily: type.familyMedium,
+                color: t.inkMute,
+                marginLeft: 4,
+              }}
+            >
+              วัน
+            </Text>
+          </View>
+          <Text
+            style={{
+              fontSize: type.sizes.xs,
+              color: t.inkMute,
+              fontFamily: type.family,
+              marginTop: 2,
+            }}
+          >
+            อายุรอบ
+          </Text>
+        </View>
+      </Row>
     </View>
   );
-}
-
-function Divider() {
-  const { t } = useTheme();
-  return <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: t.border }} />;
 }

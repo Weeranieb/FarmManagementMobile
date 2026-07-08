@@ -579,6 +579,7 @@ export function DailyLogView({
           yesterday={previousValueForActiveCell}
           lastUsedFeedId={lastUsedFeedIdForActiveCell}
           isLastCell={activeCellIsLast}
+          bottomInset={bottomInset}
           onChange={onNumpadChange}
           onCancel={onNumpadCancel}
           onCommit={onNumpadCommit}
@@ -590,6 +591,7 @@ export function DailyLogView({
         <ConfirmMonthSaveSheet
           visible={confirmOpen}
           summary={monthSummary}
+          bottomInset={bottomInset}
           onClose={() => setConfirmOpen(false)}
           onConfirm={runSave}
         />
@@ -618,6 +620,7 @@ export function DailyLogView({
         current={currentYM}
         today={today}
         marks={monthPickerMarks}
+        bottomInset={bottomInset}
         onClose={() => setMonthPickerOpen(false)}
         onConfirm={onMonthPickerConfirm}
       />

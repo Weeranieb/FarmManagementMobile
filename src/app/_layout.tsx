@@ -3,7 +3,7 @@ import 'react-native-gesture-handler';
 import '../../global.css';
 import '@/locale/i18n';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 // eslint-disable-next-line import/no-duplicates
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -27,7 +27,7 @@ import { useAuthStore } from '@/features/auth';
 import { restoreSavedLanguage } from '@/screens/language';
 import { mmkvPersistStorage } from '@/lib/mmkv';
 
-void SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,7 +54,15 @@ const persister = createSyncStoragePersister({
   key: 'farmos-rq-cache',
 });
 
-function RootShell({ children }: { children: React.ReactNode }) {
+function RootShell({
+  children,
+  onLayout,
+}: {
+  children: React.ReactNode;
+  /** Fires once, on this view's first layout pass — see RootLayout for why
+   *  the native splash is hidden from here rather than from a plain effect. */
+  onLayout?: () => void;
+}) {
   const { t, mode } = useTheme();
 
   useEffect(() => {
@@ -64,7 +72,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
   const statusBarStyle = mode === 'dark' ? 'light' : 'dark';
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.bg }}>
+    <View style={{ flex: 1, backgroundColor: t.bg }} onLayout={onLayout}>
       <StatusBar style={statusBarStyle} translucent backgroundColor="transparent" />
       {children}
     </View>
@@ -96,15 +104,26 @@ export default function RootLayout() {
   const { loaded: fontsLoaded } = useAppFonts();
   const hydrate = useAuthStore((s) => s.hydrate);
   const ready = useAuthStore((s) => s.ready);
+  const appReady = fontsLoaded && ready;
 
   useEffect(() => {
     void hydrate();
     void restoreSavedLanguage();
   }, [hydrate]);
 
-  useEffect(() => {
-    if (fontsLoaded && ready) void SplashScreen.hideAsync();
-  }, [fontsLoaded, ready]);
+  // Hide the native splash from the real content's own first `onLayout`
+  // instead of a bare effect keyed on `appReady`. `AuthGate`/`RootShell`
+  // aren't mounted until `appReady` is true (see below), so this fires the
+  // instant the app's actual UI has been laid out — not merely the instant
+  // React state flipped, which on Android could race the native splash's
+  // own dismiss/exit-animation and leave its icon visible over content that
+  // had already painted underneath it.
+  const hiddenRef = useRef(false);
+  const handleContentLayout = useCallback(() => {
+    if (hiddenRef.current) return;
+    hiddenRef.current = true;
+    void SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   return (
     <SafeAreaProvider>
@@ -120,9 +139,11 @@ export default function RootLayout() {
       >
         <ThemeProvider>
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <RootShell>
-              <AuthGate />
-            </RootShell>
+            {appReady ? (
+              <RootShell onLayout={handleContentLayout}>
+                <AuthGate />
+              </RootShell>
+            ) : null}
           </GestureHandlerRootView>
         </ThemeProvider>
       </PersistQueryClientProvider>

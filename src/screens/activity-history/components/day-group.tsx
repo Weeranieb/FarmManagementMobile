@@ -15,7 +15,7 @@ type Props = {
 export function DayGroup({ group, first = false, onPressItem }: Props) {
   const { t } = useTheme();
   return (
-    <View style={{ marginTop: first ? space[1] : space[4] + 2 }}>
+    <View style={{ marginTop: first ? space[1] : space[5] }}>
       <View
         style={{
           flexDirection: 'row',
@@ -42,11 +42,9 @@ export function DayGroup({ group, first = false, onPressItem }: Props) {
       </View>
       <View
         style={{
-          backgroundColor: t.surface,
-          borderWidth: 1,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
           borderColor: t.border,
-          borderRadius: 18,
-          overflow: 'hidden',
         }}
       >
         {group.items.map((e, i, arr) => (

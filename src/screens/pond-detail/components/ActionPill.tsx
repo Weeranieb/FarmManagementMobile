@@ -15,11 +15,11 @@ export function ActionPill({ tone, icon, label, onPress, disabled }: Props) {
   const { t } = useTheme();
   const Ico = Icon[icon];
   const map = {
-    fill: { soft: t.fillSoft, ink: t.fillInk, accent: t.fill },
-    move: { soft: t.moveSoft, ink: t.moveInk, accent: t.move },
-    sell: { soft: t.sellSoft, ink: t.sellInk, accent: t.sell },
+    fill: { ink: t.fillInk, accent: t.fill },
+    move: { ink: t.moveInk, accent: t.move },
+    sell: { ink: t.sellInk, accent: t.sell },
   };
-  const { soft, ink, accent } = map[tone];
+  const { ink, accent } = map[tone];
   return (
     <View style={{ flex: 1 }}>
       <Pressable
@@ -27,35 +27,30 @@ export function ActionPill({ tone, icon, label, onPress, disabled }: Props) {
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={label}
+        accessibilityState={{ disabled: !!disabled }}
       >
         <View
           style={{
             width: '100%',
-            height: 56,
+            height: 52,
             borderRadius: radii.md,
-            backgroundColor: soft,
+            backgroundColor: t.surface,
             borderWidth: 1.5,
             borderColor: disabled ? t.border : accent,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: 10,
-            opacity: disabled ? 0.45 : 1,
-            shadowColor: accent,
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: disabled ? 0 : 0.12,
-            shadowRadius: 3,
-            elevation: disabled ? 0 : 1,
+            gap: 8,
           }}
         >
-          <Ico size={18} color={ink} stroke={2.25} />
+          <Ico size={18} color={disabled ? t.inkMute : accent} stroke={2.25} />
           <Text
             numberOfLines={1}
             style={{
-              color: ink,
+              color: disabled ? t.inkMute : ink,
               fontFamily: type.familyBold,
               fontSize: 14,
-              marginLeft: 8,
             }}
           >
             {label}

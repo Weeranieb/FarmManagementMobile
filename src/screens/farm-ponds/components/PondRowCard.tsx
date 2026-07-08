@@ -1,71 +1,103 @@
 import { Platform, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radii, type } from '@/theme/tokens';
+import { space, type } from '@/theme/tokens';
 import { Card } from '@/components/ui';
 import { Row, Col } from '@/components/layout/Row';
-import { FishChips } from '@/components/domain/FishChips';
 import { StatusBadge } from '@/components/domain/StatusPip';
-import { fmt } from '@/utils/fmt';
+import { fmt, FISH_TH } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import type { PondModel } from '@/features/pond';
 
 type Props = { pond: PondModel; onPress?: () => void };
 
+const CLOSE_LABEL: Record<'fill' | 'move' | 'sell', string> = {
+  fill: 'เติม',
+  move: 'ย้าย',
+  sell: 'ขาย',
+};
+
+/**
+ * Flat, fixed-height pond row. Both active and maintenance states share the same
+ * two-line skeleton (name + status / one meta line) so the list reads as an even
+ * rhythm; active ponds carry a compact fish-count metric on the right.
+ */
 export function PondRowCard({ pond, onPress }: Props) {
   const { t } = useTheme();
   const isMaintenance = pond.status === 'maintenance';
 
+  const fishText = pond.fishTypes.map((ft) => FISH_TH[ft] ?? ft).join(', ');
+  const activeMeta = [fishText, `อายุ ${pond.ageDays ?? 0} วัน`].filter(Boolean).join(' · ');
+  const maintMeta =
+    pond.latestActivityDate && pond.latestActivityType
+      ? `ปิดอยู่ · ${CLOSE_LABEL[pond.latestActivityType]} ${thaiDate.short(new Date(pond.latestActivityDate))}`
+      : 'ปิดอยู่ — เริ่มรอบใหม่ได้';
+
   return (
     <Card padded={false} onPress={onPress} style={{ overflow: 'hidden' }}>
-      <View style={{ padding: 16 }}>
-        <Row justify="space-between" align="flex-start" style={{ marginBottom: 10 }}>
-          <Col gap={6} style={{ flex: 1, minWidth: 0 }}>
-            <Row gap={8} style={{ flexWrap: 'wrap', alignItems: 'center' }}>
-              <Text
-                style={{
-                  fontSize: 17,
-                  fontFamily: type.familyBold,
-                  color: t.ink,
-                  lineHeight: 24,
-                  ...Platform.select({ android: { includeFontPadding: false } }),
-                }}
-              >
-                {`บ่อ ${pond.name}`}
-              </Text>
-              {/* Pill uses alignSelf: 'flex-start' — wrap so Row alignItems:center applies */}
-              <View style={{ alignSelf: 'center' }}>
-                <StatusBadge s={pond.status} />
-              </View>
-            </Row>
-            {!isMaintenance && pond.fishTypes.length > 0 ? (
-              <Row gap={6} style={{ flexWrap: 'wrap' }}>
-                <FishChips types={pond.fishTypes} />
-              </Row>
-            ) : null}
-          </Col>
-          {!isMaintenance ? <PondStatusDot pond={pond} /> : null}
-        </Row>
-        {!isMaintenance ? (
-          <Row gap={20} style={{ paddingTop: 2, marginBottom: 8 }}>
-            <PondMiniStat label="ปลาในบ่อ (ตัว)" v={fmt.num(pond.totalFish)} />
-            <PondMiniStat label="อายุรอบ" v={String(pond.ageDays ?? 0)} sub="วัน" />
-          </Row>
-        ) : (
-          <Text
-            style={{ fontSize: 13, color: t.inkSoft, fontFamily: type.family, marginBottom: 8 }}
-          >
-            บ่อปิดอยู่ — กดเพื่อเริ่มรอบใหม่
-          </Text>
-        )}
-        {pond.latestActivityDate && pond.latestActivityType ? (
-          <Row gap={8} align="center" style={{ paddingTop: 8, borderTopWidth: 1, borderTopColor: t.border }}>
-            <ActivityModePill mode={pond.latestActivityType} />
-            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-              · {thaiDate.ago(new Date(pond.latestActivityDate))}
+      <Row
+        align="center"
+        gap={10}
+        style={{ paddingHorizontal: space[4], paddingVertical: space[3] }}
+      >
+        <Col gap={4} style={{ flex: 1, minWidth: 0 }}>
+          <Row gap={8} align="center">
+            <Text
+              numberOfLines={1}
+              style={{
+                fontSize: type.sizes.md,
+                fontFamily: type.familyBold,
+                color: t.ink,
+                lineHeight: 22,
+                flexShrink: 1,
+                ...Platform.select({ android: { includeFontPadding: false } }),
+              }}
+            >
+              {`บ่อ ${pond.name}`}
             </Text>
+            {/* Neutralize the Pill's own alignSelf so it centres in the row */}
+            <View>
+              <StatusBadge s={pond.status} />
+            </View>
           </Row>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: type.sizes.sm,
+              color: t.inkMute,
+              fontFamily: type.family,
+              lineHeight: 18,
+            }}
+          >
+            {isMaintenance ? maintMeta : activeMeta}
+          </Text>
+        </Col>
+
+        {!isMaintenance ? (
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text
+              style={{
+                fontFamily: type.familyNumBold,
+                fontSize: type.sizes.lg,
+                color: pond.totalFish > 0 ? t.ink : t.inkMute,
+              }}
+            >
+              {fmt.num(pond.totalFish)}
+            </Text>
+            <Text
+              style={{
+                fontSize: type.sizes.xs,
+                color: t.inkMute,
+                fontFamily: type.familyMedium,
+                marginLeft: 3,
+              }}
+            >
+              ตัว
+            </Text>
+          </View>
         ) : null}
-      </View>
+
+        {!isMaintenance ? <PondStatusDot pond={pond} /> : null}
+      </Row>
     </Card>
   );
 }
@@ -73,56 +105,5 @@ export function PondRowCard({ pond, onPress }: Props) {
 function PondStatusDot({ pond }: { pond: PondModel }) {
   const { t } = useTheme();
   const color = pond.loggedToday ? t.success : pond.lateDays > 0 ? t.danger : t.warn;
-  return (
-    <View
-      style={{
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: color,
-        marginTop: 4,
-      }}
-    />
-  );
-}
-
-function ActivityModePill({ mode }: { mode: 'fill' | 'move' | 'sell' }) {
-  const { t } = useTheme();
-  const map = {
-    fill: { bg: t.fillSoft, fg: t.fillInk, label: 'เติม' },
-    move: { bg: t.moveSoft, fg: t.moveInk, label: 'ย้าย' },
-    sell: { bg: t.sellSoft, fg: t.sellInk, label: 'ขาย' },
-  } as const;
-  const m = map[mode];
-  return (
-    <View
-      style={{
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: radii.xs,
-        backgroundColor: m.bg,
-      }}
-    >
-      <Text style={{ color: m.fg, fontFamily: type.familySemi, fontSize: 12 }}>{m.label}</Text>
-    </View>
-  );
-}
-
-function PondMiniStat({ label, v, sub }: { label: string; v: string; sub?: string }) {
-  const { t } = useTheme();
-  return (
-    <View style={{ flex: 1, alignItems: 'flex-start', gap: 2 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-        <Text style={{ fontFamily: type.familyNumBold, fontSize: 20, color: t.ink }}>{v}</Text>
-        {sub ? (
-          <Text
-            style={{ fontSize: 11, color: t.inkMute, marginLeft: 3, fontFamily: type.familyMedium }}
-          >
-            {sub}
-          </Text>
-        ) : null}
-      </View>
-      <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>{label}</Text>
-    </View>
-  );
+  return <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />;
 }

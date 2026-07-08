@@ -22,7 +22,7 @@
       "package": "com.farmos.mobile",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#a9d9f1"
+        "backgroundColor": "#b6e2f9"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false

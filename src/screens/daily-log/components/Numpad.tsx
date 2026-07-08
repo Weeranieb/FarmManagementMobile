@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, View, Text, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFeedCollectionsData } from '@/features/feed-collection';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
@@ -38,6 +37,11 @@ type Props = {
   /** No further cell to advance to — the primary button reads "เสร็จสิ้น"
    *  and commits-then-closes instead of advancing with "ถัดไป". */
   isLastCell?: boolean;
+  /** Bottom safe-area inset, sourced from the screen (outside this Modal).
+   *  `useSafeAreaInsets()` called from inside an Android Modal reads
+   *  stale/zero on the Modal's own first render — its native window hasn't
+   *  received insets yet — so the sheet takes this as a prop instead. */
+  bottomInset?: number;
   /** Fires on every keystroke (parsed value, may be out of range) so the
    *  table cell behind the sheet can mirror what's being typed live. */
   onChange?: (value: number | '') => void;
@@ -75,13 +79,13 @@ export function Numpad({
   yesterday,
   lastUsedFeedId,
   isLastCell = false,
+  bottomInset = 0,
   onChange,
   onCancel,
   onCommit,
   onNext,
 }: Props) {
   const { t } = useTheme();
-  const insets = useSafeAreaInsets();
   const meta = COLS.find((c) => c.key === col);
   const group: GroupKey = (meta?.group ?? 'pellet') as GroupKey;
   const integerOnly = meta?.integer === true;
@@ -138,7 +142,7 @@ export function Numpad({
   const parsed = useMemo(() => parseValue(buf), [buf]);
   const isInvalid = isCellValueInvalid(parsed);
   const { height: screenH } = useWindowDimensions();
-  const sheetH = numpadSheetHeight(screenH, insets.bottom);
+  const sheetH = numpadSheetHeight(screenH, bottomInset);
 
   if (!visible) return null;
 
@@ -471,7 +475,7 @@ export function Numpad({
             style={{
               paddingHorizontal: 12,
               paddingTop: 10,
-              paddingBottom: 12 + insets.bottom,
+              paddingBottom: 12 + bottomInset,
               flexDirection: 'row',
               gap: 8,
             }}

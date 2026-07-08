@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -33,6 +32,11 @@ type Props = {
   /** Months strictly after this anchor render as muted (non-confirmable).
    *  Mirrors the daily-log's "no future months" rule. Defaults to `today`. */
   outOfRangeAfter?: YearMonth | null;
+  /** Bottom safe-area inset, sourced from the screen (outside this Modal).
+   *  `useSafeAreaInsets()` called from inside an Android Modal reads
+   *  stale/zero on the Modal's own first render — its native window hasn't
+   *  received insets yet — so the sheet takes this as a prop instead. */
+  bottomInset?: number;
   onClose: () => void;
   /** Fires when the user taps "เลือก" with a non-disabled month selected.
    *  The view layer is responsible for unsaved-changes guards (this sheet
@@ -52,11 +56,11 @@ export function MonthYearPickerSheet({
   marks,
   outOfRangeBefore = null,
   outOfRangeAfter,
+  bottomInset = 0,
   onClose,
   onConfirm,
 }: Props) {
   const { t } = useTheme();
-  const insets = useSafeAreaInsets();
 
   const upperBound = outOfRangeAfter === undefined ? today : outOfRangeAfter;
 
@@ -125,7 +129,7 @@ export function MonthYearPickerSheet({
               backgroundColor: t.surface,
               borderTopLeftRadius: 22,
               borderTopRightRadius: 22,
-              paddingBottom: insets.bottom + 14,
+              paddingBottom: bottomInset + 14,
               shadowColor: '#0b1220',
               shadowOpacity: 0.25,
               shadowRadius: 40,

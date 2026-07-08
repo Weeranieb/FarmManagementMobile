@@ -1,6 +1,5 @@
 import { Modal, Pressable, View, Text } from 'react-native';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -10,6 +9,11 @@ import type { MonthSummary } from '../hook';
 type Props = {
   visible: boolean;
   summary: MonthSummary;
+  /** Bottom safe-area inset, sourced from the screen (outside this Modal).
+   *  `useSafeAreaInsets()` called from inside an Android Modal reads
+   *  stale/zero on the Modal's own first render — its native window hasn't
+   *  received insets yet — so the sheet takes this as a prop instead. */
+  bottomInset?: number;
   onClose: () => void;
   /** Fires the (non-blocking) save. The parent closes this sheet immediately
    *  and reports the server round-trip via a status toast. */
@@ -31,9 +35,14 @@ function monthLabel(month: string): string {
   return `${thMonth(monthIdx)} ${year + 543}`;
 }
 
-export function ConfirmMonthSaveSheet({ visible, summary, onClose, onConfirm }: Props) {
+export function ConfirmMonthSaveSheet({
+  visible,
+  summary,
+  bottomInset = 0,
+  onClose,
+  onConfirm,
+}: Props) {
   const { t } = useTheme();
-  const insets = useSafeAreaInsets();
 
   return (
     <Modal
@@ -62,7 +71,7 @@ export function ConfirmMonthSaveSheet({ visible, summary, onClose, onConfirm }: 
             backgroundColor: t.surface,
             borderTopLeftRadius: 22,
             borderTopRightRadius: 22,
-            paddingBottom: 14 + insets.bottom,
+            paddingBottom: 14 + bottomInset,
           }}
         >
           <View style={{ alignItems: 'center', paddingTop: 7, paddingBottom: 4 }}>

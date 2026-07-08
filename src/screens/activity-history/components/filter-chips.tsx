@@ -42,9 +42,9 @@ export function FilterChips({ filter, counts, disabled = false, onChange }: Prop
               key={f.id}
               style={{
                 borderRadius: radii.pill,
-                backgroundColor: sel ? t.ink : t.surface,
+                backgroundColor: sel ? t.brand : t.surface,
                 borderWidth: 1,
-                borderColor: sel ? t.ink : t.border,
+                borderColor: sel ? t.brand : t.border,
                 opacity: off ? 0.5 : 1,
                 overflow: 'hidden',
               }}
