@@ -12,6 +12,7 @@
     "build:android:dev": "bash scripts/build-android.sh dev",
     "build:android:uat": "bash scripts/build-android.sh uat",
     "build:android:prod": "bash scripts/build-android.sh prod",
+    "build:android:light": "make android-light",
     "ios": "expo run:ios",
     "ios:split": "bash scripts/dev-ios.sh",
     "web": "expo start --web",
