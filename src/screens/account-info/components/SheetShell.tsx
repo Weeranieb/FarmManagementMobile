@@ -9,26 +9,46 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radii } from '@/theme/tokens';
+import { radii, space } from '@/theme/tokens';
+import { Icon } from '@/components/icons';
 
 type Props = {
   visible: boolean;
   onClose: () => void;
   heightPct?: number;
-  children: React.ReactNode;
+  /** Size the sheet to its content instead of a fixed `heightPct` — avoids the
+   *  empty gap under short sheets. Capped at 90% of the screen. */
+  fitContent?: boolean;
+  /** Render an explicit close (✕) button top-right — a real dismiss affordance
+   *  since the grabber here is decorative (not drag-to-dismiss). */
+  showClose?: boolean;
+  children?: React.ReactNode;
 };
 
-export function SheetShell({ visible, onClose, heightPct = 0.7, children }: Props) {
+export function SheetShell({
+  visible,
+  onClose,
+  heightPct = 0.7,
+  fitContent = false,
+  showClose = false,
+  children,
+}: Props) {
   const { t, shadowLg } = useTheme();
+  const insets = useSafeAreaInsets();
   const screenH = Dimensions.get('window').height;
 
   const sheetStyle: ViewStyle = {
-    height: screenH * heightPct,
+    ...(fitContent ? { maxHeight: screenH * 0.9 } : { height: screenH * heightPct }),
     backgroundColor: t.bg,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
     overflow: 'hidden',
+    // Inside a RN Modal the safe-area context can resolve to 0 (the Modal
+    // renders outside the provider tree), so floor the fit-content bottom pad
+    // to keep the sheet clear of the home indicator either way.
+    paddingBottom: fitContent ? Math.max(insets.bottom, space[4]) : 0,
     ...shadowLg,
   };
 
@@ -47,16 +67,40 @@ export function SheetShell({ visible, onClose, heightPct = 0.7, children }: Prop
           />
         </Animated.View>
 
-        <Animated.View
-          entering={SlideInDown.duration(260)}
-          exiting={SlideOutDown.duration(220)}
-        >
+        <Animated.View entering={SlideInDown.duration(260)} exiting={SlideOutDown.duration(220)}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={sheetStyle}>
-              <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}>
+              <View style={{ paddingTop: 10, paddingBottom: 6 }}>
                 <View
-                  style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: t.border }}
+                  style={{
+                    alignSelf: 'center',
+                    width: 40,
+                    height: 4,
+                    borderRadius: 2,
+                    backgroundColor: t.border,
+                  }}
                 />
+                {showClose ? (
+                  <Pressable
+                    onPress={onClose}
+                    accessibilityRole="button"
+                    accessibilityLabel="ปิด"
+                    hitSlop={8}
+                    style={{
+                      position: 'absolute',
+                      right: space[3],
+                      top: space[2],
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      backgroundColor: t.surfaceAlt,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Icon.x size={16} color={t.inkSoft} />
+                  </Pressable>
+                ) : null}
               </View>
               {children}
             </View>

@@ -1,13 +1,13 @@
 import { Pressable, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { type } from '@/theme/tokens';
+import { radii, space, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
-import { dangerInk } from '@/theme/ink';
+import { dangerInk, warnInk } from '@/theme/ink';
 import { Row } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
 import { SheetShell } from '@/screens/account-info/components/SheetShell';
 import type { FeedCollectionModel } from '@/features/feed-collection';
-import { FEED_TYPE_LABEL_TH, feedPaletteFor, type FeedPalette } from '../feedPalette';
+import { FEED_PILL_TONE_BY_KIND, FEED_TYPE_LABEL_TH } from '../feedPalette';
 import { FeedChartIcon, feedGlyphFor } from './FeedIcons';
 
 type Props = {
@@ -31,40 +31,36 @@ export function SheetFeedActions({
   const danger = dangerInk(mode, t);
 
   if (!feed) {
-    return (
-      <SheetShell visible={visible} onClose={onClose} heightPct={0.42}>
-        {null}
-      </SheetShell>
-    );
+    return <SheetShell visible={visible} onClose={onClose} fitContent showClose />;
   }
 
-  const palette = feedPaletteFor(feed.kind);
   const Glyph = feedGlyphFor(feed.kind);
+  const tone = FEED_PILL_TONE_BY_KIND[feed.kind];
+  const tileBg = tone === 'warn' ? t.warnSoft : t.brandSoft;
+  const toneInk = tone === 'warn' ? warnInk(mode, t) : t.brandInk;
+  const toneSoft = tone === 'warn' ? t.warnSoft : t.brandSoft;
 
   return (
-    <SheetShell visible={visible} onClose={onClose} heightPct={0.5}>
-      <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 28 }}>
-        <Row gap={12} style={{ marginBottom: 14 }}>
+    <SheetShell visible={visible} onClose={onClose} fitContent showClose>
+      <View style={{ paddingHorizontal: space[5], paddingTop: space[1], paddingBottom: space[3] }}>
+        <Row gap={space[3]} style={{ marginBottom: space[4] }}>
           <View
             style={{
               width: 40,
               height: 40,
-              borderRadius: 11,
-              backgroundColor: palette.tile,
+              borderRadius: radii.md,
+              backgroundColor: tileBg,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Glyph size={20} stroke={2} color="#fff" />
+            <Glyph size={20} stroke={2} color={toneInk} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text
-              numberOfLines={1}
-              style={{ fontSize: 15, fontFamily: type.familyBold, color: t.ink }}
-            >
+            <Text numberOfLines={1} style={{ fontSize: type.sizes.base, fontFamily: type.familyBold, color: t.ink }}>
               {feed.name}
             </Text>
-            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.familyNum, marginTop: 2 }}>
+            <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.familyNum, marginTop: 2 }}>
               {feed.price != null ? `${fmt.baht(feed.price)}/${feed.unit} · ` : ''}
               {FEED_TYPE_LABEL_TH[feed.kind]}
             </Text>
@@ -78,12 +74,11 @@ export function SheetFeedActions({
           onPress={onEdit}
         />
         <ActionRow
-          icon={<FeedChartIcon size={18} color={palette.ink} />}
-          iconBg="#ffffff"
+          icon={<FeedChartIcon size={18} color={toneInk} />}
+          iconBg={t.surface}
           label="อัปเดตราคา"
           sub="บันทึกราคาใหม่ในประวัติ"
-          highlight
-          palette={palette}
+          highlightBg={toneSoft}
           onPress={onUpdatePrice}
         />
         <ActionRow
@@ -104,8 +99,7 @@ function ActionRow({
   iconBg,
   label,
   sub,
-  highlight,
-  palette,
+  highlightBg,
   labelColor,
   onPress,
 }: {
@@ -113,8 +107,7 @@ function ActionRow({
   iconBg?: string;
   label: string;
   sub: string;
-  highlight?: boolean;
-  palette?: FeedPalette;
+  highlightBg?: string;
   labelColor?: string;
   onPress?: () => void;
 }) {
@@ -126,18 +119,18 @@ function ActionRow({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 14,
-        paddingHorizontal: 14,
-        paddingVertical: 14,
-        borderRadius: 14,
-        backgroundColor: highlight && palette ? palette.soft : 'transparent',
+        gap: space[3],
+        paddingHorizontal: space[3],
+        paddingVertical: space[3],
+        borderRadius: radii.md,
+        backgroundColor: highlightBg ?? 'transparent',
       }}
     >
       <View
         style={{
           width: 40,
           height: 40,
-          borderRadius: 10,
+          borderRadius: radii.sm,
           backgroundColor: iconBg ?? t.surfaceAlt,
           alignItems: 'center',
           justifyContent: 'center',
@@ -146,10 +139,10 @@ function ActionRow({
         {icon}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: 15, fontFamily: type.familySemi, color: labelColor ?? t.ink }}>
+        <Text style={{ fontSize: type.sizes.base, fontFamily: type.familySemi, color: labelColor ?? t.ink }}>
           {label}
         </Text>
-        <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}>
+        <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}>
           {sub}
         </Text>
       </View>
