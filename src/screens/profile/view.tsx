@@ -1,9 +1,11 @@
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Constants from 'expo-constants';
 import { useTheme } from '@/theme/ThemeProvider';
-import { type, type ThemeMode } from '@/theme/tokens';
+import { radii, space, type, type ThemeMode } from '@/theme/tokens';
+import { dangerInk } from '@/theme/ink';
 import { Card, Pill, TopBar } from '@/components/ui';
+import { Icon } from '@/components/icons';
 import { LanguageSheet, type LanguageCode } from '@/screens/language';
 import { ListRow } from './components/ListRow';
 
@@ -30,18 +32,76 @@ function SectionLabel({ children }: { children: string }) {
   return (
     <Text
       style={{
-        fontSize: 12,
+        fontSize: type.sizes.sm,
         fontFamily: type.familyBold,
         color: t.inkSoft,
-        letterSpacing: 0.6,
-        textTransform: 'uppercase',
-        paddingHorizontal: 20,
-        paddingTop: 18,
-        paddingBottom: 8,
+        paddingHorizontal: space[5],
+        paddingTop: space[5],
+        paddingBottom: space[2],
       }}
     >
       {children}
     </Text>
+  );
+}
+
+/**
+ * Segmented display-mode switch. Replaces the blind "cycle" row so all three
+ * themes — including the outdoor (sunlight) mode — are visible and one tap away.
+ */
+function ModeSwitch() {
+  const { t, mode, setMode, shadow } = useTheme();
+  const { t: tx } = useTranslation();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        gap: space[1],
+        padding: space[1],
+        borderRadius: radii.md,
+        backgroundColor: t.surfaceSunk,
+        borderWidth: 1,
+        borderColor: t.border,
+      }}
+    >
+      {MODE_ORDER.map((m) => {
+        const active = m === mode;
+        return (
+          <Pressable
+            key={m}
+            onPress={() => setMode(m)}
+            android_ripple={{ color: t.surfaceAlt }}
+            style={{
+              flex: 1,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: space[2] - 2,
+              minHeight: 44,
+              paddingVertical: space[2],
+              borderRadius: radii.sm,
+              backgroundColor: active ? t.surface : 'transparent',
+              borderWidth: 1,
+              borderColor: active ? t.borderStrong : 'transparent',
+              ...(active ? shadow : null),
+            }}
+          >
+            {m === 'outdoor' ? (
+              <Icon.sun size={15} color={active ? t.brand : t.inkMute} />
+            ) : null}
+            <Text
+              style={{
+                fontSize: type.sizes.sm,
+                fontFamily: active ? type.familySemi : type.familyMedium,
+                color: active ? t.ink : t.inkMute,
+              }}
+            >
+              {tx(`profile.modes.${m}`)}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -59,30 +119,25 @@ export function ProfileView({
   handlePickLanguage,
 }: Props) {
   const { t: tx } = useTranslation();
-  const { t, mode, setMode } = useTheme();
+  const { t, mode } = useTheme();
 
   const langLabel = language === 'en' ? tx('profile.language.en') : tx('profile.language.th');
-  const modeLabel = tx(`profile.modes.${mode}`);
   const fullName = [firstName, lastName].filter(Boolean).join(' ');
   const initial = (firstName?.[0] ?? username?.[0] ?? '–').toUpperCase();
-
-  const cycleMode = () => {
-    const next = MODE_ORDER[(MODE_ORDER.indexOf(mode) + 1) % MODE_ORDER.length] ?? 'light';
-    setMode(next);
-  };
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       {showHeader ? <TopBar title={tx('profile.title')} /> : null}
       <ScrollView delaysContentTouches={false} contentContainerStyle={{ paddingBottom: 96 }}>
-        <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4 }}>
-          <Card style={{ paddingVertical: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+        {/* Identity — the one focal moment on the screen */}
+        <View style={{ paddingHorizontal: space[5], paddingTop: space[5], paddingBottom: space[1] }}>
+          <Card style={{ paddingVertical: space[5] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[4] }}>
               <View
                 style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
                   backgroundColor: t.brandSoft,
                   borderWidth: 2,
                   borderColor: t.brand,
@@ -90,22 +145,22 @@ export function ProfileView({
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: t.brandInk, fontFamily: type.familyBold, fontSize: 18 }}>
+                <Text style={{ color: t.brandInk, fontFamily: type.familyBold, fontSize: type.sizes.xxl }}>
                   {initial}
                 </Text>
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
-                  style={{ fontFamily: type.familyBold, fontSize: 16, color: t.ink }}
+                  style={{ fontFamily: type.familyBold, fontSize: type.sizes.xl, color: t.ink }}
                   numberOfLines={1}
                 >
                   {fullName || firstName}
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[2] }}>
                   <Pill tone="brand">{tx('profile.ownerLabel')}</Pill>
                   <Text
                     style={{
-                      fontSize: 12,
+                      fontSize: type.sizes.sm,
                       color: t.inkMute,
                       fontFamily: type.familyNum,
                       flexShrink: 1,
@@ -121,7 +176,7 @@ export function ProfileView({
         </View>
 
         <SectionLabel>{tx('profile.settings')}</SectionLabel>
-        <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
+        <View style={{ paddingHorizontal: 20 }}>
           <Card padded={false}>
             <ListRow icon="user" label={tx('profile.rowAccount')} onPress={openAccount} />
             <ListRow
@@ -135,23 +190,31 @@ export function ProfileView({
         </View>
 
         <SectionLabel>{tx('profile.displayMode')}</SectionLabel>
-        <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
-          <Card padded={false}>
-            <ListRow
-              icon="refresh"
-              label={tx('profile.rowTheme')}
-              sub={tx('profile.themeNow', { mode: modeLabel })}
-              onPress={cycleMode}
-            />
-            <ListRow
-              icon="logout"
-              label={tx('profile.logout')}
-              tone="danger"
-              onPress={handleLogout}
-              last
-            />
-          </Card>
+        <View style={{ paddingHorizontal: 20 }}>
+          <ModeSwitch />
         </View>
+
+        {/* Destructive action — separated and clearly weighted, not a settings row */}
+        <Pressable
+          onPress={handleLogout}
+          android_ripple={{ color: t.dangerSoft }}
+          style={{
+            marginHorizontal: space[5],
+            marginTop: space[7],
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: space[2],
+            paddingVertical: space[4],
+            borderRadius: radii.lg,
+            backgroundColor: t.dangerSoft,
+          }}
+        >
+          <Icon.logout size={18} color={dangerInk(mode, t)} />
+          <Text style={{ fontFamily: type.familySemi, fontSize: type.sizes.base, color: dangerInk(mode, t) }}>
+            {tx('profile.logout')}
+          </Text>
+        </Pressable>
       </ScrollView>
 
       <LanguageSheet

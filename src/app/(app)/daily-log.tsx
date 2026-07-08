@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
+import { View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as SystemUI from 'expo-system-ui';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
+import { initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DailyLogScreen } from '@/screens/daily-log';
 import { DailyLogErrorBoundary } from '@/screens/daily-log/ErrorBoundary';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -32,16 +32,24 @@ export default function DailyLogRoute() {
     }, [t.surface, t.bg]),
   );
 
+  // Native-stack (react-native-screens) resets the safe-area context to 0 for
+  // the first frames of the slide-in transition, so a plain SafeAreaView would
+  // render the header flush under the status bar until it settles. Fall back to
+  // the static `initialWindowMetrics` — read synchronously at launch and immune
+  // to that transition reset — so the top inset is correct from the first frame.
+  const topInset = Math.max(insets.top, initialWindowMetrics?.insets.top ?? 0);
+  const bottomInset = Math.max(insets.bottom, initialWindowMetrics?.insets.bottom ?? 0);
+
   return (
-    <ThemedSafeAreaView edges={['top']} canvas="surface">
+    <View style={{ flex: 1, backgroundColor: t.surface, paddingTop: topInset }}>
       <DailyLogErrorBoundary>
         <DailyLogScreen
           farmId={farmId}
           initialPondId={initialPondId}
           onBack={() => router.back()}
-          bottomInset={insets.bottom}
+          bottomInset={bottomInset}
         />
       </DailyLogErrorBoundary>
-    </ThemedSafeAreaView>
+    </View>
   );
 }

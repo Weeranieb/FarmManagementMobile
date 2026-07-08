@@ -11,7 +11,6 @@ import { useAuthStore } from '@/features/auth';
 import { toIsoDate } from '@/shared/time';
 import {
   additionalCostsTotal,
-  EMPTY_COST_ROW,
   type CostRow,
 } from '../additional-costs';
 
@@ -70,7 +69,7 @@ export function useFillFlow(initialPondId: number | undefined, onClose?: () => v
   const [amount, setAmount] = useState('');
   const [pricePerUnit, setPricePerUnit] = useState('');
   const [avgWeightKg, setAvgWeightKg] = useState('');
-  const [additionalCosts, setAdditionalCosts] = useState<CostRow[]>([EMPTY_COST_ROW]);
+  const [additionalCosts, setAdditionalCosts] = useState<CostRow[]>([]);
   const [remark, setRemark] = useState('');
   // Lazy init so each fresh mount reads the wall clock (defends against the
   // app staying open across midnight — `today` from shared/time is evaluated

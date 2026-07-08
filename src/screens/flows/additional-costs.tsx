@@ -1,20 +1,22 @@
-// Additional Costs editor — preset chips + multi-row + delete + live subtotal.
-// Shared by Fill / Sell / Move forms. Matches web "Add Fish" UX (section 5
-// of the FAB Picker Fix design — see FAB Picker Fix.html §⑤).
+// Additional Costs editor — one add model: tap a preset chip (or "อื่นๆ" for a
+// custom category) to append a cost; each cost is one unified row with an
+// inline delete; a tone-tinted subtotal appears once there is a positive sum.
+// Shared by Fill / Sell / Move forms.
 //
 // Controlled: parent owns `rows` so it can persist across review → back nav
-// and feed into the mutation payload.
+// and feed into the mutation payload. The parent seeds `[]` — the empty state
+// is just the chip menu, so there are no phantom blank rows.
 
 import { Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radii, type, type ThemePalette } from '@/theme/tokens';
+import { radii, space, type, type ThemePalette } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
-import { Col, Row } from '@/components/layout/Row';
+import { Col } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
 
 export type CostRow = { category: string; amount: string };
 
-const PRESETS = ['ค่าขนส่ง', 'ค่าแรง', 'ค่ารถ', 'ค่าอาหาร', 'อื่นๆ'] as const;
+const PRESETS = ['ค่าขนส่ง', 'ค่าแรง', 'ค่ารถ', 'ค่าอาหาร'] as const;
 
 type Tone = 'fill' | 'sell' | 'move';
 
@@ -27,12 +29,17 @@ const TONE_KEYS: Record<
   move: { solid: 'move', ink: 'moveInk', soft: 'moveSoft' },
 };
 
+function toneColors(t: ThemePalette, tone: Tone) {
+  const k = TONE_KEYS[tone];
+  return { solid: t[k.solid], ink: t[k.ink], soft: t[k.soft] };
+}
+
 /** Sum the numeric `amount` of every row. Ignores empties / non-numerics. */
 export function additionalCostsTotal(rows: CostRow[]): number {
   return rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
 }
 
-/** A single blank row — the editor always shows at least one. */
+/** A single blank row — kept for callers that still reference it. */
 export const EMPTY_COST_ROW: CostRow = { category: '', amount: '' };
 
 type Props = {
@@ -41,62 +48,54 @@ type Props = {
   onChange: (rows: CostRow[]) => void;
 };
 
-/** Oval preset chip — border/background on inner View; used chips match legacy UX. */
-function CostPresetChip({
+// ─── Add chip — preset (checks off once used) or the always-on custom chip ─
+function AddChip({
   label,
-  ink,
-  inkMute,
-  surface,
-  surfaceAlt,
-  border,
-  toneSolid,
   used,
+  ink,
   onPress,
 }: {
   label: string;
+  used?: boolean;
   ink: string;
-  inkMute: string;
-  surface: string;
-  surfaceAlt: string;
-  border: string;
-  toneSolid: string;
-  used: boolean;
   onPress: () => void;
 }) {
+  const { t } = useTheme();
   return (
     <Pressable
       onPress={used ? undefined : onPress}
       disabled={used}
+      hitSlop={8}
       accessibilityRole="button"
-      accessibilityState={{ disabled: used }}
+      accessibilityState={{ disabled: !!used }}
       accessibilityLabel={used ? `${label} — เพิ่มแล้ว` : `เพิ่ม${label}`}
-      style={({ pressed }) => ({
-        opacity: used ? 0.45 : pressed ? 0.85 : 1,
-        alignSelf: 'flex-start',
-      })}
+      style={({ pressed }) => ({ opacity: used ? 0.5 : pressed ? 0.85 : 1, alignSelf: 'flex-start' })}
     >
       <View
         style={{
-          paddingVertical: 7,
-          paddingHorizontal: 12,
-          borderRadius: radii.pill,
-          backgroundColor: used ? surfaceAlt : surface,
-          borderWidth: 1.5,
-          borderStyle: 'solid',
-          borderColor: used ? border : toneSolid + '40',
+          flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'center',
+          gap: space[1] + 1,
+          paddingVertical: space[2],
+          paddingHorizontal: space[3],
+          borderRadius: radii.pill,
+          borderWidth: 1.5,
+          borderColor: t.border,
+          backgroundColor: used ? t.surfaceAlt : t.surface,
         }}
       >
+        {used ? (
+          <Icon.check size={12} color={t.inkMute} stroke={2.6} />
+        ) : (
+          <Icon.plus size={12} color={ink} stroke={2.4} />
+        )}
         <Text
           style={{
-            color: used ? inkMute : ink,
+            fontSize: type.sizes.sm,
             fontFamily: type.familySemi,
-            fontSize: 12,
-            lineHeight: 18,
+            color: used ? t.inkMute : ink,
           }}
         >
-          {used ? '✓ ' : '+ '}
           {label}
         </Text>
       </View>
@@ -104,207 +103,182 @@ function CostPresetChip({
   );
 }
 
-export function AdditionalCostsEditor({ tone, rows, onChange }: Props) {
+// ─── One cost = one unified bordered row (category · amount · delete) ─────
+function CostRowItem({
+  row,
+  onCategory,
+  onAmount,
+  onRemove,
+}: {
+  row: CostRow;
+  onCategory: (v: string) => void;
+  onAmount: (v: string) => void;
+  onRemove: () => void;
+}) {
   const { t } = useTheme();
-  const toneKey = TONE_KEYS[tone];
-  const solid = t[toneKey.solid];
-  const ink = t[toneKey.ink];
-
-  // The editor always shows at least one row so the empty state has affordance
-  // for "what does a row look like?". Parent persists the underlying state.
-  const visibleRows = rows.length === 0 ? [EMPTY_COST_ROW] : rows;
-
-  const updateRow = (i: number, patch: Partial<CostRow>) => {
-    const next = visibleRows.map((r, idx) => (idx === i ? { ...r, ...patch } : r));
-    onChange(next);
-  };
-  const removeRow = (i: number) => {
-    const next = visibleRows.filter((_, idx) => idx !== i);
-    onChange(next.length === 0 ? [EMPTY_COST_ROW] : next);
-  };
-  const addRow = () => {
-    onChange([...visibleRows, { category: '', amount: '' }]);
-  };
-  const applyPreset = (preset: string) => {
-    // Apply to the first empty row, or append a new one.
-    const idx = visibleRows.findIndex((r) => !r.category && !r.amount);
-    if (idx >= 0) updateRow(idx, { category: preset });
-    else onChange([...visibleRows, { category: preset, amount: '' }]);
-  };
-
-  const sum = additionalCostsTotal(visibleRows);
-
+  const isPreset = (PRESETS as readonly string[]).includes(row.category.trim());
   return (
-    <Col gap={10}>
-      {/* preset chips — oval pills (Sell Step 1 / FAB Picker Fix §⑤).
-          White surface + neutral border + tone ink; disabled once category is used. */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-        {PRESETS.map((p) => (
-          <CostPresetChip
-            key={p}
-            label={p}
-            ink={ink}
-            inkMute={t.inkMute}
-            surface={t.surface}
-            surfaceAlt={t.surfaceAlt}
-            border={t.border}
-            toneSolid={solid}
-            used={visibleRows.some((r) => r.category.trim() === p)}
-            onPress={() => applyPreset(p)}
-          />
-        ))}
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        minHeight: 48,
+        borderRadius: radii.md,
+        borderWidth: 1.5,
+        borderColor: t.border,
+        backgroundColor: t.surface,
+        overflow: 'hidden',
+      }}
+    >
+      {isPreset ? (
+        <Text
+          style={{
+            flex: 1,
+            paddingHorizontal: space[3],
+            fontSize: type.sizes.base,
+            fontFamily: type.familySemi,
+            color: t.ink,
+          }}
+          numberOfLines={1}
+        >
+          {row.category}
+        </Text>
+      ) : (
+        <TextInput
+          value={row.category}
+          onChangeText={onCategory}
+          placeholder="ระบุหมวด"
+          placeholderTextColor={t.inkMute}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            height: 48,
+            paddingHorizontal: space[3],
+            paddingVertical: 0,
+            textAlignVertical: 'center',
+            ...Platform.select({ android: { includeFontPadding: false } }),
+            fontFamily: type.family,
+            fontSize: type.sizes.base,
+            color: t.ink,
+          }}
+        />
+      )}
+
+      <View style={{ width: 1, alignSelf: 'stretch', backgroundColor: t.border }} />
+
+      <View
+        style={{
+          width: 108,
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: space[3],
+          gap: space[1],
+        }}
+      >
+        <TextInput
+          value={row.amount}
+          onChangeText={(v) => onAmount(v.replace(/[^\d.]/g, ''))}
+          placeholder="0"
+          placeholderTextColor={t.inkMute}
+          keyboardType="decimal-pad"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            paddingVertical: 0,
+            textAlignVertical: 'center',
+            ...Platform.select({ android: { includeFontPadding: false } }),
+            fontFamily: type.familyNumSemi,
+            fontSize: type.sizes.base,
+            color: t.ink,
+            textAlign: 'right',
+          }}
+        />
+        <Text style={{ color: t.inkMute, fontSize: type.sizes.sm, fontFamily: type.familyNum }}>฿</Text>
       </View>
 
-      {/* rows */}
-      <Col gap={8}>
-        {visibleRows.map((r, i) => {
-          const isOnlyEmpty = visibleRows.length === 1 && !r.category && !r.amount;
-          return (
-            <Row key={i} gap={6}>
-              <TextInput
-                value={r.category}
-                onChangeText={(v) => updateRow(i, { category: v })}
-                placeholder="หมวด"
-                placeholderTextColor={t.inkMute}
-                style={{
-                  flex: 1.4,
-                  minWidth: 0,
-                  height: 44,
-                  paddingHorizontal: 12,
-                  paddingVertical: 0,
-                  textAlignVertical: 'center',
-                  ...Platform.select({ android: { includeFontPadding: false } }),
-                  backgroundColor: t.surface,
-                  borderWidth: 1.5,
-                  borderColor: t.border,
-                  borderRadius: 10,
-                  fontFamily: type.family,
-                  fontSize: 14,
-                  color: t.ink,
-                }}
-              />
-              <View
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  height: 44,
-                  paddingHorizontal: 12,
-                  backgroundColor: t.surface,
-                  borderWidth: 1.5,
-                  borderColor: t.border,
-                  borderRadius: 10,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <TextInput
-                  value={r.amount}
-                  onChangeText={(v) => updateRow(i, { amount: v.replace(/[^\d.]/g, '') })}
-                  placeholder="0"
-                  placeholderTextColor={t.inkMute}
-                  keyboardType="decimal-pad"
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    paddingVertical: 0,
-                    textAlignVertical: 'center',
-                    ...Platform.select({ android: { includeFontPadding: false } }),
-                    fontFamily: type.familyNumSemi,
-                    fontSize: 15,
-                    color: t.ink,
-                    textAlign: 'right',
-                  }}
-                />
-                <Text style={{ color: t.inkMute, fontSize: 13, fontFamily: type.familyNum }}>
-                  ฿
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => removeRow(i)}
-                disabled={isOnlyEmpty}
-                accessibilityRole="button"
-                accessibilityLabel="ลบรายการนี้"
-                style={({ pressed }) => ({
-                  opacity: isOnlyEmpty ? 0.4 : pressed ? 0.7 : 1,
-                  width: 44,
-                  height: 44,
-                  borderRadius: 10,
-                  borderWidth: 1.5,
-                  borderColor: t.border,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                })}
-              >
-                <Icon.trash size={16} color={isOnlyEmpty ? t.inkMute : t.danger} />
-              </Pressable>
-            </Row>
-          );
+      <Pressable
+        onPress={onRemove}
+        hitSlop={6}
+        accessibilityRole="button"
+        accessibilityLabel="ลบรายการนี้"
+        style={({ pressed }) => ({
+          opacity: pressed ? 0.6 : 1,
+          width: 42,
+          height: 48,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderLeftWidth: 1,
+          borderLeftColor: t.border,
         })}
-      </Col>
+      >
+        <Icon.trash size={15} color={t.inkMute} />
+      </Pressable>
+    </View>
+  );
+}
 
-      {/* subtotal bar — appears only when there's a positive sum.
-          Full-width tone-tinted strip with label left, amount right. */}
+export function AdditionalCostsEditor({ tone, rows, onChange }: Props) {
+  const { t } = useTheme();
+  const c = toneColors(t, tone);
+
+  const usedPresets = new Set(rows.map((r) => r.category.trim()));
+
+  const addPreset = (preset: string) => {
+    if (usedPresets.has(preset)) return;
+    onChange([...rows, { category: preset, amount: '' }]);
+  };
+  const addCustom = () => onChange([...rows, { category: '', amount: '' }]);
+  const updateRow = (i: number, patch: Partial<CostRow>) =>
+    onChange(rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  const removeRow = (i: number) => onChange(rows.filter((_, idx) => idx !== i));
+
+  const sum = additionalCostsTotal(rows);
+
+  return (
+    <Col gap={space[3]}>
+      {/* Chip menu — the single way to add a cost. Presets check off once used;
+          "อื่นๆ" appends a custom, free-text row. */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
+        {PRESETS.map((p) => (
+          <AddChip key={p} label={p} ink={c.ink} used={usedPresets.has(p)} onPress={() => addPreset(p)} />
+        ))}
+        <AddChip label="อื่นๆ" ink={c.ink} onPress={addCustom} />
+      </View>
+
+      {rows.length > 0 ? (
+        <Col gap={space[2]}>
+          {rows.map((r, i) => (
+            <CostRowItem
+              key={i}
+              row={r}
+              onCategory={(v) => updateRow(i, { category: v })}
+              onAmount={(v) => updateRow(i, { amount: v })}
+              onRemove={() => removeRow(i)}
+            />
+          ))}
+        </Col>
+      ) : null}
+
       {sum > 0 ? (
         <View
           style={{
-            paddingVertical: 10,
-            paddingHorizontal: 14,
-            borderRadius: radii.sm,
-            backgroundColor: t[toneKey.soft],
-            borderWidth: 1,
-            borderColor: solid + '30',
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
+            paddingVertical: space[3] - 2,
+            paddingHorizontal: space[3] + 2,
+            borderRadius: radii.sm,
+            backgroundColor: c.soft,
           }}
         >
-          <Text style={{ fontSize: 13, color: ink, fontFamily: type.familySemi }}>
+          <Text style={{ fontSize: type.sizes.sm, color: c.ink, fontFamily: type.familySemi }}>
             รวมค่าใช้จ่าย
           </Text>
-          <Text
-            style={{
-              fontFamily: type.familyNumBold,
-              fontSize: 16,
-              color: ink,
-              letterSpacing: -0.2,
-            }}
-          >
+          <Text style={{ fontFamily: type.familyNumBold, fontSize: type.sizes.md, color: c.ink }}>
             {fmt.baht(sum)}
           </Text>
         </View>
       ) : null}
-
-      {/* add-row button — full-width dashed. Pressable handles the tap;
-          an inner View owns the layout to keep border/padding reliable
-          across RN versions (the style-function form can drop layout props). */}
-      <Pressable
-        onPress={addRow}
-        accessibilityRole="button"
-        accessibilityLabel="เพิ่มค่าใช้จ่าย"
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1, alignSelf: 'stretch' })}
-      >
-        <View
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 14,
-            backgroundColor: 'transparent',
-            borderWidth: 1.5,
-            borderStyle: 'dashed',
-            borderColor: solid + '60',
-            borderRadius: 10,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-          }}
-        >
-          <Icon.plus size={14} color={ink} />
-          <Text style={{ fontFamily: type.familySemi, fontSize: 13, color: ink }}>
-            เพิ่มค่าใช้จ่าย
-          </Text>
-        </View>
-      </Pressable>
     </Col>
   );
 }

@@ -158,16 +158,17 @@ export const TABLE_SURFACE = {
  * P / Q, callout at lines 1697-1699.
  */
 export const MAINT = {
-  /** Row background — sits above zebra (#fafbfd) so neighbours pop. */
-  bg: '#eceff5',
+  /** Row background — kept close to white so locked rows recede and the
+   *  editable rows above them lead the eye. */
+  bg: '#f5f6f9',
   /** Pond name cell text color before opacity is applied. */
   ink: '#5d6a85',
   /** Central lock-icon color in the data columns. */
-  inkSoft: '#8390a8',
+  inkSoft: '#98a2b5',
   /** Accent stripe on the row's left edge (replaces saved/dirty/empty). */
-  accent: '#a3acc2',
+  accent: '#c2c8d6',
   /** Cell border + pill border tint. */
-  stroke: 'rgba(124,140,170,.22)',
+  stroke: 'rgba(124,140,170,.12)',
   /** Pill background under the pond code. */
   pillBg: 'rgba(124,140,170,.14)',
 } as const;

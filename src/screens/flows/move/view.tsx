@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Btn, Input, Pill, TopBar } from '@/components/ui';
@@ -10,7 +10,7 @@ import { fmt, FISH_TH, displayFarmName, displayPondName } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import type { FarmModel } from '@/features/farm';
 import type { PondModel } from '@/features/pond';
-import { BottomBar, CloseAfterActionToggle, FieldRow, FishPicker, FlowBackBtn } from '../shared';
+import { BottomBar, CloseAfterActionToggle, FieldRow, FishPicker, FlowBackBtn, NoteField } from '../shared';
 import { DimWrap, InlineMovePicker, PickerValidationBanner, useAutoAdvance } from '../picker';
 import { AdditionalCostsEditor, type CostRow } from '../additional-costs';
 import {
@@ -390,7 +390,7 @@ export function MoveView({
             hint={fromFab ? 'เลือกฟาร์มและบ่อ แล้วกรอกจำนวนที่ย้าย' : undefined}
           >
             <FieldRow label="พันธุ์ปลา">
-              <FishPicker types={fishTypeOptions} selected={fishType} onChange={setFishType} />
+              <FishPicker types={fishTypeOptions} selected={fishType} onChange={setFishType} tone="move" />
             </FieldRow>
 
             <FieldRow label="จำนวนที่ย้าย">
@@ -492,54 +492,17 @@ export function MoveView({
               <DateField value={date} onChange={setDate} />
             </FieldRow>
 
-            <View style={{ marginTop: 2, marginBottom: 14 }}>
-              <Row gap={6} style={{ marginBottom: 6 }}>
-                <Text style={{ fontSize: 13, fontFamily: type.familySemi, color: t.ink }}>
-                  ค่าใช้จ่ายเพิ่มเติม
-                </Text>
-                <Text style={{ fontSize: 13, color: t.inkMute, fontFamily: type.family }}>
-                  · ไม่บังคับ
-                </Text>
-              </Row>
+            <FieldRow label="ค่าใช้จ่ายเพิ่มเติม" optional>
               <AdditionalCostsEditor
                 tone="move"
                 rows={additionalCosts}
                 onChange={setAdditionalCosts}
               />
-            </View>
+            </FieldRow>
 
-            <View style={{ marginTop: 6, marginBottom: 14 }}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontFamily: type.familySemi,
-                  color: t.ink,
-                  marginBottom: 6,
-                }}
-              >
-                โน้ต
-              </Text>
-              <TextInput
-                value={remark}
-                onChangeText={setRemark}
-                placeholder="เพิ่มโน้ต…"
-                placeholderTextColor={t.inkMute}
-                style={{
-                  height: 48,
-                  paddingHorizontal: 12,
-                  paddingVertical: 0,
-                  textAlignVertical: 'center',
-                  ...Platform.select({ android: { includeFontPadding: false } }),
-                  borderRadius: radii.sm,
-                  borderWidth: 1.5,
-                  borderColor: t.border,
-                  backgroundColor: t.surface,
-                  color: t.ink,
-                  fontFamily: type.family,
-                  fontSize: 14,
-                }}
-              />
-            </View>
+            <FieldRow label="โน้ต">
+              <NoteField value={remark} onChange={setRemark} />
+            </FieldRow>
 
             <CloseAfterActionToggle
               value={markToClose}

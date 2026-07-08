@@ -1,8 +1,9 @@
 import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radii, type } from '@/theme/tokens';
+import { radii, space, type } from '@/theme/tokens';
 import { SearchHeader, TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { FeedCard } from './components/FeedCard';
@@ -41,6 +42,7 @@ export function FeedCollectionView({
 }: Props) {
   const { t } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const trimmed = query.trim();
   const isEmpty = feeds.length === 0;
   const showSearchEmpty = searchOpen && trimmed.length > 0 && filtered.length === 0;
@@ -146,9 +148,9 @@ export function FeedCollectionView({
             ItemSeparatorComponent={FeedSeparator}
             ListHeaderComponent={listHeader}
             contentContainerStyle={{
-              paddingHorizontal: 20,
-              paddingTop: 12,
-              paddingBottom: isAdmin ? 132 : 32,
+              paddingHorizontal: space[5],
+              paddingTop: space[3],
+              paddingBottom: (isAdmin ? 132 : space[7]) + insets.bottom,
             }}
             delaysContentTouches={false}
             showsVerticalScrollIndicator={false}
@@ -162,9 +164,9 @@ export function FeedCollectionView({
         <View
           style={{
             position: 'absolute',
-            left: 16,
-            right: 16,
-            bottom: 24,
+            left: space[4],
+            right: space[4],
+            bottom: Math.max(space[6], insets.bottom + space[2]),
           }}
         >
           <Pressable
@@ -178,11 +180,11 @@ export function FeedCollectionView({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
+              gap: space[2],
             }}
           >
             <Icon.plus size={20} color="#fff" stroke={2.2} />
-            <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
+            <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: type.sizes.base }}>
               เพิ่มอาหาร
             </Text>
           </Pressable>

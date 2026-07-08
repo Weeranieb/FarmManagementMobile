@@ -2,7 +2,6 @@ import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'rea
 import { useTheme } from '@/theme/ThemeProvider';
 import { space, type } from '@/theme/tokens';
 import { Skeleton, SkeletonShape } from '@/components/ui';
-import { thaiDate } from '@/locale/thaiDate';
 import { today } from '@/shared/time';
 import { ActivityRow, type ActivityItem } from './components/activity-row';
 import { ActivityRowSkeleton } from './components/activity-row-skeleton';
@@ -115,37 +114,24 @@ export function HomeView({
             paddingBottom: space[3] + 2,
             flexDirection: 'row',
             justifyContent: 'space-between',
-            alignItems: 'flex-start',
+            alignItems: 'center',
           }}
         >
-          <View style={{ flex: 1, gap: 2 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             {isLoading ? (
-              <>
-                <Skeleton width={140} height={11} />
-                <Skeleton width={180} height={20} radius={5} style={{ marginTop: space[1] }} />
-              </>
+              <Skeleton width={180} height={22} radius={5} />
             ) : (
-              <>
-                <Text
-                  style={{
-                    fontSize: type.sizes.sm,
-                    color: t.inkMute,
-                    fontFamily: type.familyMedium,
-                  }}
-                >
-                  {thaiDate.long(today)}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: type.sizes.xl,
-                    fontFamily: type.familyBold,
-                    color: t.ink,
-                    letterSpacing: -0.2,
-                  }}
-                >
-                  {isEmpty ? 'ยินดีต้อนรับ' : `สวัสดี, คุณ${greetingName}`}
-                </Text>
-              </>
+              <Text
+                style={{
+                  fontSize: type.sizes.xl,
+                  fontFamily: type.familyBold,
+                  color: t.ink,
+                  letterSpacing: -0.2,
+                }}
+                numberOfLines={1}
+              >
+                {isEmpty ? 'ยินดีต้อนรับ' : `สวัสดี, คุณ${greetingName}`}
+              </Text>
             )}
           </View>
           {isLoading ? (

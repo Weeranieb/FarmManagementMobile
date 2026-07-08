@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Btn, Input, Pill, TopBar } from '@/components/ui';
@@ -12,7 +12,7 @@ import type { FarmModel } from '@/features/farm';
 import type { PondModel } from '@/features/pond';
 import type { MerchantModel } from '@/features/merchant';
 import type { SizeGradeModel } from '@/features/size-grade';
-import { BottomBar, CloseAfterActionToggle, FieldRow, FlowBackBtn } from '../shared';
+import { BottomBar, CloseAfterActionToggle, FieldRow, FlowBackBtn, NoteField } from '../shared';
 import { DimWrap, InlineFarmPondPicker, PickerValidationBanner, useAutoAdvance } from '../picker';
 import { AdditionalCostsEditor, type CostRow } from '../additional-costs';
 import {
@@ -210,21 +210,13 @@ function SellStep1({
               />
             </FieldRow>
 
-            <View style={{ marginTop: 2, marginBottom: 14 }}>
-              <Row gap={6} style={{ marginBottom: 6 }}>
-                <Text style={{ fontSize: 13, fontFamily: type.familySemi, color: t.ink }}>
-                  ต้นทุนเพิ่มเติม
-                </Text>
-                <Text style={{ fontSize: 13, color: t.inkMute, fontFamily: type.family }}>
-                  · ไม่บังคับ
-                </Text>
-              </Row>
+            <FieldRow label="ต้นทุนเพิ่มเติม" optional>
               <AdditionalCostsEditor
                 tone="sell"
                 rows={additionalCosts}
                 onChange={setAdditionalCosts}
               />
-            </View>
+            </FieldRow>
 
             <CloseAfterActionToggle
               value={markToClose}
@@ -235,38 +227,9 @@ function SellStep1({
               pondName={pond ? displayPondName(pond.name) : ''}
             />
 
-            <View style={{ marginTop: 6, marginBottom: 14 }}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontFamily: type.familySemi,
-                  color: t.ink,
-                  marginBottom: 6,
-                }}
-              >
-                โน้ต
-              </Text>
-              <TextInput
-                value={remark}
-                onChangeText={setRemark}
-                placeholder="เพิ่มโน้ต…"
-                placeholderTextColor={t.inkMute}
-                style={{
-                  height: 48,
-                  paddingHorizontal: 12,
-                  paddingVertical: 0,
-                  textAlignVertical: 'center',
-                  ...Platform.select({ android: { includeFontPadding: false } }),
-                  borderRadius: radii.sm,
-                  borderWidth: 1.5,
-                  borderColor: t.border,
-                  backgroundColor: t.surface,
-                  color: t.ink,
-                  fontFamily: type.family,
-                  fontSize: 14,
-                }}
-              />
-            </View>
+            <FieldRow label="โน้ต">
+              <NoteField value={remark} onChange={setRemark} />
+            </FieldRow>
 
             {fieldsReady && sourceStock > 0 ? (
               <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>

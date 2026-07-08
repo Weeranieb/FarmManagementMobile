@@ -6,7 +6,6 @@ import { Icon } from '@/components/icons';
 import {
   CELL_HIGHLIGHT,
   COLS,
-  GROUP_LIGHT,
   MAINT,
   NAME_W,
   ROW_H,
@@ -186,8 +185,11 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
         </View>
       </View>
 
-      {COLS.map((c) => {
-        const g = GROUP_LIGHT[c.group];
+      {COLS.map((c, ci) => {
+        // Hairline only at column-GROUP boundaries (not between the pellet
+        // เช้า/เย็น sub-cells) — enough structure to keep columns legible
+        // without the full spreadsheet gridlines.
+        const isGroupEnd = ci < COLS.length - 1 && COLS[ci + 1]?.group !== c.group;
         const cellDisabled =
           (c.group === 'pellet' && !pond.hasPellet) || (c.group === 'fresh' && !pond.hasFresh);
         const isActive = activeCell?.pondKey === pond.key && activeCell?.col === c.key;
@@ -220,9 +222,7 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
           ? TABLE_SURFACE.even
           : rowActive
             ? 'rgba(255,255,255,.55)'
-            : filled
-              ? 'transparent'
-              : g.tint;
+            : 'transparent';
 
         const accentColor = isError ? CELL_HIGHLIGHT.errorBorder : CELL_HIGHLIGHT.border;
         const accentTint = isError ? CELL_HIGHLIGHT.errorTint : CELL_HIGHLIGHT.tint;
@@ -240,6 +240,8 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
               alignItems: 'flex-end',
               justifyContent: 'center',
               position: 'relative',
+              borderRightWidth: isGroupEnd ? 1 : 0,
+              borderRightColor: t.border,
             }}
           >
             {/* Pill highlight overlay — sits inside the cell so column
@@ -510,7 +512,7 @@ function StripePattern() {
             left: -ROW_H + i * STRIPE_GAP,
             width: 1,
             height: ROW_H * 3,
-            backgroundColor: 'rgba(124,140,170,.10)',
+            backgroundColor: 'rgba(124,140,170,.05)',
             transform: [{ rotate: '45deg' }],
           }}
         />

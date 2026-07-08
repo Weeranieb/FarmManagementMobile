@@ -5,11 +5,18 @@
 //
 // Controlled components — the form owns selection state so it can validate
 // the CTA + persist state across review→back navigation.
+//
+// Design (boonma-taste-mobile): the farm is usually a foregone default, so it
+// is demoted to a compact chip row; the pond — the real decision — gets the
+// hero list. Ponds are grouped active-first with closed ("ปิดบ่อ") ponds under
+// a labelled divider, so the loud status no longer interleaves with live ponds.
+// Selection is a single bold, outdoor-safe cue (tone border + soft fill + a
+// solid check), not a stack of four faint signals.
 
 import { useCallback, useRef, type RefObject } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radii, type, type ThemePalette } from '@/theme/tokens';
+import { radii, space, type, type ThemePalette } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { Pill } from '@/components/ui';
 import { Col, Row } from '@/components/layout/Row';
@@ -18,13 +25,6 @@ import type { FarmModel } from '@/features/farm';
 import type { PondModel } from '@/features/pond';
 
 type PickerTone = 'fill' | 'sell' | 'move';
-
-const TONE_TO_PILL = {
-  fill: 'fill',
-  sell: 'sell',
-  move: 'move',
-  brand: 'brand',
-} as const;
 
 const TONE_KEYS: Record<PickerTone | 'brand', {
   solid: keyof ThemePalette;
@@ -58,10 +58,10 @@ function StepLabel({
 }) {
   const { t } = useTheme();
   const c = toneColors(t, tone);
-  const bg = isComplete ? c.solid : isCurrent ? c.soft : t.surfaceAlt;
+  const bg = isComplete ? c.solid : isCurrent ? c.soft : t.surface;
   const fg = isComplete ? '#ffffff' : isCurrent ? c.ink : t.inkMute;
   return (
-    <Row gap={10} style={{ marginBottom: 8 }}>
+    <Row gap={space[2]} style={{ marginBottom: space[2] }}>
       <View
         style={{
           width: 22,
@@ -77,49 +77,81 @@ function StepLabel({
         {isComplete ? (
           <Icon.check size={12} color={fg} stroke={2.6} />
         ) : (
-          <Text
-            style={{
-              fontSize: 11,
-              fontFamily: type.familyNumBold,
-              color: fg,
-            }}
-          >
+          <Text style={{ fontSize: type.sizes.xs, fontFamily: type.familyNumBold, color: fg }}>
             {num}
           </Text>
         )}
       </View>
-      <Text
-        style={{
-          fontSize: 13,
-          fontFamily: type.familyBold,
-          color: t.ink,
-        }}
-      >
+      <Text style={{ fontSize: type.sizes.sm, fontFamily: type.familyBold, color: t.ink }}>
         {label}
       </Text>
     </Row>
   );
 }
 
-// ─── Single-row selectable list card ────────────────────────────────────
-function PickCard({
+// ─── Sub-group divider inside a pond list (e.g. the closed-ponds group) ──
+function GroupDivider({ label }: { label: string }) {
+  const { t } = useTheme();
+  return (
+    <Row gap={space[2]} style={{ marginTop: space[1], marginBottom: 2 }}>
+      <Text style={{ fontSize: type.sizes.xs, fontFamily: type.familySemi, color: t.inkMute }}>
+        {label}
+      </Text>
+      <View style={{ flex: 1, height: 1, backgroundColor: t.border }} />
+    </Row>
+  );
+}
+
+// ─── Selection indicator: an empty ring when off, a solid check when on ──
+// One bold cue that survives `outdoor` where soft background tints wash out.
+function SelectDot({ selected, tone }: { selected: boolean; tone: PickerTone }) {
+  const { t } = useTheme();
+  const c = toneColors(t, tone);
+  if (selected) {
+    return (
+      <View
+        style={{
+          width: 22,
+          height: 22,
+          borderRadius: 11,
+          backgroundColor: c.solid,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon.check size={13} color="#ffffff" stroke={2.8} />
+      </View>
+    );
+  }
+  return (
+    <View
+      style={{
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        borderWidth: 2,
+        borderColor: t.borderStrong,
+        backgroundColor: 'transparent',
+      }}
+    />
+  );
+}
+
+// ─── Compact farm chip — farms are demoted from full cards to a chip row ─
+function FarmChip({
   selected,
   disabled,
-  onPress,
   tone,
-  leading,
-  primary,
-  secondary,
-  badge,
+  label,
+  meta,
+  onPress,
 }: {
   selected: boolean;
   disabled?: boolean;
-  onPress: () => void;
   tone: PickerTone;
-  leading: React.ReactNode;
-  primary: string;
-  secondary?: string;
-  badge?: React.ReactNode;
+  label: string;
+  meta?: string;
+  onPress: () => void;
 }) {
   const { t } = useTheme();
   const c = toneColors(t, tone);
@@ -127,35 +159,130 @@ function PickCard({
     <Pressable
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
-      style={({ pressed }) => ({
-        opacity: disabled ? 0.55 : pressed ? 0.92 : 1,
-      })}
+      accessibilityRole="button"
+      accessibilityState={{ selected, disabled: !!disabled }}
+      style={({ pressed }) => ({ opacity: disabled ? 0.45 : pressed ? 0.9 : 1 })}
     >
       <View
         style={{
-          width: '100%',
-          paddingVertical: 10,
-          paddingHorizontal: 12,
-          borderRadius: 12,
-          borderWidth: 1.5,
-          borderColor: selected ? c.solid : t.border,
-          backgroundColor: selected ? c.soft : disabled ? t.surfaceAlt : t.surface,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
+          gap: space[2] - 2,
+          minHeight: 44,
+          paddingVertical: space[2],
+          paddingHorizontal: space[3],
+          borderRadius: radii.md,
+          borderWidth: 1.5,
+          borderColor: selected ? c.solid : t.border,
+          backgroundColor: selected ? c.solid : t.surface,
         }}
       >
-        {leading}
+        <Icon.farm size={15} color={selected ? '#ffffff' : t.inkSoft} stroke={selected ? 2 : 1.7} />
+        <Text style={{ fontSize: type.sizes.sm, fontFamily: type.familySemi, color: selected ? '#ffffff' : t.ink }}>
+          {label}
+        </Text>
+        {meta ? (
+          <Text
+            style={{
+              fontSize: type.sizes.xs,
+              fontFamily: type.familyNum,
+              color: selected ? 'rgba(255,255,255,0.82)' : t.inkMute,
+            }}
+          >
+            {meta}
+          </Text>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
+// ─── Pond glyph — status-aware (active = fish, closed = cycle/warn) ──────
+function PondGlyph({
+  pond,
+  tone,
+  selected,
+}: {
+  pond: PondModel;
+  tone: PickerTone;
+  selected: boolean;
+}) {
+  const { t } = useTheme();
+  const c = toneColors(t, tone);
+  const isMaint = pond.status === 'maintenance';
+  const bg = selected ? c.solid : isMaint ? t.warnSoft : t.surfaceAlt;
+  const fg = selected ? '#ffffff' : isMaint ? t.warn : t.inkSoft;
+  const G = isMaint ? Icon.cycle : Icon.fish;
+  return (
+    <View
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: radii.sm,
+        backgroundColor: bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <G size={18} color={fg} stroke={selected ? 2 : 1.7} />
+    </View>
+  );
+}
+
+// ─── Hero pond row — the primary decision of the picker ─────────────────
+function PondRow({
+  pond,
+  selected,
+  disabled,
+  tone,
+  primary,
+  secondary,
+  badge,
+  onPress,
+}: {
+  pond: PondModel;
+  selected: boolean;
+  disabled?: boolean;
+  tone: PickerTone;
+  primary: string;
+  secondary?: string;
+  badge?: React.ReactNode;
+  onPress: () => void;
+}) {
+  const { t } = useTheme();
+  const c = toneColors(t, tone);
+  return (
+    <Pressable
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ selected, disabled: !!disabled }}
+      style={({ pressed }) => ({ opacity: disabled ? 0.5 : pressed ? 0.94 : 1 })}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: space[3],
+          paddingVertical: space[3],
+          paddingHorizontal: space[3],
+          borderRadius: radii.md,
+          borderWidth: selected ? 2 : 1.5,
+          borderColor: selected ? c.solid : t.border,
+          backgroundColor: selected ? c.soft : t.surface,
+        }}
+      >
+        <PondGlyph pond={pond} tone={tone} selected={selected} />
         <Col gap={2} style={{ flex: 1, minWidth: 0 }}>
-          <Row gap={6}>
+          <Row gap={space[2] - 2}>
             <Text
-              style={{
-                fontFamily: type.familyBold,
-                fontSize: 14,
-                color: selected ? c.ink : t.ink,
-                flexShrink: 1,
-              }}
               numberOfLines={1}
+              style={{
+                flexShrink: 1,
+                fontFamily: type.familyBold,
+                fontSize: type.sizes.md,
+                color: selected ? c.ink : t.ink,
+              }}
             >
               {primary}
             </Text>
@@ -163,58 +290,16 @@ function PickCard({
           </Row>
           {secondary ? (
             <Text
-              style={{
-                fontSize: 12,
-                color: t.inkMute,
-                fontFamily: type.familyNum,
-              }}
               numberOfLines={1}
+              style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.familyNum }}
             >
               {secondary}
             </Text>
           ) : null}
         </Col>
-        <RadioDot selected={selected} tone={tone} disabled={disabled} />
+        <SelectDot selected={selected} tone={tone} />
       </View>
     </Pressable>
-  );
-}
-
-function RadioDot({
-  selected,
-  tone,
-  disabled,
-}: {
-  selected: boolean;
-  tone: PickerTone;
-  disabled?: boolean;
-}) {
-  const { t } = useTheme();
-  const c = toneColors(t, tone);
-  return (
-    <View
-      style={{
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: selected ? c.solid : disabled ? t.border : t.borderStrong,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#ffffff',
-      }}
-    >
-      {selected ? (
-        <View
-          style={{
-            width: 9,
-            height: 9,
-            borderRadius: 5,
-            backgroundColor: c.solid,
-          }}
-        />
-      ) : null}
-    </View>
   );
 }
 
@@ -224,21 +309,23 @@ function DisabledSlot({ msg }: { msg: string }) {
   return (
     <View
       style={{
-        paddingVertical: 18,
-        paddingHorizontal: 14,
-        borderRadius: 12,
+        paddingVertical: space[4] + 2,
+        paddingHorizontal: space[3],
+        borderRadius: radii.md,
         borderWidth: 1.5,
         borderColor: t.border,
         borderStyle: 'dashed',
-        backgroundColor: t.surfaceAlt,
+        backgroundColor: t.surface,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
+        gap: space[2],
       }}
     >
       <Icon.warn size={14} color={t.inkMute} />
-      <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.familyMedium }}>{msg}</Text>
+      <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.familyMedium }}>
+        {msg}
+      </Text>
     </View>
   );
 }
@@ -257,15 +344,15 @@ function EmptyInline({
   return (
     <View
       style={{
-        paddingVertical: 18,
-        paddingHorizontal: 14,
-        borderRadius: 14,
-        backgroundColor: t.surfaceAlt,
+        paddingVertical: space[4] + 2,
+        paddingHorizontal: space[3],
+        borderRadius: radii.md,
+        backgroundColor: t.surface,
         borderWidth: 1,
         borderColor: t.borderStrong,
         borderStyle: 'dashed',
         alignItems: 'center',
-        gap: 8,
+        gap: space[2],
       }}
     >
       <View
@@ -273,7 +360,7 @@ function EmptyInline({
           width: 40,
           height: 40,
           borderRadius: 20,
-          backgroundColor: t.surface,
+          backgroundColor: t.surfaceAlt,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -282,7 +369,7 @@ function EmptyInline({
       </View>
       <Text
         style={{
-          fontSize: 14,
+          fontSize: type.sizes.base,
           fontFamily: type.familyBold,
           color: t.ink,
           textAlign: 'center',
@@ -292,10 +379,10 @@ function EmptyInline({
       </Text>
       <Text
         style={{
-          fontSize: 12,
+          fontSize: type.sizes.sm,
           color: t.inkMute,
           maxWidth: 280,
-          lineHeight: 18,
+          lineHeight: 20,
           textAlign: 'center',
           fontFamily: type.family,
         }}
@@ -306,68 +393,18 @@ function EmptyInline({
   );
 }
 
-function FarmGlyph({ tone, selected }: { tone: PickerTone; selected: boolean }) {
-  const { t } = useTheme();
-  const c = toneColors(t, tone);
-  return (
-    <View
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: selected ? c.solid : t.brandSoft,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Icon.farm size={18} color={selected ? '#ffffff' : t.brandInk} stroke={selected ? 2 : 1.6} />
-    </View>
-  );
-}
-
-function PondGlyph({
-  pond,
-  tone,
-  selected,
-}: {
-  pond: PondModel;
-  tone: PickerTone;
-  selected: boolean;
-}) {
-  const { t } = useTheme();
-  const c = toneColors(t, tone);
-  const isMaint = pond.status === 'maintenance';
-  return (
-    <View
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        backgroundColor: selected ? c.solid : t.surfaceAlt,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {isMaint ? (
-        <Icon.cycle size={16} color={selected ? '#ffffff' : t.inkSoft} stroke={selected ? 2 : 1.6} />
-      ) : (
-        <Icon.fish size={18} color={selected ? '#ffffff' : t.inkSoft} stroke={selected ? 2 : 1.6} />
-      )}
-    </View>
-  );
-}
-
+// ─── Outer panel — a slightly sunk surface so the raised rows read above it
 function PickerCard({ children }: { children: React.ReactNode }) {
   const { t } = useTheme();
   return (
     <View
       style={{
-        padding: 14,
-        borderRadius: 16,
-        backgroundColor: t.surface,
+        padding: space[3],
+        borderRadius: radii.lg,
+        backgroundColor: t.surfaceAlt,
         borderWidth: 1,
         borderColor: t.border,
-        marginBottom: 14,
+        marginBottom: space[3],
       }}
     >
       {children}
@@ -375,21 +412,18 @@ function PickerCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-function DefaultBadge() {
-  return <Pill tone={TONE_TO_PILL.brand}>ค่าเริ่มต้น</Pill>;
-}
-
-function pondHint(pond: PondModel, action: 'fill' | 'sell'): string {
-  if (pond.status === 'maintenance') {
-    return action === 'sell' ? 'ปิดบ่อ · ไม่มีปลาให้ขาย' : 'ปิดบ่อ · จะเริ่มรอบใหม่';
-  }
-  if (action === 'sell' && pond.totalFish === 0) return 'ไม่มีปลา';
+function pondMeta(pond: PondModel): string {
   const age = pond.ageDays != null ? ` · อายุ ${pond.ageDays} วัน` : '';
   return `${fmt.num(pond.totalFish)} ตัว${age}`;
 }
 
+function sellPondMeta(pond: PondModel): string {
+  if (pond.totalFish === 0) return 'ไม่มีปลา';
+  return pondMeta(pond);
+}
+
 // ════════════════════════════════════════════════════════════════════════
-// FILL / SELL — farm picker → pond picker
+// FILL / SELL — farm chips → pond list
 // ════════════════════════════════════════════════════════════════════════
 
 type FarmPondPickerProps = {
@@ -420,6 +454,29 @@ function canPickForAction(action: 'fill' | 'sell', pond: PondModel) {
   return true;
 }
 
+// A farm is a dead-end for the action: fill needs at least one pond to exist;
+// sell needs at least one active pond. Dead-ends are dimmed + sorted last.
+function farmDeadEnd(action: 'fill' | 'sell', f: FarmModel) {
+  return action === 'sell' ? f.activePonds === 0 : f.pondCount === 0;
+}
+
+// Sort pickable farms first, and float the default to the front within them —
+// so the chip the user almost always wants sits leftmost and preselected.
+function sortFarms<T extends FarmModel>(
+  farms: T[],
+  defaultFarmId: number | null,
+  deadEnd: (f: T) => boolean,
+): T[] {
+  return [...farms].sort((a, b) => {
+    const da = deadEnd(a) ? 1 : 0;
+    const db = deadEnd(b) ? 1 : 0;
+    if (da !== db) return da - db;
+    const fa = a.id === defaultFarmId ? 0 : 1;
+    const fb = b.id === defaultFarmId ? 0 : 1;
+    return fa - fb;
+  });
+}
+
 export function InlineFarmPondPicker({
   action,
   farms,
@@ -433,12 +490,17 @@ export function InlineFarmPondPicker({
 }: FarmPondPickerProps) {
   const tone = ACTION_TONE[action];
   const pondsForFarm = farmId != null ? ponds.filter((p) => p.farmId === farmId) : [];
-  // Sell hides non-sellable ponds (closed or empty) — same behavior as the
-  // move-source picker. Fill still lists everything because filling a closed
-  // pond is a legitimate "start new cycle" path. canPickForAction is the
-  // single source of truth for what counts as sellable.
+  // Sell hides non-sellable ponds (closed or empty). Fill lists everything —
+  // filling a closed pond is the legitimate "start new cycle" path — but splits
+  // closed ponds into their own group instead of interleaving them.
   const visiblePonds =
     action === 'sell' ? pondsForFarm.filter((p) => canPickForAction(action, p)) : pondsForFarm;
+  const activePonds = visiblePonds.filter((p) => p.status !== 'maintenance');
+  const closedPonds =
+    action === 'fill' ? visiblePonds.filter((p) => p.status === 'maintenance') : [];
+
+  const deadEnd = (f: FarmModel) => farmDeadEnd(action, f);
+  const orderedFarms = sortFarms(farms, defaultFarmId, deadEnd);
 
   return (
     <PickerCard>
@@ -456,23 +518,22 @@ export function InlineFarmPondPicker({
           body="คุณยังไม่ได้รับสิทธิ์เข้าฟาร์มใด ๆ — ติดต่อผู้ดูแลระบบ"
         />
       ) : (
-        <Col gap={6}>
-          {farms.map((f) => (
-            <PickCard
+        <Row wrap gap={space[2]}>
+          {orderedFarms.map((f) => (
+            <FarmChip
               key={f.id}
               tone={tone}
               selected={farmId === f.id}
+              disabled={deadEnd(f)}
+              label={displayFarmName(f.name)}
+              meta={`${action === 'sell' ? f.activePonds : f.pondCount} บ่อ`}
               onPress={() => onFarmChange(f.id)}
-              leading={<FarmGlyph tone={tone} selected={farmId === f.id} />}
-              primary={displayFarmName(f.name)}
-              secondary={`${f.activePonds} บ่อ ใช้งาน · ${f.pondCount} บ่อรวม`}
-              badge={f.id === defaultFarmId ? <DefaultBadge /> : null}
             />
           ))}
-        </Col>
+        </Row>
       )}
 
-      <View style={{ height: 12 }} />
+      <View style={{ height: space[3] }} />
       <View ref={pondSectionRef} />
 
       <StepLabel
@@ -493,20 +554,34 @@ export function InlineFarmPondPicker({
           body="ทุกบ่อในฟาร์มนี้ปิดอยู่หรือไม่มีปลา"
         />
       ) : (
-        <Col gap={6}>
-          {visiblePonds.map((p) => (
-            <PickCard
+        <Col gap={space[2]}>
+          {activePonds.map((p) => (
+            <PondRow
               key={p.id}
               tone={tone}
+              pond={p}
               selected={pondId === p.id}
-              disabled={!canPickForAction(action, p)}
-              onPress={() => onPondChange(p.id)}
-              leading={<PondGlyph pond={p} tone={tone} selected={pondId === p.id} />}
               primary={displayPondName(p.name)}
-              secondary={pondHint(p, action)}
-              badge={p.status === 'maintenance' ? <Pill tone="warn">ปิดบ่อ</Pill> : null}
+              secondary={action === 'sell' ? sellPondMeta(p) : pondMeta(p)}
+              onPress={() => onPondChange(p.id)}
             />
           ))}
+          {closedPonds.length > 0 ? (
+            <>
+              <GroupDivider label="บ่อที่ปิดอยู่ · เติมเพื่อเริ่มรอบใหม่" />
+              {closedPonds.map((p) => (
+                <PondRow
+                  key={p.id}
+                  tone={tone}
+                  pond={p}
+                  selected={pondId === p.id}
+                  primary={displayPondName(p.name)}
+                  secondary="พร้อมเริ่มรอบใหม่"
+                  onPress={() => onPondChange(p.id)}
+                />
+              ))}
+            </>
+          ) : null}
         </Col>
       )}
     </PickerCard>
@@ -514,7 +589,7 @@ export function InlineFarmPondPicker({
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// MOVE — farm picker → source pond → destination pond
+// MOVE — farm chips → source pond → destination pond
 // ════════════════════════════════════════════════════════════════════════
 
 type MovePickerProps = {
@@ -565,30 +640,33 @@ export function InlineMovePicker({
     farmId != null && fromId != null
       ? ponds.filter((p) => (allowCrossFarm || p.farmId === farmId) && p.id !== fromId)
       : [];
+  const destActive = destPonds.filter((p) => p.status !== 'maintenance');
+  const destClosed = destPonds.filter((p) => p.status === 'maintenance');
+
+  const orderedFarms = sortFarms(farms, defaultFarmId, (f) => f.activePonds === 0);
+
+  const crossFarmBadge = (p: PondModel) =>
+    allowCrossFarm && farmId != null && p.farmId !== farmId ? (
+      <Pill tone="neutral">{displayFarmName(p.farmName)}</Pill>
+    ) : null;
 
   return (
     <PickerCard>
       {allowCrossFarm ? (
         <View
           style={{
-            marginBottom: 12,
-            paddingVertical: 8,
-            paddingHorizontal: 10,
-            borderRadius: 8,
+            marginBottom: space[3],
+            paddingVertical: space[2],
+            paddingHorizontal: space[3] - 2,
+            borderRadius: radii.sm,
             backgroundColor: c.soft,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 6,
+            gap: space[2] - 2,
           }}
         >
           <Icon.swap size={12} color={c.ink} />
-          <Text
-            style={{
-              fontSize: 11,
-              fontFamily: type.familyMedium,
-              color: c.ink,
-            }}
-          >
+          <Text style={{ fontSize: type.sizes.xs, fontFamily: type.familyMedium, color: c.ink }}>
             โหมดข้ามฟาร์ม
           </Text>
         </View>
@@ -604,23 +682,21 @@ export function InlineMovePicker({
       {farms.length === 0 ? (
         <EmptyInline icon="farm" title="ยังไม่มีฟาร์ม" body="ติดต่อผู้ดูแลระบบเพื่อขอเข้าถึง" />
       ) : (
-        <Col gap={6}>
-          {farms.map((f) => (
-            <PickCard
+        <Row wrap gap={space[2]}>
+          {orderedFarms.map((f) => (
+            <FarmChip
               key={f.id}
               tone={tone}
               selected={farmId === f.id}
+              label={displayFarmName(f.name)}
+              meta={`${f.activePonds} บ่อ`}
               onPress={() => onFarmChange(f.id)}
-              leading={<FarmGlyph tone={tone} selected={farmId === f.id} />}
-              primary={displayFarmName(f.name)}
-              secondary={`${f.activePonds} บ่อ ใช้งาน · ${f.pondCount} บ่อรวม`}
-              badge={f.id === defaultFarmId ? <DefaultBadge /> : null}
             />
           ))}
-        </Col>
+        </Row>
       )}
 
-      <View style={{ height: 12 }} />
+      <View style={{ height: space[3] }} />
       <View ref={sourceSectionRef} />
 
       <StepLabel
@@ -639,27 +715,23 @@ export function InlineMovePicker({
           body="ฟาร์มนี้ยังไม่มีบ่อที่มีปลาอยู่"
         />
       ) : (
-        <Col gap={6}>
+        <Col gap={space[2]}>
           {sourcePonds.map((p) => (
-            <PickCard
+            <PondRow
               key={p.id}
               tone={tone}
+              pond={p}
               selected={fromId === p.id}
-              onPress={() => onFromChange(p.id)}
-              leading={<PondGlyph pond={p} tone={tone} selected={fromId === p.id} />}
               primary={displayPondName(p.name)}
-              secondary={`${fmt.num(p.totalFish)} ตัว${p.ageDays != null ? ` · อายุ ${p.ageDays} วัน` : ''}`}
-              badge={
-                allowCrossFarm && farmId != null && p.farmId !== farmId ? (
-                  <Pill tone="neutral">{displayFarmName(p.farmName)}</Pill>
-                ) : null
-              }
+              secondary={pondMeta(p)}
+              badge={crossFarmBadge(p)}
+              onPress={() => onFromChange(p.id)}
             />
           ))}
         </Col>
       )}
 
-      <View style={{ height: 12 }} />
+      <View style={{ height: space[3] }} />
       <View ref={destSectionRef} />
 
       <StepLabel
@@ -672,38 +744,38 @@ export function InlineMovePicker({
       {fromId == null ? (
         <DisabledSlot msg="เลือกบ่อต้นทางก่อน" />
       ) : destPonds.length === 0 ? (
-        <EmptyInline
-          icon="fish"
-          title="ไม่มีบ่อปลายทางให้เลือก"
-          body="ต้องมีบ่ออื่นในฟาร์มก่อน"
-        />
+        <EmptyInline icon="fish" title="ไม่มีบ่อปลายทางให้เลือก" body="ต้องมีบ่ออื่นในฟาร์มก่อน" />
       ) : (
-        <Col gap={6}>
-          {destPonds.map((p) => {
-            const isMaint = p.status === 'maintenance';
-            return (
-              <PickCard
-                key={p.id}
-                tone={tone}
-                selected={toId === p.id}
-                onPress={() => onToChange(p.id)}
-                leading={<PondGlyph pond={p} tone={tone} selected={toId === p.id} />}
-                primary={displayPondName(p.name)}
-                secondary={
-                  isMaint
-                    ? 'ปิดบ่อ · จะเริ่มรอบใหม่ที่นี่'
-                    : `${fmt.num(p.totalFish)} ตัว${p.ageDays != null ? ` · อายุ ${p.ageDays} วัน` : ''}`
-                }
-                badge={
-                  isMaint ? (
-                    <Pill tone="warn">ปิดบ่อ</Pill>
-                  ) : allowCrossFarm && farmId != null && p.farmId !== farmId ? (
-                    <Pill tone="neutral">{displayFarmName(p.farmName)}</Pill>
-                  ) : null
-                }
-              />
-            );
-          })}
+        <Col gap={space[2]}>
+          {destActive.map((p) => (
+            <PondRow
+              key={p.id}
+              tone={tone}
+              pond={p}
+              selected={toId === p.id}
+              primary={displayPondName(p.name)}
+              secondary={pondMeta(p)}
+              badge={crossFarmBadge(p)}
+              onPress={() => onToChange(p.id)}
+            />
+          ))}
+          {destClosed.length > 0 ? (
+            <>
+              <GroupDivider label="บ่อที่ปิดอยู่ · ย้ายเข้าเพื่อเริ่มรอบใหม่" />
+              {destClosed.map((p) => (
+                <PondRow
+                  key={p.id}
+                  tone={tone}
+                  pond={p}
+                  selected={toId === p.id}
+                  primary={displayPondName(p.name)}
+                  secondary="พร้อมเริ่มรอบใหม่"
+                  badge={crossFarmBadge(p)}
+                  onPress={() => onToChange(p.id)}
+                />
+              ))}
+            </>
+          ) : null}
         </Col>
       )}
     </PickerCard>
@@ -717,19 +789,19 @@ export function PickerValidationBanner({ msg }: { msg: string | null }) {
   return (
     <View
       style={{
-        paddingVertical: 8,
-        paddingHorizontal: 12,
+        paddingVertical: space[2],
+        paddingHorizontal: space[3],
         borderRadius: radii.sm,
         backgroundColor: t.warnSoft,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: space[2],
       }}
     >
       <Icon.warn size={14} color={t.statusMaint} />
       <Text
         style={{
-          fontSize: 12,
+          fontSize: type.sizes.sm,
           color: t.statusMaint,
           fontFamily: type.familyMedium,
           flexShrink: 1,
@@ -762,7 +834,7 @@ export function useAutoAdvance() {
       if (!nativeScrollRef) return;
 
       // Defer one tick so React has flushed layout for the picker re-render
-      // (the radio dot fills + completed-state border appears before we measure).
+      // (the selection cue fills + completed-state appears before we measure).
       setTimeout(() => {
         try {
           v.measureLayout(
@@ -795,15 +867,12 @@ export function DimWrap({
 }) {
   const { t } = useTheme();
   return (
-    <View
-      style={{ opacity: ready ? 1 : 0.45 }}
-      pointerEvents={ready ? 'auto' : 'none'}
-    >
+    <View style={{ opacity: ready ? 1 : 0.45 }} pointerEvents={ready ? 'auto' : 'none'}>
       {!ready && hint ? (
         <Text
           style={{
-            marginBottom: 12,
-            fontSize: 12,
+            marginBottom: space[3],
+            fontSize: type.sizes.sm,
             color: t.inkMute,
             fontFamily: type.familyMedium,
           }}
