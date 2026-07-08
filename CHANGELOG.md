@@ -9,6 +9,13 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.8](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.7...v0.2.8) (2026-07-08)
+
+
+### Features
+
+* **android:** add light build option for optimized APK size ([6c5c34a](https://github.com/Weeranieb/FarmManagementMobile/commit/6c5c34a016b9243a35b11674dfa422d895c71674))
+
 ## [0.2.7](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.6...v0.2.7) (2026-07-08)
 
 
