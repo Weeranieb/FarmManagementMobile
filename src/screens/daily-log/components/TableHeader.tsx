@@ -7,25 +7,24 @@ function GroupBand({
   w,
   title,
   unit,
-  tint,
   ink,
 }: {
   w: number;
   title: string;
   unit: string;
-  tint: string;
   ink: string;
 }) {
   return (
     <View
       style={{
         width: w,
-        backgroundColor: tint,
         paddingHorizontal: 10,
         paddingVertical: 2,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
+        borderBottomWidth: 2,
+        borderBottomColor: ink,
       }}
     >
       <Text
