@@ -2,7 +2,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Constants from 'expo-constants';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radii, type, type ThemeMode } from '@/theme/tokens';
+import { radii, space, type, type ThemeMode } from '@/theme/tokens';
 import { dangerInk } from '@/theme/ink';
 import { Card, Pill, TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
@@ -32,14 +32,12 @@ function SectionLabel({ children }: { children: string }) {
   return (
     <Text
       style={{
-        fontSize: 12,
+        fontSize: type.sizes.sm,
         fontFamily: type.familyBold,
-        color: t.inkMute,
-        letterSpacing: 0.6,
-        textTransform: 'uppercase',
-        paddingHorizontal: 20,
-        paddingTop: 24,
-        paddingBottom: 8,
+        color: t.inkSoft,
+        paddingHorizontal: space[5],
+        paddingTop: space[5],
+        paddingBottom: space[2],
       }}
     >
       {children}
@@ -58,8 +56,8 @@ function ModeSwitch() {
     <View
       style={{
         flexDirection: 'row',
-        gap: 4,
-        padding: 4,
+        gap: space[1],
+        padding: space[1],
         borderRadius: radii.md,
         backgroundColor: t.surfaceSunk,
         borderWidth: 1,
@@ -78,8 +76,9 @@ function ModeSwitch() {
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 6,
-              paddingVertical: 10,
+              gap: space[2] - 2,
+              minHeight: 44,
+              paddingVertical: space[2],
               borderRadius: radii.sm,
               backgroundColor: active ? t.surface : 'transparent',
               borderWidth: 1,
@@ -92,7 +91,7 @@ function ModeSwitch() {
             ) : null}
             <Text
               style={{
-                fontSize: 13,
+                fontSize: type.sizes.sm,
                 fontFamily: active ? type.familySemi : type.familyMedium,
                 color: active ? t.ink : t.inkMute,
               }}
@@ -131,9 +130,9 @@ export function ProfileView({
       {showHeader ? <TopBar title={tx('profile.title')} /> : null}
       <ScrollView delaysContentTouches={false} contentContainerStyle={{ paddingBottom: 96 }}>
         {/* Identity — the one focal moment on the screen */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 4 }}>
-          <Card style={{ paddingVertical: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+        <View style={{ paddingHorizontal: space[5], paddingTop: space[5], paddingBottom: space[1] }}>
+          <Card style={{ paddingVertical: space[5] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[4] }}>
               <View
                 style={{
                   width: 64,
@@ -146,7 +145,7 @@ export function ProfileView({
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: t.brandInk, fontFamily: type.familyBold, fontSize: 26 }}>
+                <Text style={{ color: t.brandInk, fontFamily: type.familyBold, fontSize: type.sizes.xxl }}>
                   {initial}
                 </Text>
               </View>
@@ -157,11 +156,11 @@ export function ProfileView({
                 >
                   {fullName || firstName}
                 </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space[2], marginTop: space[2] }}>
                   <Pill tone="brand">{tx('profile.ownerLabel')}</Pill>
                   <Text
                     style={{
-                      fontSize: 13,
+                      fontSize: type.sizes.sm,
                       color: t.inkMute,
                       fontFamily: type.familyNum,
                       flexShrink: 1,
@@ -200,19 +199,19 @@ export function ProfileView({
           onPress={handleLogout}
           android_ripple={{ color: t.dangerSoft }}
           style={{
-            marginHorizontal: 20,
-            marginTop: 32,
+            marginHorizontal: space[5],
+            marginTop: space[7],
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 8,
-            paddingVertical: 14,
+            gap: space[2],
+            paddingVertical: space[4],
             borderRadius: radii.lg,
             backgroundColor: t.dangerSoft,
           }}
         >
           <Icon.logout size={18} color={dangerInk(mode, t)} />
-          <Text style={{ fontFamily: type.familySemi, fontSize: 15, color: dangerInk(mode, t) }}>
+          <Text style={{ fontFamily: type.familySemi, fontSize: type.sizes.base, color: dangerInk(mode, t) }}>
             {tx('profile.logout')}
           </Text>
         </Pressable>
