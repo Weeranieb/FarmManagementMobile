@@ -30,16 +30,27 @@ export const CHROME_SCROLL = CHROME.farm + CHROME.month + CHROME.day;
 /** @deprecated Use CHROME_SCROLL for onScroll collapse math. */
 export const CHROME_TOTAL = CHROME_SCROLL;
 
-/** Fraction of the screen height the numpad bottom-sheet occupies. */
-export const NUMPAD_HEIGHT_RATIO = 0.52;
+/** Numpad keypad — fixed row height (comfortable, gloves-in-sun tap target,
+ *  well above the 44pt minimum) and inter-row gap. The keypad sizes to its
+ *  rows instead of stretching to fill a fraction of the screen, so the sheet
+ *  stays as short as its content. */
+export const NUMPAD_KEY_ROW_H = 44;
+export const NUMPAD_KEY_ROW_GAP = 6;
+
 /**
- * Numpad bottom-sheet height. Grows past the ratio to cover the home-indicator
- * inset so the footer keeps its designed proportions and clears the safe area.
- * Shared by Numpad (the sheet itself) and the daily-log view (so the table's
- * bottom padding can lift the last rows above the sheet when it's open).
+ * Estimated numpad bottom-sheet height, now that the sheet is content-driven
+ * (grabber + header + 4 key rows + footer + home-indicator inset) rather than
+ * a fixed fraction of the screen. Used by the daily-log view to lift the last
+ * table rows above the open sheet; an estimate is fine — it only sets the
+ * scroll-to-reveal target, and the validation hint (when shown) adds a little
+ * on top. Keep the piece sums in sync with Numpad's layout.
  */
-export function numpadSheetHeight(screenH: number, insetBottom: number): number {
-  return Math.round(screenH * NUMPAD_HEIGHT_RATIO) + insetBottom;
+export function numpadSheetHeight(insetBottom: number): number {
+  const GRABBER = 10; // paddingTop 6 + dot 4
+  const HEADER = 58; // single row: paddingTop 4 + label+value stack ~46 + paddingBottom 8
+  const KEYPAD = NUMPAD_KEY_ROW_H * 4 + NUMPAD_KEY_ROW_GAP * 3;
+  const FOOTER = 58; // paddingTop 8 + button 44 + paddingBottom 10
+  return GRABBER + HEADER + KEYPAD + FOOTER + insetBottom;
 }
 
 export type ColKey = 'pm' | 'pe' | 'fresh' | 'death' | 'cat';

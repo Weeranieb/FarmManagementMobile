@@ -102,10 +102,6 @@ export type UseDailyLogV6 = {
    *  given pond + group. saveAll prefers this over what came back from the
    *  monthly GET, so cells typed against the in-numpad default still save. */
   setFeedSelection: (pondKey: string, group: 'pellet' | 'fresh', feedId: number) => void;
-  /** Latest non-zero value for the active cell from any prior day (same month,
-   *  then prev month) along with the date it was logged on. `null` when no
-   *  prior entry exists. Drives the "เดิม X · 1 พ.ค." hint inside Numpad. */
-  previousValueForActiveCell: { value: number; date: Date } | null;
   /** Feed-collection ID used in the active pond's most recent entry, scoped to
    *  the active cell's group (pellet vs fresh). Used to pre-select the Numpad's
    *  feed-type chip. `null` for groups without a feed type (death / catch) or
@@ -236,40 +232,6 @@ function entryToValues(e: DailyLogEntry): CellValues {
     death: e.deathFishCount,
     cat: e.touristCatchCount,
   };
-}
-
-// Map a column key to the matching numeric field on the DTO. Mirrors
-// entryToValues but for single-cell lookup (used by the previous-value hint).
-function entryValueForCol(e: DailyLogEntry, col: ColKey): number {
-  switch (col) {
-    case 'pm':
-      return e.pelletMorning;
-    case 'pe':
-      return e.pelletEvening;
-    case 'fresh':
-      return e.fresh;
-    case 'death':
-      return e.deathFishCount;
-    case 'cat':
-      return e.touristCatchCount;
-  }
-}
-
-// Pick the entry with the largest `day` from a list filtered to non-zero
-// values for the target column. Returns null when nothing qualifies.
-function latestNonZeroEntry(
-  entries: readonly DailyLogEntry[] | undefined,
-  col: ColKey,
-  maxDayExclusive: number | null,
-): DailyLogEntry | null {
-  if (!entries) return null;
-  let best: DailyLogEntry | null = null;
-  for (const e of entries) {
-    if (maxDayExclusive != null && e.day >= maxDayExclusive) continue;
-    if (entryValueForCol(e, col) <= 0) continue;
-    if (best == null || e.day > best.day) best = e;
-  }
-  return best;
 }
 
 type UseDailyLogV6Options = {
@@ -444,39 +406,6 @@ export function useDailyLogV6(
     if (activePondId == null || !isAuth) return undefined;
     return activePondPrevMonthQuery.data;
   }, [activePondId, isAuth, activePondPrevMonthQuery.data]);
-
-  const previousValueForActiveCell = useMemo<{ value: number; date: Date } | null>(() => {
-    if (!activeCell || activePondId == null) return null;
-    const col = activeCell.col;
-    // Same month: cap at the selected day (exclusive). Treats `0` as "no
-    // data" — the backend zero-fills cells the user never touched.
-    const sameMonth = latestNonZeroEntry(activePondCurrentMonthData?.entries, col, day);
-    if (sameMonth) {
-      return {
-        value: entryValueForCol(sameMonth, col),
-        date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), sameMonth.day),
-      };
-    }
-    // Prev month: no day cap; all of its days are < the selected day.
-    const prev = latestNonZeroEntry(activePondPrevMonthData?.entries, col, null);
-    if (prev) {
-      // Step back from a copy of selectedDate to derive prev-month's year/month
-      // — month-1 wraps to Dec of the previous year automatically.
-      const prevAnchor = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
-      return {
-        value: entryValueForCol(prev, col),
-        date: new Date(prevAnchor.getFullYear(), prevAnchor.getMonth(), prev.day),
-      };
-    }
-    return null;
-  }, [
-    activeCell,
-    activePondId,
-    day,
-    selectedDate,
-    activePondCurrentMonthData,
-    activePondPrevMonthData,
-  ]);
 
   const lastUsedFeedIdForActiveCell = useMemo<number | null>(() => {
     if (!activeCell || activePondId == null) return null;
@@ -924,7 +853,6 @@ export function useDailyLogV6(
     monthSummary,
     setCellValue,
     setFeedSelection,
-    previousValueForActiveCell,
     lastUsedFeedIdForActiveCell,
     advanceActive,
     activeCellIsLast,

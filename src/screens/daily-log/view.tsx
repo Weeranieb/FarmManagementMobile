@@ -15,10 +15,7 @@ import { CollapsingChrome } from './components/CollapsingChrome';
 import { ConfirmMonthSaveSheet } from './components/ConfirmMonthSaveSheet';
 import { SaveStatusToast, type SaveToastStatus } from './components/SaveStatusToast';
 import { FarmPickerSheet, type FarmOption } from './components/FarmPickerSheet';
-import {
-  MonthYearPickerSheet,
-  type MonthMarksMap,
-} from './components/MonthYearPickerSheet';
+import { MonthYearPickerSheet, type MonthMarksMap } from './components/MonthYearPickerSheet';
 import { Numpad } from './components/Numpad';
 import { SaveBar } from './components/SaveBar';
 import { TableHeader } from './components/TableHeader';
@@ -51,7 +48,10 @@ function formatSaveError(result: SaveResult): string {
   return 'บันทึกไม่สำเร็จ — ตรวจสอบสัญญาณแล้วลองอีกครั้ง';
 }
 
-type Pending = { kind: 'month'; delta: number } | { kind: 'farm'; farmId: number } | { kind: 'back' };
+type Pending =
+  | { kind: 'month'; delta: number }
+  | { kind: 'farm'; farmId: number }
+  | { kind: 'back' };
 
 type Props = {
   state: UseDailyLogV6;
@@ -102,7 +102,6 @@ export function DailyLogView({
     monthSummary,
     setCellValue,
     setFeedSelection,
-    previousValueForActiveCell,
     lastUsedFeedIdForActiveCell,
     advanceActive,
     activeCellIsLast,
@@ -201,7 +200,7 @@ export function DailyLogView({
   const onActiveRowMeasure = useCallback(
     (pageY: number, height: number) => {
       const screenH = Dimensions.get('window').height;
-      const sheetTop = screenH - numpadSheetHeight(screenH, bottomInset);
+      const sheetTop = screenH - numpadSheetHeight(bottomInset);
       const rowBottom = pageY + height;
       const limit = sheetTop - NUMPAD_REVEAL_MARGIN;
       if (rowBottom <= limit) return; // already fully visible above the sheet
@@ -576,7 +575,6 @@ export function DailyLogView({
           pondId={activePond.id}
           col={activeCell.col}
           initialValue={activeValue}
-          yesterday={previousValueForActiveCell}
           lastUsedFeedId={lastUsedFeedIdForActiveCell}
           isLastCell={activeCellIsLast}
           bottomInset={bottomInset}
