@@ -35,6 +35,7 @@ type Props = {
   onBack?: () => void;
   onAction?: (kind: 'fill' | 'move' | 'sell') => void;
   onOpenDailyLog?: (ctx: { farmId: number; pondId: number }) => void;
+  onOpenLedger?: () => void;
   showHeader?: boolean;
 };
 
@@ -52,6 +53,7 @@ export function PondDetailView({
   onBack,
   onAction,
   onOpenDailyLog,
+  onOpenLedger,
   showHeader = true,
 }: Props) {
   const { t } = useTheme();
@@ -211,6 +213,7 @@ export function PondDetailView({
         {tab === 'feed' ? (
           <DailyFeedBody
             pondId={pond.id}
+            onOpenLedger={onOpenLedger}
             onOpenDailyLog={() => onOpenDailyLog?.({ farmId: pond.farmId, pondId: pond.id })}
           />
         ) : (

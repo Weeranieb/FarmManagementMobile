@@ -19,6 +19,12 @@ export default function PondDetailRoute() {
             params: { farmId: String(farmId), pondId: String(pondId) },
           })
         }
+        onOpenLedger={() =>
+          router.push({
+            pathname: '/(app)/pond/[id]/ledger',
+            params: { id: String(pondId) },
+          })
+        }
       />
     </ThemedSafeAreaView>
   );

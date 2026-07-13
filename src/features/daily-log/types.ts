@@ -8,7 +8,10 @@ export type DailyLogEntry = {
   pelletMorning: number;
   pelletEvening: number;
   deathFishCount: number;
-  touristCatchCount: number;
+  // Backend column is nullable (`tourist_catch_count` dropped NOT NULL) and the
+  // response has no `omitempty`, so it comes back as `null` for days it was
+  // never set on. Requests may send a number (0 = none) or omit it.
+  touristCatchCount: number | null;
   // Per-entry unit price (฿/kg) the backend resolved from the feed collection
   // for the entry's date. `omitempty` server-side → undefined when the feed
   // type has no collection / price configured. Used to derive feed cost.
