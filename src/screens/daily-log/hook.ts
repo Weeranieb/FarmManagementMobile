@@ -102,10 +102,6 @@ export type UseDailyLogV6 = {
    *  given pond + group. saveAll prefers this over what came back from the
    *  monthly GET, so cells typed against the in-numpad default still save. */
   setFeedSelection: (pondKey: string, group: 'pellet' | 'fresh', feedId: number) => void;
-  /** Latest non-zero value for the active cell from any prior day (same month,
-   *  then prev month) along with the date it was logged on. `null` when no
-   *  prior entry exists. Drives the "เดิม X · 1 พ.ค." hint inside Numpad. */
-  previousValueForActiveCell: { value: number; date: Date } | null;
   /** Feed-collection ID used in the active pond's most recent entry, scoped to
    *  the active cell's group (pellet vs fresh). Used to pre-select the Numpad's
    *  feed-type chip. `null` for groups without a feed type (death / catch) or
@@ -238,40 +234,6 @@ function entryToValues(e: DailyLogEntry): CellValues {
   };
 }
 
-// Map a column key to the matching numeric field on the DTO. Mirrors
-// entryToValues but for single-cell lookup (used by the previous-value hint).
-function entryValueForCol(e: DailyLogEntry, col: ColKey): number {
-  switch (col) {
-    case 'pm':
-      return e.pelletMorning;
-    case 'pe':
-      return e.pelletEvening;
-    case 'fresh':
-      return e.fresh;
-    case 'death':
-      return e.deathFishCount;
-    case 'cat':
-      return e.touristCatchCount;
-  }
-}
-
-// Pick the entry with the largest `day` from a list filtered to non-zero
-// values for the target column. Returns null when nothing qualifies.
-function latestNonZeroEntry(
-  entries: readonly DailyLogEntry[] | undefined,
-  col: ColKey,
-  maxDayExclusive: number | null,
-): DailyLogEntry | null {
-  if (!entries) return null;
-  let best: DailyLogEntry | null = null;
-  for (const e of entries) {
-    if (maxDayExclusive != null && e.day >= maxDayExclusive) continue;
-    if (entryValueForCol(e, col) <= 0) continue;
-    if (best == null || e.day > best.day) best = e;
-  }
-  return best;
-}
-
 type UseDailyLogV6Options = {
   /** Focus this pond when rows load (pond detail → daily log drill-down). */
   initialPondId?: number;
@@ -326,6 +288,13 @@ export function useDailyLogV6(
     (farmId == null && farmsLoading) || (pondsQuery.isLoading && pondModels.length === 0);
 
   const [overrides, setOverrides] = useState<OverrideMap>({});
+  // saveAll reads the latest overrides through this ref rather than the value
+  // captured in its useCallback closure. A stale closure (e.g. the confirm
+  // sheet or a queued callback holding an older saveAll) must never build the
+  // payload from an out-of-date draft set — that yields an empty payload, a
+  // "saved" toast, and day dots that never clear.
+  const overridesRef = useRef<OverrideMap>(overrides);
+  overridesRef.current = overrides;
   const [feedSelections, setFeedSelections] = useState<
     Record<string, { pellet?: number; fresh?: number }>
   >({});
@@ -437,39 +406,6 @@ export function useDailyLogV6(
     if (activePondId == null || !isAuth) return undefined;
     return activePondPrevMonthQuery.data;
   }, [activePondId, isAuth, activePondPrevMonthQuery.data]);
-
-  const previousValueForActiveCell = useMemo<{ value: number; date: Date } | null>(() => {
-    if (!activeCell || activePondId == null) return null;
-    const col = activeCell.col;
-    // Same month: cap at the selected day (exclusive). Treats `0` as "no
-    // data" — the backend zero-fills cells the user never touched.
-    const sameMonth = latestNonZeroEntry(activePondCurrentMonthData?.entries, col, day);
-    if (sameMonth) {
-      return {
-        value: entryValueForCol(sameMonth, col),
-        date: new Date(selectedDate.getFullYear(), selectedDate.getMonth(), sameMonth.day),
-      };
-    }
-    // Prev month: no day cap; all of its days are < the selected day.
-    const prev = latestNonZeroEntry(activePondPrevMonthData?.entries, col, null);
-    if (prev) {
-      // Step back from a copy of selectedDate to derive prev-month's year/month
-      // — month-1 wraps to Dec of the previous year automatically.
-      const prevAnchor = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 1, 1);
-      return {
-        value: entryValueForCol(prev, col),
-        date: new Date(prevAnchor.getFullYear(), prevAnchor.getMonth(), prev.day),
-      };
-    }
-    return null;
-  }, [
-    activeCell,
-    activePondId,
-    day,
-    selectedDate,
-    activePondCurrentMonthData,
-    activePondPrevMonthData,
-  ]);
 
   const lastUsedFeedIdForActiveCell = useMemo<number | null>(() => {
     if (!activeCell || activePondId == null) return null;
@@ -630,14 +566,23 @@ export function useDailyLogV6(
     // entries[] into the month and leaves other days untouched. Feed IDs are
     // pond-level, so one pair of IDs covers all of the pond's days.
     const byPond = new Map<string, DailyLogEntry[]>();
-    // Snapshot of the values sent per (pond, day), so the post-save drop can
-    // skip any override the user re-edited mid-flight (save is non-blocking —
+    // Save-start snapshot of every current-month drafted (pond, day), so the
+    // post-save drop can skip any override the user re-edited mid-flight (save is non-blocking —
     // the table stays editable while the request is in the air).
     const sentByKey = new Map<string, CellValues>();
-    for (const [dk, bucket] of Object.entries(overrides)) {
+    // (pond, day) pairs deliberately left out of the payload because they hold
+    // nothing to persist ({0,0,0,0,0} with no backend entry). They carry no
+    // unsaved data, so a save clears them even though they were never sent.
+    const noopKeys = new Set<string>();
+    for (const [dk, bucket] of Object.entries(overridesRef.current)) {
       if (dKeyMonth(dk) !== month) continue;
       const entryDay = dKeyDay(dk);
       for (const [pondKey, ovr] of Object.entries(bucket)) {
+        // Snapshot EVERY current-month drafted (pond, day) value up front — the
+        // post-save drop compares live overrides against this to clear saved
+        // days (and no-op days) while keeping any re-edited mid-flight. Recorded
+        // before the skip below so a skipped day can still be cleared.
+        sentByKey.set(`${pondKey} ${dk}`, ovr.v);
         // Every override is dirty by construction (setCellValue drops overrides
         // matching the backend ref). Defensive: skip a {0,0,0,0,0} draft unless
         // it overwrites an existing backend entry on THAT day (user cleared
@@ -652,7 +597,10 @@ export function useDailyLogV6(
             dailyLogKeys.month(Number(pondKey), month),
           );
           const hadEntry = cached?.entries.some((e) => e.day === entryDay) ?? false;
-          if (!hadEntry) continue;
+          if (!hadEntry) {
+            noopKeys.add(`${pondKey} ${dk}`);
+            continue;
+          }
         }
         const entry: DailyLogEntry = {
           day: entryDay,
@@ -665,11 +613,10 @@ export function useDailyLogV6(
         const list = byPond.get(pondKey);
         if (list) list.push(entry);
         else byPond.set(pondKey, [entry]);
-        sentByKey.set(`${pondKey} ${dk}`, ovr.v);
       }
     }
-    if (byPond.size === 0) return { ok: true, failedCount: 0 };
-
+    // No early bail-out when byPond is empty: allSettled([]) resolves cleanly,
+    // and the drop below still needs to run to clear any no-op drafts.
     const results = await Promise.allSettled(
       Array.from(byPond.entries()).map(async ([pondKey, entries]) => {
         const feeds = feedCollectionsByPondId.get(Number(pondKey));
@@ -721,9 +668,10 @@ export function useDailyLogV6(
       }
     }
 
-    if (successKeys.size > 0) {
-      // Drop successfully-saved ponds' overrides across EVERY current-month day
-      // (one upsert saved all of them). Failed ponds keep all their day
+    if (successKeys.size > 0 || noopKeys.size > 0) {
+      // Drop overrides that a save resolved: every current-month day of a pond
+      // whose upsert succeeded (one upsert saves the whole month), plus no-op
+      // days that never needed saving. Failed ponds keep their (real) day
       // overrides so the user can retry. Other months are left untouched.
       setOverrides((prev) => {
         let changed = false;
@@ -735,13 +683,14 @@ export function useDailyLogV6(
           }
           const nextBucket: Record<string, LocalOverride> = {};
           for (const [pondKey, o] of Object.entries(bucket)) {
-            if (successKeys.has(pondKey)) {
-              // Drop only if the value is still exactly what we sent — if the
-              // user re-edited this cell while the save was in flight, keep the
-              // override dirty so their edit isn't silently discarded.
-              const sent = sentByKey.get(`${pondKey} ${dk}`);
+            const key = `${pondKey} ${dk}`;
+            if (successKeys.has(pondKey) || noopKeys.has(key)) {
+              // Drop only if the value still matches the save-start snapshot —
+              // if the user re-edited this cell while the save was in flight,
+              // keep the override dirty so their edit isn't silently discarded.
+              const snap = sentByKey.get(key);
               const unchanged =
-                sent != null && CELL_KEYS.every((k) => valuesEqual(o.v[k], sent[k]));
+                snap != null && CELL_KEYS.every((k) => valuesEqual(o.v[k], snap[k]));
               if (unchanged) {
                 changed = true;
                 continue;
@@ -757,7 +706,10 @@ export function useDailyLogV6(
     }
 
     return { ok: failedCount === 0, failedCount, errorCode, errorMessage, errorDetails };
-  }, [overrides, month, qc, feedCollectionsByPondId, feedSelections]);
+    // `overrides` is read via `overridesRef.current`, not the closure, so it's
+    // intentionally not a dependency — that's what keeps saveAll from ever
+    // acting on a stale draft set.
+  }, [month, qc, feedCollectionsByPondId, feedSelections]);
 
   const discardDirty = useCallback(() => {
     // Guard "discard" — drop every draft in the CURRENT month (all its days).
@@ -901,7 +853,6 @@ export function useDailyLogV6(
     monthSummary,
     setCellValue,
     setFeedSelection,
-    previousValueForActiveCell,
     lastUsedFeedIdForActiveCell,
     advanceActive,
     activeCellIsLast,

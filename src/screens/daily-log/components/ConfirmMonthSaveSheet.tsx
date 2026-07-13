@@ -1,10 +1,11 @@
-import { Modal, Pressable, View, Text } from 'react-native';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { Modal, Pressable, View, Text, useWindowDimensions } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { GROUP_LIGHT, VIBRANT_BRAND, fmtTh, thMonth } from '../constants';
 import type { MonthSummary } from '../hook';
+import { useSheetSlideIn } from './useSheetSlideIn';
 
 type Props = {
   visible: boolean;
@@ -43,6 +44,10 @@ export function ConfirmMonthSaveSheet({
   onConfirm,
 }: Props) {
   const { t } = useTheme();
+  // Sheet has no fixed height (content-driven) — slide from the full screen
+  // height so it always starts off-screen regardless of content size.
+  const { height: screenH } = useWindowDimensions();
+  const sheetAnim = useSheetSlideIn(screenH);
 
   return (
     <Modal
@@ -62,17 +67,19 @@ export function ConfirmMonthSaveSheet({
         </Animated.View>
 
         <Animated.View
-          entering={SlideInDown.duration(220)}
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: t.surface,
-            borderTopLeftRadius: 22,
-            borderTopRightRadius: 22,
-            paddingBottom: 14 + bottomInset,
-          }}
+          style={[
+            {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: t.surface,
+              borderTopLeftRadius: 22,
+              borderTopRightRadius: 22,
+              paddingBottom: 14 + bottomInset,
+            },
+            sheetAnim,
+          ]}
         >
           <View style={{ alignItems: 'center', paddingTop: 7, paddingBottom: 4 }}>
             <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: t.border }} />
@@ -104,7 +111,9 @@ export function ConfirmMonthSaveSheet({
               <Icon.calendar size={20} color={VIBRANT_BRAND[700]} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ fontSize: 17, fontFamily: type.familyBold, color: t.ink, lineHeight: 22 }}>
+              <Text
+                style={{ fontSize: 17, fontFamily: type.familyBold, color: t.ink, lineHeight: 22 }}
+              >
                 บันทึกข้อมูลเดือน{monthLabel(summary.month)}
               </Text>
               <Text style={{ fontSize: 12.5, color: t.inkSoft, marginTop: 2, lineHeight: 17 }}>
@@ -170,7 +179,9 @@ export function ConfirmMonthSaveSheet({
                   >
                     {r.label}
                     {cell.days > 0 ? (
-                      <Text style={{ fontSize: 11.5, color: t.inkMute, fontFamily: type.familyNum }}>
+                      <Text
+                        style={{ fontSize: 11.5, color: t.inkMute, fontFamily: type.familyNum }}
+                      >
                         {'  '}({fmtTh(cell.days)} วัน)
                       </Text>
                     ) : null}

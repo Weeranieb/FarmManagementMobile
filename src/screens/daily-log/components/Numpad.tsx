@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, View, Text, useWindowDimensions } from 'react-native';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useFeedCollectionsData } from '@/features/feed-collection';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
@@ -10,25 +10,22 @@ import {
   CELL_MAX_VALUE,
   COLS,
   GROUP_LIGHT,
+  NUMPAD_KEY_ROW_GAP,
+  NUMPAD_KEY_ROW_H,
   VIBRANT_BRAND,
-  fmtTh,
   isCellValueInvalid,
-  numpadSheetHeight,
-  thMonthAbbr,
   type ColKey,
   type GroupKey,
 } from '../constants';
 import { FeedTypePicker } from './FeedTypePicker';
 import { GroupIcon } from './GroupIcon';
+import { useSheetSlideIn } from './useSheetSlideIn';
 
 type Props = {
   visible: boolean;
   pondId: string;
   col: ColKey;
   initialValue: number | '';
-  /** Latest prior entry for this pond + column — value plus the date it was
-   *  logged on. Renders as "เดิม 14 · 1 พ.ค." underneath the typed value. */
-  yesterday?: { value: number; date: Date } | null;
   /** Feed-collection ID used in the active pond's most recent entry. When
    *  present in the available feeds, it becomes the default chip selection —
    *  so re-entering data for a pond keeps the feed type it was last logged
@@ -76,7 +73,6 @@ export function Numpad({
   pondId,
   col,
   initialValue,
-  yesterday,
   lastUsedFeedId,
   isLastCell = false,
   bottomInset = 0,
@@ -119,9 +115,7 @@ export function Numpad({
     }
     if (selectedFeedId != null && feeds.some((f) => f.id === selectedFeedId)) return;
     const fromLastEntry =
-      lastUsedFeedId != null && feeds.some((f) => f.id === lastUsedFeedId)
-        ? lastUsedFeedId
-        : null;
+      lastUsedFeedId != null && feeds.some((f) => f.id === lastUsedFeedId) ? lastUsedFeedId : null;
     setSelectedFeedId(fromLastEntry ?? feeds[0]?.id ?? null);
   }, [feeds, supportsFeedType, selectedFeedId, lastUsedFeedId]);
 
@@ -141,8 +135,10 @@ export function Numpad({
   // commit-time concern, not a range error.
   const parsed = useMemo(() => parseValue(buf), [buf]);
   const isInvalid = isCellValueInvalid(parsed);
+  // The sheet is content-driven (auto height) — slide it in from the full
+  // screen height so it always starts fully off-screen regardless of content.
   const { height: screenH } = useWindowDimensions();
-  const sheetH = numpadSheetHeight(screenH, bottomInset);
+  const sheetAnim = useSheetSlideIn(screenH);
 
   if (!visible) return null;
 
@@ -167,9 +163,7 @@ export function Numpad({
   const cur = supportsFeedType ? (feeds.find((f) => f.id === selectedFeedId) ?? null) : null;
   // Calm/desaturated brand swatch — same calibration as FeedTypePicker rows.
   const chipDot =
-    group === 'fresh'
-      ? { dot: '#5ca070', tintA: '#ebf4ee' }
-      : { dot: '#5478c2', tintA: '#eaf0fb' };
+    group === 'fresh' ? { dot: '#5ca070', tintA: '#ebf4ee' } : { dot: '#5478c2', tintA: '#eaf0fb' };
 
   return (
     <Modal
@@ -192,105 +186,93 @@ export function Numpad({
         </Animated.View>
 
         <Animated.View
-          entering={SlideInDown.duration(220)}
-          style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            bottom: 0,
-            height: sheetH,
-            backgroundColor: t.surfaceAlt,
-            borderTopLeftRadius: 22,
-            borderTopRightRadius: 22,
-            borderTopWidth: 1,
-            borderTopColor: t.border,
-          }}
+          style={[
+            {
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: t.surfaceAlt,
+              borderTopLeftRadius: 22,
+              borderTopRightRadius: 22,
+              borderTopWidth: 1,
+              borderTopColor: t.border,
+            },
+            sheetAnim,
+          ]}
         >
           {/* grabber */}
-          <View style={{ alignItems: 'center', paddingTop: 7, paddingBottom: 3 }}>
+          <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 2 }}>
             <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: t.border }} />
           </View>
 
-          {/* header: pond context + typed value on the left, feed-type
-              selector as a full-height tile on the right */}
+          {/* header — one compact band: group icon + identity label & hero
+              value stacked (left), feed-type selector (right). Single row keeps
+              the sheet short; the identity label sits above the value so a long
+              feed name in the chip never collides with them. */}
           <View
             style={{
               paddingHorizontal: 16,
               paddingTop: 4,
-              paddingBottom: 10,
+              paddingBottom: 8,
               flexDirection: 'row',
-              alignItems: 'stretch',
+              alignItems: 'center',
               gap: 10,
             }}
           >
             <View
-              style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 9,
+                backgroundColor: g.tint,
+                borderWidth: 1,
+                borderColor: g.edge,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              <View
+              <GroupIcon group={group} size={14} color={g.ink} />
+            </View>
+
+            {/* identity label + typed value + prior-entry hint */}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text
+                numberOfLines={1}
                 style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 9,
-                  backgroundColor: g.tint,
-                  borderWidth: 1,
-                  borderColor: g.edge,
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  fontSize: 12,
+                  fontFamily: type.familyBold,
+                  color: t.inkSoft,
+                  letterSpacing: 0.2,
                 }}
               >
-                <GroupIcon group={group} size={14} color={g.ink} />
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
+                บ่อ {pondId} · {slotLabel}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 1 }}>
                 <Text
                   style={{
-                    fontSize: 12,
-                    fontFamily: type.familyBold,
-                    color: t.inkSoft,
-                    letterSpacing: 0.2,
+                    fontSize: 28,
+                    lineHeight: 32,
+                    fontFamily: type.familyNumBold,
+                    color: isInvalid ? CELL_HIGHLIGHT.errorInk : t.ink,
+                    letterSpacing: -0.5,
                   }}
-                  numberOfLines={1}
                 >
-                  บ่อ {pondId} · {slotLabel}
+                  {displayValue}
                 </Text>
-                <View
-                  style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4 }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 34,
-                      lineHeight: 36,
-                      fontFamily: type.familyNumBold,
-                      color: isInvalid ? CELL_HIGHLIGHT.errorInk : t.ink,
-                      letterSpacing: -1,
-                    }}
-                  >
-                    {displayValue}
-                  </Text>
-                  <Text style={{ fontSize: 14, color: t.inkSoft, fontFamily: type.familySemi }}>
-                    {g.unit}
-                  </Text>
-                  {yesterday != null && !isInvalid ? (
-                    <Text style={{ fontSize: 12, color: t.inkSoft, marginLeft: 8 }}>
-                      เดิม{' '}
-                      <Text style={{ fontFamily: type.familyNumBold, color: t.inkSoft }}>
-                        {fmtTh(yesterday.value)}
-                      </Text>
-                      {' · '}
-                      {yesterday.date.getDate()} {thMonthAbbr(yesterday.date.getMonth())}
-                    </Text>
-                  ) : null}
-                </View>
+                <Text style={{ fontSize: 13, color: t.inkSoft, fontFamily: type.familySemi }}>
+                  {g.unit}
+                </Text>
               </View>
             </View>
 
-            {/* feed-type selector — full-height tile (eyebrow + feed name) */}
+            {/* feed-type selector */}
             {supportsFeedType && cur ? (
               <Pressable
                 onPress={() => setPickerOpen(true)}
                 style={{
-                  alignSelf: 'stretch',
                   justifyContent: 'center',
-                  paddingVertical: 8,
+                  paddingVertical: 6,
                   paddingLeft: 11,
                   paddingRight: 10,
                   borderRadius: 13,
@@ -300,7 +282,7 @@ export function Numpad({
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 9,
-                  maxWidth: 200,
+                  maxWidth: 168,
                   shadowColor: '#0f172a',
                   shadowOpacity: 0.1,
                   shadowRadius: 8,
@@ -333,7 +315,7 @@ export function Numpad({
                         color: t.inkMute,
                         letterSpacing: 0.55,
                         textTransform: 'uppercase',
-                        lineHeight: 14,
+                        lineHeight: 13,
                       }}
                     >
                       {g.title}
@@ -342,11 +324,11 @@ export function Numpad({
                   <Text
                     numberOfLines={1}
                     style={{
-                      marginTop: cur.name !== g.title ? 2 : 0,
+                      marginTop: cur.name !== g.title ? 1 : 0,
                       fontSize: 13,
                       fontFamily: type.familyBold,
                       color: t.ink,
-                      lineHeight: 18,
+                      lineHeight: 17,
                     }}
                   >
                     {cur.name}
@@ -411,8 +393,10 @@ export function Numpad({
             </View>
           ) : null}
 
-          {/* keypad — 4 rows × 3 cols */}
-          <View style={{ flex: 1, paddingHorizontal: 12 }}>
+          {/* keypad — 4 rows × 3 cols. Fixed row height (not flex-fill) so the
+              sheet stays as short as its content instead of stretching keys to
+              a fraction of the screen. */}
+          <View style={{ paddingHorizontal: 12 }}>
             {[
               ['1', '2', '3'],
               ['4', '5', '6'],
@@ -422,10 +406,10 @@ export function Numpad({
               <View
                 key={ri}
                 style={{
-                  flex: 1,
+                  height: NUMPAD_KEY_ROW_H,
                   flexDirection: 'row',
                   gap: 8,
-                  marginBottom: ri < 3 ? 8 : 0,
+                  marginBottom: ri < 3 ? NUMPAD_KEY_ROW_GAP : 0,
                 }}
               >
                 {row.map((k) => {
@@ -474,8 +458,8 @@ export function Numpad({
           <View
             style={{
               paddingHorizontal: 12,
-              paddingTop: 10,
-              paddingBottom: 12 + bottomInset,
+              paddingTop: 8,
+              paddingBottom: 10 + bottomInset,
               flexDirection: 'row',
               gap: 8,
             }}
@@ -483,7 +467,7 @@ export function Numpad({
             <Pressable
               onPress={handleCancel}
               style={{
-                height: 46,
+                height: 44,
                 paddingHorizontal: 18,
                 borderRadius: 13,
                 backgroundColor: t.surface,
@@ -502,7 +486,7 @@ export function Numpad({
               disabled={isInvalid}
               style={{
                 flex: 1,
-                height: 46,
+                height: 44,
                 borderRadius: 13,
                 backgroundColor: VIBRANT_BRAND[600],
                 flexDirection: 'row',

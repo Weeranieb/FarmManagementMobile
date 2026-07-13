@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import { Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { VIBRANT_BRAND, thMonthAbbr } from '../constants';
+import { useSheetSlideIn } from './useSheetSlideIn';
 
 export type MonthMark = 'data' | 'unsaved' | 'closed';
 
@@ -61,6 +62,10 @@ export function MonthYearPickerSheet({
   onConfirm,
 }: Props) {
   const { t } = useTheme();
+  // Sheet has no fixed height (content-driven) — slide from the full screen
+  // height so it always starts off-screen regardless of content size.
+  const { height: screenH } = useWindowDimensions();
+  const sheetAnim = useSheetSlideIn(screenH);
 
   const upperBound = outOfRangeAfter === undefined ? today : outOfRangeAfter;
 
@@ -120,22 +125,24 @@ export function MonthYearPickerSheet({
           />
 
           <Animated.View
-            entering={SlideInDown.duration(260)}
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: t.surface,
-              borderTopLeftRadius: 22,
-              borderTopRightRadius: 22,
-              paddingBottom: bottomInset + 14,
-              shadowColor: '#0b1220',
-              shadowOpacity: 0.25,
-              shadowRadius: 40,
-              shadowOffset: { width: 0, height: -16 },
-              elevation: 12,
-            }}
+            style={[
+              {
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: t.surface,
+                borderTopLeftRadius: 22,
+                borderTopRightRadius: 22,
+                paddingBottom: bottomInset + 14,
+                shadowColor: '#0b1220',
+                shadowOpacity: 0.25,
+                shadowRadius: 40,
+                shadowOffset: { width: 0, height: -16 },
+                elevation: 12,
+              },
+              sheetAnim,
+            ]}
           >
             {/* drag handle */}
             <View style={{ alignItems: 'center', paddingTop: 7, paddingBottom: 4 }}>
@@ -179,9 +186,7 @@ export function MonthYearPickerSheet({
                   }}
                 >
                   เลือกวันในเดือนใหม่จาก
-                  <Text style={{ color: t.inkSoft, fontFamily: type.familyBold }}>
-                    {'แถบวัน'}
-                  </Text>
+                  <Text style={{ color: t.inkSoft, fontFamily: type.familyBold }}>{'แถบวัน'}</Text>
                   ด้านบน
                 </Text>
               </View>
@@ -240,7 +245,10 @@ export function MonthYearPickerSheet({
                     outOfRangeBefore != null && compareYM(ym, outOfRangeBefore) < 0;
                   const mark = marks?.[`${viewYear}-${m}`];
                   return (
-                    <View key={m} style={{ width: '33.333%', paddingHorizontal: 4, paddingBottom: 8 }}>
+                    <View
+                      key={m}
+                      style={{ width: '33.333%', paddingHorizontal: 4, paddingBottom: 8 }}
+                    >
                       <MonthCell
                         label={thMonthAbbr(m)}
                         isToday={isToday}
@@ -405,9 +413,7 @@ function YearNavRow({
           }}
         >
           <Text style={{ color: t.inkSoft }}>{'ปี '}</Text>
-          <Text style={{ fontFamily: type.familyNumBold, letterSpacing: 0.5 }}>
-            {beYear}
-          </Text>
+          <Text style={{ fontFamily: type.familyNumBold, letterSpacing: 0.5 }}>{beYear}</Text>
         </Text>
       </View>
       <Pressable
@@ -467,17 +473,9 @@ function MonthCell({
   // the empty 13px row still steals vertical space.
   const hasMark = !outOfRange && mark != null;
 
-  const borderColor = isSelected
-    ? VIBRANT_BRAND[600]
-    : isToday
-      ? VIBRANT_BRAND[600]
-      : t.border;
+  const borderColor = isSelected ? VIBRANT_BRAND[600] : isToday ? VIBRANT_BRAND[600] : t.border;
   const borderWidth = isSelected ? 0 : isToday ? 1.5 : 1;
-  const background = isSelected
-    ? VIBRANT_BRAND[600]
-    : closedMark
-      ? CLOSED_TINT
-      : t.surface;
+  const background = isSelected ? VIBRANT_BRAND[600] : closedMark ? CLOSED_TINT : t.surface;
 
   return (
     <Pressable
@@ -539,12 +537,7 @@ function MarkGlyph({
   if (outOfRange || !mark) return null;
 
   if (mark === 'closed') {
-    return (
-      <Icon.lock
-        size={10}
-        color={isSelected ? 'rgba(255,255,255,.9)' : CLOSED_INK}
-      />
-    );
+    return <Icon.lock size={10} color={isSelected ? 'rgba(255,255,255,.9)' : CLOSED_INK} />;
   }
   if (mark === 'unsaved') {
     return (
