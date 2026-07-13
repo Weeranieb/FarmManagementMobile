@@ -9,6 +9,13 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.9](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.8...v0.2.9) (2026-07-13)
+
+
+### Bug Fixes
+
+* daily log save and sheet float ([#28](https://github.com/Weeranieb/FarmManagementMobile/issues/28)) ([dea576f](https://github.com/Weeranieb/FarmManagementMobile/commit/dea576fe820e16d4f673d345451581e8cb79c252))
+
 ## [0.2.8](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.7...v0.2.8) (2026-07-08)
 
 
