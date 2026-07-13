@@ -148,20 +148,17 @@ type OverrideMap = Record<string, Record<string, LocalOverride>>;
 
 const CELL_KEYS: readonly (keyof CellValues)[] = ['pm', 'pe', 'fresh', 'death', 'cat'];
 
-// Feed columns, in table order — the only columns "ถัดไป" auto-advances
-// through (เช้า → เย็น → เหยื่อสด). Death / catch are entered manually by
-// tapping; the snake never visits them.
-const FEED_COLS: readonly ColKey[] = COLS.filter(
-  (c) => c.group === 'pellet' || c.group === 'fresh',
-).map((c) => c.key);
+// All columns, in table order — "ถัดไป" auto-advances through every one
+// (เช้า → เย็น → เหยื่อสด → ปลาตาย → ตกปลา) so the whole grid can be filled
+// from the keypad without tapping each death / catch cell by hand.
+const SNAKE_COLS: readonly ColKey[] = COLS.map((c) => c.key);
 
-// Column-major snake across the feed columns: the next fillable pond down the
-// current column, then the first fillable pond at the top of the next feed
-// column. Returns null when there's nothing left to advance to — the end of
-// the last feed column, or a non-feed (death / catch) column — which the
+// Column-major snake across all columns: the next fillable pond down the
+// current column, then the first fillable pond at the top of the next column.
+// Returns null only at the very end (bottom of the last column) — which the
 // caller treats as "finish, close the numpad".
-function nextFeedCell(cur: NonNullable<ActiveCell>, ponds: PondRow[]): ActiveCell {
-  const colIdx = FEED_COLS.indexOf(cur.col);
+function nextSnakeCell(cur: NonNullable<ActiveCell>, ponds: PondRow[]): ActiveCell {
+  const colIdx = SNAKE_COLS.indexOf(cur.col);
   if (colIdx < 0) return null;
   const pondIdx = ponds.findIndex((p) => p.key === cur.pondKey);
   if (pondIdx < 0) return null;
@@ -170,8 +167,8 @@ function nextFeedCell(cur: NonNullable<ActiveCell>, ponds: PondRow[]): ActiveCel
     const p = ponds[i];
     if (p && !p.disabled) return { pondKey: p.key, col: cur.col };
   }
-  // End of column — wrap to the first fillable pond of the next feed column.
-  const nextCol = FEED_COLS[colIdx + 1];
+  // End of column — wrap to the first fillable pond of the next column.
+  const nextCol = SNAKE_COLS[colIdx + 1];
   if (nextCol == null) return null;
   for (let i = 0; i < ponds.length; i++) {
     const p = ponds[i];
@@ -230,7 +227,7 @@ function entryToValues(e: DailyLogEntry): CellValues {
     pe: e.pelletEvening,
     fresh: e.fresh,
     death: e.deathFishCount,
-    cat: e.touristCatchCount,
+    cat: e.touristCatchCount ?? '',
   };
 }
 
@@ -548,14 +545,14 @@ export function useDailyLogV6(
   );
 
   const advanceActive = useCallback(() => {
-    // Snake through the feed columns; null closes the numpad (finish).
-    setActiveCell((cur) => (cur ? nextFeedCell(cur, ponds) : null));
+    // Snake through every column; null closes the numpad (finish).
+    setActiveCell((cur) => (cur ? nextSnakeCell(cur, ponds) : null));
   }, [ponds]);
 
   // True when there's nowhere left to advance — the numpad's primary button
   // should read "เสร็จสิ้น" and commit-then-close instead of "ถัดไป".
   const activeCellIsLast = useMemo(
-    () => (activeCell ? nextFeedCell(activeCell, ponds) == null : false),
+    () => (activeCell ? nextSnakeCell(activeCell, ponds) == null : false),
     [activeCell, ponds],
   );
 

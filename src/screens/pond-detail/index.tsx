@@ -8,6 +8,7 @@ type Props = {
   onBack?: () => void;
   onAction?: (kind: 'fill' | 'move' | 'sell') => void;
   onOpenDailyLog?: (ctx: DailyLogDrillDown) => void;
+  onOpenLedger?: () => void;
   showHeader?: boolean;
 };
 
