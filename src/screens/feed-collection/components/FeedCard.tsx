@@ -96,72 +96,83 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
           ) : null}
         </Row>
 
-        {/* Anchor row — price + last-updated (left) · price-history button (right) */}
-        <Row justify="space-between" align="flex-end" style={{ marginTop: space[3] }}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            {feed.price != null ? (
-              <Row align="baseline" gap={space[1]}>
-                <Text
-                  style={{
-                    fontFamily: type.familyNumBold,
-                    fontSize: type.sizes.xxl,
-                    color: t.ink,
-                    letterSpacing: -0.6,
-                  }}
-                >
-                  {fmt.baht(feed.price)}
+        {/* Price shelf — hero number on a sunken panel, grouping price · recency · history */}
+        <View
+          style={{
+            marginTop: space[3],
+            padding: space[3],
+            borderRadius: radii.md,
+            backgroundColor: t.surfaceSunk,
+            borderWidth: 1,
+            borderColor: t.border,
+          }}
+        >
+          <Row justify="space-between" align="flex-end">
+            <View style={{ flex: 1, minWidth: 0 }}>
+              {feed.price != null ? (
+                <Row align="baseline" gap={space[1]}>
+                  <Text
+                    style={{
+                      fontFamily: type.familyNumBold,
+                      fontSize: type.sizes.xxl,
+                      color: t.ink,
+                      letterSpacing: -0.6,
+                    }}
+                  >
+                    {fmt.baht(feed.price)}
+                  </Text>
+                  <Text
+                    style={{ fontSize: type.sizes.base, color: t.inkSoft, fontFamily: type.familyMedium }}
+                  >
+                    /{feed.unit}
+                  </Text>
+                </Row>
+              ) : (
+                <Text style={{ fontFamily: type.familySemi, fontSize: type.sizes.base, color: t.inkMute }}>
+                  ยังไม่มีราคา
                 </Text>
-                <Text
-                  style={{ fontSize: type.sizes.base, color: t.inkSoft, fontFamily: type.familyMedium }}
-                >
-                  /{feed.unit}
+              )}
+              <Row gap={space[2] - 2} style={{ marginTop: space[1] }}>
+                <Icon.clock size={13} color={t.inkMute} />
+                <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family }}>
+                  อัปเดต <Text style={{ fontFamily: type.familyNum }}>{thaiDate.short(updated)}</Text>
                 </Text>
               </Row>
-            ) : (
-              <Text style={{ fontFamily: type.familySemi, fontSize: type.sizes.base, color: t.inkMute }}>
-                ยังไม่มีราคา
-              </Text>
-            )}
-            <Row gap={space[2] - 2} style={{ marginTop: space[1] }}>
-              <Icon.clock size={13} color={t.inkMute} />
-              <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family }}>
-                อัปเดต <Text style={{ fontFamily: type.familyNum }}>{thaiDate.short(updated)}</Text>
-              </Text>
-            </Row>
-          </View>
+            </View>
 
-          {onChart ? (
-            <Pressable
-              onPress={onChart}
-              hitSlop={6}
-              accessibilityRole="button"
-              accessibilityLabel="ดูราคาย้อนหลัง"
-              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-            >
-              {/* Inner View owns the layout — the Pressable style-function form
-                  can drop layout props across RN versions (same reason the
-                  additional-costs add-row button wraps its layout in a View). */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: space[2] - 2,
-                  paddingVertical: space[2],
-                  paddingHorizontal: space[3],
-                  borderRadius: radii.pill,
-                  borderWidth: 1,
-                  borderColor: t.border,
-                  backgroundColor: t.surface,
-                }}
+            {onChart ? (
+              <Pressable
+                onPress={onChart}
+                hitSlop={6}
+                accessibilityRole="button"
+                accessibilityLabel="ดูราคาย้อนหลัง"
+                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
               >
-                <FeedChartIcon size={15} color={t.brand} />
-                <Text style={{ fontSize: type.sizes.sm, fontFamily: type.familySemi, color: t.brand }}>
-                  ราคาย้อนหลัง
-                </Text>
-              </View>
-            </Pressable>
-          ) : null}
-        </Row>
+                {/* Inner View owns the layout — the Pressable style-function form
+                    can drop layout props across RN versions. A white (surface)
+                    chip lifts off the sunken shelf without competing with the price. */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: space[2] - 2,
+                    paddingVertical: space[2],
+                    paddingHorizontal: space[3],
+                    borderRadius: radii.pill,
+                    borderWidth: 1,
+                    borderColor: t.border,
+                    backgroundColor: t.surface,
+                  }}
+                >
+                  <FeedChartIcon size={15} color={t.brand} />
+                  <Text style={{ fontSize: type.sizes.sm, fontFamily: type.familySemi, color: t.brand }}>
+                    ราคาย้อนหลัง
+                  </Text>
+                </View>
+              </Pressable>
+            ) : null}
+          </Row>
+        </View>
       </View>
     </Card>
   );

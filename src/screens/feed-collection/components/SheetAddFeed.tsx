@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { warnInk } from '@/theme/ink';
 import { Row } from '@/components/layout/Row';
 import { SheetShell } from '@/screens/account-info/components/SheetShell';
 import type { FeedCollectionModel, FeedKind } from '@/features/feed-collection';
-import { FEED_UNIT_BY_KIND, feedPaletteFor } from '../feedPalette';
+import { FEED_PILL_TONE_BY_KIND, FEED_UNIT_BY_KIND, feedPaletteFor } from '../feedPalette';
 import { DateField } from '@/components/date-selector';
 import { feedGlyphFor } from './FeedIcons';
 
@@ -28,7 +29,7 @@ type Props = {
 };
 
 export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
-  const { t } = useTheme();
+  const { t, mode } = useTheme();
   const [name, setName] = useState(editing?.name ?? '');
   const [kind, setKind] = useState<FeedKind>(editing?.kind ?? 'pellet');
   const [fcr, setFcr] = useState(editing?.fcr != null ? editing.fcr.toFixed(2) : '');
@@ -36,6 +37,28 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
   const [effectiveDate, setEffectiveDate] = useState<Date>(new Date());
   const isEdit = editing != null;
   const unit = FEED_UNIT_BY_KIND[kind];
+  const HeaderGlyph = feedGlyphFor(kind);
+  // Match the list card + actions sheet: soft pill-tone tile (pellet=warn,
+  // fresh=brand), not the saturated feed palette. The tile tracks the live
+  // `kind` selection so toggling type previews the identity.
+  const headerTone = FEED_PILL_TONE_BY_KIND[kind];
+  const headerTileBg = headerTone === 'warn' ? t.warnSoft : t.brandSoft;
+  const headerGlyphColor = headerTone === 'warn' ? warnInk(mode, t) : t.brandInk;
+
+  // The sheet stays mounted inside a Modal, so the useState seeds above run
+  // only once (when editing == null) and never re-apply. Re-seed the form on
+  // every open so edit pre-fills the current feed and add starts clean.
+  const wasVisible = useRef(false);
+  useEffect(() => {
+    if (visible && !wasVisible.current) {
+      setName(editing?.name ?? '');
+      setKind(editing?.kind ?? 'pellet');
+      setFcr(editing?.fcr != null ? editing.fcr.toFixed(2) : '');
+      setPrice(editing?.price != null ? String(editing.price) : '');
+      setEffectiveDate(new Date());
+    }
+    wasVisible.current = visible;
+  }, [visible, editing]);
 
   const handleSubmit = () => {
     const numericPrice = Number(price);
@@ -53,20 +76,39 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
 
   return (
     <SheetShell visible={visible} onClose={onClose} heightPct={0.92}>
-      <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 }}>
-        <Row justify="space-between">
-          <View>
-            <Text style={{ fontFamily: type.familyBold, fontSize: 18, color: t.ink }}>
-              {isEdit ? 'แก้ไขรายละเอียด' : 'เพิ่มอาหาร'}
+      <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12 }}>
+        <Row gap={12} align="center">
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: radii.md,
+              backgroundColor: headerTileBg,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <HeaderGlyph size={22} stroke={2} color={headerGlyphColor} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text
+              numberOfLines={1}
+              style={{ fontFamily: type.familyBold, fontSize: type.sizes.lg, color: t.ink }}
+            >
+              {editing ? editing.name : 'เพิ่มอาหาร'}
             </Text>
-            <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}>
-              {isEdit ? 'ชื่อ · ประเภท · FCR (ราคาแก้ไขแยก)' : 'กรอกข้อมูลพื้นฐาน + ราคาเริ่มต้น'}
+            <Text
+              numberOfLines={1}
+              style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}
+            >
+              {isEdit ? 'แก้ไขรายละเอียด · ราคาแก้ไขแยก' : 'กรอกข้อมูลพื้นฐาน + ราคาเริ่มต้น'}
             </Text>
           </View>
           <Pressable
             onPress={onClose}
             hitSlop={8}
             accessibilityRole="button"
+            accessibilityLabel="ปิด"
             style={{
               width: 40,
               height: 40,
@@ -88,8 +130,10 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16 }}
         keyboardShouldPersistTaps="handled"
       >
+        {!isEdit ? <SectionLabel>รายละเอียด</SectionLabel> : null}
+
         <Field label="ชื่ออาหาร">
-          <FInput value={name} onChangeText={setName} />
+          <FInput value={name} onChangeText={setName} placeholder="เช่น โปรฟีด, ปลาเป็ด" />
         </Field>
 
         <Field label="ประเภท">
@@ -108,29 +152,30 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
             })}
             onChange={(v) => setKind(v as FeedKind)}
           />
+          <UnitHint unit={unit} />
         </Field>
 
-        <Row gap={10}>
-          <View style={{ flex: 1 }}>
-            <Field label="หน่วย">
-              <FInput value={unit} onChangeText={noop} editable={false} />
-            </Field>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Field label="FCR" optional>
-              <FInput value={fcr} onChangeText={setFcr} numeric keyboardType="decimal-pad" />
-            </Field>
-          </View>
-        </Row>
+        <Field label="FCR" optional>
+          <FInput
+            value={fcr}
+            onChangeText={setFcr}
+            placeholder="เช่น 1.50"
+            numeric
+            keyboardType="decimal-pad"
+          />
+        </Field>
 
         {!isEdit ? (
           <>
-            <Field label="ราคาเริ่มต้น">
+            <View style={{ height: 1, backgroundColor: t.border, marginTop: 4, marginBottom: 18 }} />
+            <SectionLabel>ราคาเริ่มต้น</SectionLabel>
+
+            <Field label="ราคา">
               <FInput
                 value={price}
                 onChangeText={setPrice}
                 placeholder="32"
-                big
+                hero
                 numeric
                 keyboardType="decimal-pad"
                 suffix={`฿/${unit}`}
@@ -190,8 +235,41 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
   );
 }
 
-function noop() {
-  // unit field is locked to the type — onChangeText needs a stable handler.
+function UnitHint({ unit }: { unit: string }) {
+  const { t } = useTheme();
+  return (
+    <Row gap={6} align="center" style={{ marginTop: 8 }}>
+      <Icon.lock size={12} color={t.inkMute} />
+      <Text style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.family }}>
+        หน่วยขายกำหนดตามประเภท
+      </Text>
+      <View
+        style={{
+          paddingHorizontal: 8,
+          paddingVertical: 2,
+          borderRadius: radii.xs,
+          backgroundColor: t.surfaceAlt,
+          borderWidth: 1,
+          borderColor: t.border,
+        }}
+      >
+        <Text style={{ fontSize: type.sizes.xs, color: t.inkSoft, fontFamily: type.familySemi }}>
+          {unit}
+        </Text>
+      </View>
+    </Row>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  const { t } = useTheme();
+  return (
+    <Text
+      style={{ fontSize: type.sizes.sm, fontFamily: type.familyBold, color: t.inkMute, marginBottom: 12 }}
+    >
+      {children}
+    </Text>
+  );
 }
 
 function Field({
@@ -222,7 +300,8 @@ type FInputProps = {
   onChangeText: (s: string) => void;
   placeholder?: string;
   suffix?: string;
-  big?: boolean;
+  /** Hero treatment — taller, sunken panel, xxl number. For the focal price field. */
+  hero?: boolean;
   numeric?: boolean;
   editable?: boolean;
   keyboardType?: 'default' | 'decimal-pad' | 'numeric';
@@ -233,7 +312,7 @@ function FInput({
   onChangeText,
   placeholder,
   suffix,
-  big,
+  hero,
   numeric,
   editable = true,
   keyboardType = 'default',
@@ -242,9 +321,9 @@ function FInput({
   return (
     <View
       style={{
-        height: 52,
+        height: hero ? 60 : 52,
         borderRadius: radii.md,
-        backgroundColor: editable ? t.surface : t.surfaceAlt,
+        backgroundColor: hero ? t.surfaceSunk : editable ? t.surface : t.surfaceAlt,
         borderWidth: 1.5,
         borderColor: t.border,
         paddingHorizontal: 14,
@@ -265,17 +344,17 @@ function FInput({
         style={{
           flex: 1,
           color: t.ink,
-          fontFamily: numeric ? (big ? type.familyNumBold : type.familyNum) : type.family,
-          fontSize: big ? 22 : 15.5,
-          letterSpacing: big ? -0.3 : 0,
+          fontFamily: numeric ? (hero ? type.familyNumBold : type.familyNum) : type.family,
+          fontSize: hero ? type.sizes.xxl : 15.5,
+          letterSpacing: hero ? -0.4 : 0,
           paddingVertical: 0,
         }}
       />
       {suffix ? (
         <Text
           style={{
-            fontSize: big ? 14 : 13,
-            color: t.inkMute,
+            fontSize: hero ? 15 : 13,
+            color: t.inkSoft,
             fontFamily: type.familyNum,
           }}
         >

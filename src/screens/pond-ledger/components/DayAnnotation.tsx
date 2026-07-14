@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
@@ -6,7 +7,7 @@ import { DAY_W, eventTone, activityText } from '../ui';
 import type { PondActivityModel } from '@/features/pond';
 
 /** Real fill/move/sell records threaded under their day — colored, read-only. */
-export function DayAnnotation({ events }: { events: PondActivityModel[] }) {
+export const DayAnnotation = memo(function DayAnnotation({ events }: { events: PondActivityModel[] }) {
   const { t } = useTheme();
   return (
     <View
@@ -50,4 +51,4 @@ export function DayAnnotation({ events }: { events: PondActivityModel[] }) {
       })}
     </View>
   );
-}
+});

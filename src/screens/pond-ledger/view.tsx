@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, Pressable, ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
@@ -8,12 +8,21 @@ import { thaiDate } from '@/locale/thaiDate';
 import { fmt, FISH_TH } from '@/utils/fmt';
 import { Numpad } from '@/screens/daily-log/components/Numpad';
 import { SaveBar } from '@/screens/daily-log/components/SaveBar';
+import { MonthYearPickerSheet } from '@/screens/daily-log/components/MonthYearPickerSheet';
+import { ConfirmMonthSaveSheet } from '@/screens/daily-log/components/ConfirmMonthSaveSheet';
+import { SaveStatusToast, type SaveToastStatus } from '@/screens/daily-log/components/SaveStatusToast';
+import { numpadSheetHeight } from '@/screens/daily-log/constants';
 import { LedgerTableHeader } from './components/LedgerTableHeader';
 import { LedgerDayRow } from './components/LedgerDayRow';
 import { DayAnnotation } from './components/DayAnnotation';
 import { MonthStatStrip } from './components/MonthStatStrip';
 import { TotalsRow } from './components/TotalsRow';
+import { ROW_H } from './ui';
 import type { PondLedgerState } from './hook';
+
+// Breathing room kept between the lifted row and the top edge of the numpad
+// sheet, so the active cell never sits flush against the keypad.
+const NUMPAD_REVEAL_MARGIN = 32;
 
 export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBack?: () => void }) {
   const { t } = useTheme();
@@ -33,19 +42,43 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
     eventsByDay,
     dirtyDays,
     invalidCount,
+    saveSummary,
     editing,
     lastUsedFeedId,
     isLastCell,
     isFutureDay,
     canGoPrev,
+    startYm,
+    todayYm,
     setCell,
     openCell,
     advance,
     closeKeypad,
     goPrevMonth,
     goNextMonth,
+    goToMonth,
     save,
   } = state;
+
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saveToast, setSaveToast] = useState<{
+    status: SaveToastStatus;
+    days: number;
+    error?: string;
+  } | null>(null);
+
+  const runSave = useCallback(async () => {
+    if (saveToast?.status === 'saving') return; // single-flight guard
+    const days = dirtyDays.length; // snapshot before drafts clear on success
+    setConfirmOpen(false);
+    setSaveToast({ status: 'saving', days });
+    const result = await save();
+    setSaveToast(
+      result.ok ? { status: 'success', days } : { status: 'error', days, error: result.error },
+    );
+  }, [saveToast, dirtyDays.length, save]);
+  const dismissToast = useCallback(() => setSaveToast(null), []);
 
   const fishType = pond?.fishTypes?.[0] ? FISH_TH[pond.fishTypes[0]] ?? pond.fishTypes[0] : '';
   const subtitle = [pond?.farmName, fishType, pond ? `${fmt.num(pond.totalFish)} ตัว` : '']
@@ -53,18 +86,47 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
     .join(' · ');
 
   const scrollRef = useRef<ScrollView>(null);
-  const rowY = useRef<Record<number, number>>({});
+  const scrollYRef = useRef(0);
+  const rowNodes = useRef<Record<number, View | null>>({});
+  const rowY = useRef<Record<number, number>>({}); // content offset (y within scroll content) per day
   const editingDay = editing?.day ?? null;
   useEffect(() => {
-    // Lift the row being edited above the keypad sheet (it covers the lower
-    // half of the screen), so the live value + active-cell ring stay visible.
+    // Keyboard-style avoidance: when a cell becomes active, measure the row and
+    // scroll only if it's outside the band between the table top and the numpad
+    // sheet — DOWN to lift it clear of the keypad, or UP when "ถัดไป" wraps back
+    // to an earlier day that's scrolled off the top. Rows already in view don't
+    // move. Bottom padding (below) guarantees the last day can lift clear.
     if (editingDay == null) return;
-    const y = rowY.current[editingDay];
-    if (y != null) scrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: true });
-  }, [editingDay]);
+    const node = rowNodes.current[editingDay];
+    const contentY = rowY.current[editingDay];
+    if (!node || contentY == null) return;
+    node.measureInWindow((_x, y) => {
+      const screenH = Dimensions.get('window').height;
+      const sheetTop = screenH - numpadSheetHeight(insets.bottom);
+      // Derive the scroll area's on-screen top from this row:
+      // windowY = areaTop + (contentY − scrollY)  ⇒  areaTop = windowY − contentY + scrollY.
+      const areaTop = y - contentY + scrollYRef.current;
+      const rowTop = y;
+      const rowBottom = y + ROW_H;
+      let delta = 0;
+      if (rowBottom > sheetTop - NUMPAD_REVEAL_MARGIN) {
+        delta = rowBottom - (sheetTop - NUMPAD_REVEAL_MARGIN); // below the sheet → scroll down
+      } else if (rowTop < areaTop + NUMPAD_REVEAL_MARGIN) {
+        delta = rowTop - (areaTop + NUMPAD_REVEAL_MARGIN); // above the table → scroll up (negative)
+      } else {
+        return; // comfortably visible — leave it
+      }
+      scrollRef.current?.scrollTo({ y: Math.max(0, scrollYRef.current + delta), animated: true });
+    });
+  }, [editingDay, insets.bottom]);
 
   const denom = isCurrentMonth ? todayDate : nDays;
-  const days = Array.from({ length: nDays }, (_, i) => i + 1);
+  // Day number + weekday, computed once per month (not per keystroke render) so
+  // editing doesn't re-allocate ~31 Date objects on every keypress.
+  const dayMeta = useMemo(
+    () => Array.from({ length: nDays }, (_, i) => ({ day: i + 1, dow: new Date(year, m0, i + 1).getDay() })),
+    [nDays, year, m0],
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -83,7 +145,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
           {onBack ? <IconBtn onPress={onBack} icon="back" label="ย้อนกลับ" /> : null}
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text numberOfLines={1} style={{ fontFamily: type.familyBold, fontSize: 18, lineHeight: 24, color: t.ink }}>
-              {pond?.name ?? 'บ่อ'}
+              {pond ? `บ่อ ${pond.name}` : 'บ่อ'}
             </Text>
             {subtitle ? (
               <Text numberOfLines={1} style={{ fontSize: 11.5, lineHeight: 16, color: t.inkMute, fontFamily: type.family }}>
@@ -96,11 +158,24 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
         <View style={{ paddingHorizontal: 12, paddingBottom: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <IconBtn onPress={goPrevMonth} icon="chevL" label="เดือนก่อน" size={34} disabled={!canGoPrev} />
-            <View style={{ flex: 1, alignItems: 'center' }}>
+            <Pressable
+              onPress={() => setPickerOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`เลือกเดือน · ปี · ${thaiDate.monthYear(monthDate)}`}
+              style={{
+                flex: 1,
+                height: 34,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+            >
               <Text style={{ fontFamily: type.familyBold, fontSize: 15, lineHeight: 22, color: t.ink }}>
                 {thaiDate.monthYear(monthDate)}
               </Text>
-            </View>
+              <Icon.arrowDown size={13} color={t.inkSoft} />
+            </Pressable>
             <IconBtn onPress={goNextMonth} icon="chevR" label="เดือนถัดไป" size={34} disabled={isCurrentMonth} />
           </View>
           <View style={{ height: 6 }} />
@@ -120,15 +195,27 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
           ref={scrollRef}
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: (dirtyDays.length ? 96 : 24) + insets.bottom }}
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            scrollYRef.current = e.nativeEvent.contentOffset.y;
+          }}
+          contentContainerStyle={{
+            // While editing, reserve the sheet's height so any row — including
+            // the last day of the month — can scroll up clear of the numpad.
+            paddingBottom: editing
+              ? numpadSheetHeight(insets.bottom) + 24
+              : (dirtyDays.length ? 96 : 24) + insets.bottom,
+          }}
         >
-          {days.map((day) => {
-            const dow = new Date(year, m0, day).getDay();
+          {dayMeta.map(({ day, dow }) => {
             const events = eventsByDay[day];
             const future = isFutureDay(day);
             return (
               <View
                 key={day}
+                ref={(node) => {
+                  rowNodes.current[day] = node;
+                }}
                 onLayout={(e) => {
                   rowY.current[day] = e.nativeEvent.layout.y;
                 }}
@@ -141,8 +228,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
                   isFuture={future}
                   editingCol={editing?.day === day ? editing.col : null}
                   hasEvent={!!events?.length}
-                  onCell={(col) => openCell(day, col)}
-                  onOpenDay={() => openCell(day, 'pm')}
+                  onCell={openCell}
                 />
                 {events?.length && !future ? <DayAnnotation events={events} /> : null}
               </View>
@@ -153,13 +239,25 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
         </ScrollView>
       )}
 
-      {/* month save bar (hidden while the keypad — with its own commit — is up) */}
-      {dirtyDays.length > 0 && !editing ? (
+      {/* Save flow (mirrors the farm daily-log): SaveBar → confirm summary sheet
+          → status toast (saving → success/error). The toast is state-driven so
+          it survives the drafts clearing on success. SaveBar hides while the
+          keypad — which has its own commit — is up. */}
+      {saveToast ? (
+        <SaveStatusToast
+          status={saveToast.status}
+          days={saveToast.days}
+          message={saveToast.error}
+          bottom={insets.bottom}
+          onRetry={runSave}
+          onDismiss={dismissToast}
+        />
+      ) : dirtyDays.length > 0 && !editing ? (
         <SaveBar
           daysCount={dirtyDays.length}
           editsCount={dirtyDays.length}
           invalidCount={invalidCount}
-          onSavePress={save}
+          onSavePress={() => setConfirmOpen(true)}
           bottomInset={insets.bottom}
         />
       ) : null}
@@ -184,6 +282,34 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
             setCell(editing.day, editing.col, v, feedId);
             advance();
           }}
+        />
+      ) : null}
+
+      {/* month · year picker — clamped to the pond's cycle (no earlier than
+          เริ่มรอบ, no future months) */}
+      <MonthYearPickerSheet
+        visible={pickerOpen}
+        current={{ y: year, m: m0 }}
+        today={todayYm}
+        outOfRangeBefore={startYm}
+        bottomInset={insets.bottom}
+        onClose={() => setPickerOpen(false)}
+        onConfirm={(y, monthIdx) => {
+          goToMonth(y, monthIdx);
+          setPickerOpen(false);
+        }}
+      />
+
+      {/* pre-save summary — confirm before the upsert */}
+      {confirmOpen ? (
+        <ConfirmMonthSaveSheet
+          visible={confirmOpen}
+          summary={saveSummary}
+          bottomInset={insets.bottom}
+          showPondCount={false}
+          showOfflineNote={false}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={runSave}
         />
       ) : null}
     </View>
