@@ -1,9 +1,10 @@
+import { memo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
 import { thaiDate } from '@/locale/thaiDate';
-import { DAY_W, ROW_H_LOGGED, ROW_H_EMPTY, LEDGER_LEAVES, colWash, fmtCell } from '../ui';
+import { DAY_W, ROW_H, LEDGER_LEAVES, colWash, fmtCell } from '../ui';
 import type { CellValues } from '../hook';
 import type { ColKey } from '@/screens/daily-log/constants';
 
@@ -15,13 +16,15 @@ type Props = {
   isFuture: boolean;
   editingCol: ColKey | null;
   hasEvent: boolean;
-  onCell: (col: ColKey) => void;
-  onOpenDay: () => void;
+  /** Stable across renders (the hook's `openCell`) so the memo holds — the row
+   *  passes its own `day`, tapping the day cell opens its first column. */
+  onCell: (day: number, col: ColKey) => void;
 };
 
-/** One day-of-month row. Logged days sit taller with emphasized values; empty
- *  days recede to a short faint "–"; today gets a brand rail; future is dimmed. */
-export function LedgerDayRow({
+/** One day-of-month row. Logged days show emphasized values; empty days recede
+ *  to a faint "–"; today gets a brand rail; future is dimmed. Memoized: with a
+ *  stable `values` ref + `onCell`, only the row being edited re-renders. */
+export const LedgerDayRow = memo(function LedgerDayRow({
   day,
   dow,
   values,
@@ -30,17 +33,18 @@ export function LedgerDayRow({
   editingCol,
   hasEvent,
   onCell,
-  onOpenDay,
 }: Props) {
   const { t, mode } = useTheme();
-  const logged = LEDGER_LEAVES.some((l) => values[l.key] !== '');
-  const rowH = logged ? ROW_H_LOGGED : ROW_H_EMPTY;
+  // "Logged" drives the emphasized treatment (bold day number, size-15 values).
+  // Key it off what actually renders — fmtCell hides zeros — so an all-zero day
+  // recedes like an empty one instead of looking emphasized-but-blank.
+  const logged = LEDGER_LEAVES.some((l) => fmtCell(values[l.key]) != null);
 
   return (
     <View style={{ borderBottomWidth: 1, borderBottomColor: t.border, opacity: isFuture ? 0.55 : 1 }}>
-      <View style={{ flexDirection: 'row', height: rowH }}>
+      <View style={{ flexDirection: 'row', height: ROW_H }}>
         <Pressable
-          onPress={isFuture ? undefined : onOpenDay}
+          onPress={isFuture ? undefined : () => onCell(day, 'pm')}
           disabled={isFuture}
           accessibilityRole="button"
           accessibilityLabel={`วันที่ ${day}`}
@@ -86,7 +90,7 @@ export function LedgerDayRow({
           return (
             <Pressable
               key={l.key}
-              onPress={isFuture ? undefined : () => onCell(l.key)}
+              onPress={isFuture ? undefined : () => onCell(day, l.key)}
               disabled={isFuture}
               style={{
                 flex: 1,
@@ -125,4 +129,4 @@ export function LedgerDayRow({
       </View>
     </View>
   );
-}
+});

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
@@ -16,7 +17,7 @@ const GROUP_H = 28;
  * internal เช้า|เย็น divider hidden so it reads as one band) and floats the
  * centered group labels over their spans.
  */
-export function LedgerTableHeader() {
+export const LedgerTableHeader = memo(function LedgerTableHeader() {
   const { t, mode } = useTheme();
   return (
     <View
@@ -109,4 +110,4 @@ export function LedgerTableHeader() {
       </View>
     </View>
   );
-}
+});

@@ -12,6 +12,9 @@ type Props = {
   days: number;
   /** # of ponds that failed — shown in the error copy. */
   failedCount?: number;
+  /** Specific error detail (e.g. a server/validation message) shown as the
+   *  error subtitle in place of the generic "ลองอีกครั้ง" when provided. */
+  message?: string;
   /** ms before the success toast auto-dismisses. Default 4000. */
   successDuration?: number;
   /** Bottom offset (safe-area inset). */
@@ -31,6 +34,7 @@ export function SaveStatusToast({
   status,
   days,
   failedCount = 0,
+  message,
   successDuration = 4000,
   bottom = 0,
   onRetry,
@@ -138,6 +142,7 @@ export function SaveStatusToast({
             </Text>
           ) : isError ? (
             <Text
+              numberOfLines={2}
               style={{
                 color: 'rgba(255,255,255,0.7)',
                 fontSize: type.sizes.xs,
@@ -145,7 +150,7 @@ export function SaveStatusToast({
                 marginTop: 2,
               }}
             >
-              {failedCount > 0 ? `${failedCount} บ่อยังไม่ถูกบันทึก` : 'ลองอีกครั้ง'}
+              {message ?? (failedCount > 0 ? `${failedCount} บ่อยังไม่ถูกบันทึก` : 'ลองอีกครั้ง')}
             </Text>
           ) : null}
         </View>

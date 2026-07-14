@@ -15,6 +15,12 @@ type Props = {
    *  stale/zero on the Modal's own first render — its native window hasn't
    *  received insets yet — so the sheet takes this as a prop instead. */
   bottomInset?: number;
+  /** Show the "· N บ่อ" pond count in the header. Defaults on for the farm
+   *  editor (spans many ponds); the single-pond ledger passes false. */
+  showPondCount?: boolean;
+  /** Show the offline-queue reassurance note. Defaults on; screens whose save
+   *  is a live upsert with no offline queue (e.g. the pond ledger) pass false. */
+  showOfflineNote?: boolean;
   onClose: () => void;
   /** Fires the (non-blocking) save. The parent closes this sheet immediately
    *  and reports the server round-trip via a status toast. */
@@ -40,6 +46,8 @@ export function ConfirmMonthSaveSheet({
   visible,
   summary,
   bottomInset = 0,
+  showPondCount = true,
+  showOfflineNote = true,
   onClose,
   onConfirm,
 }: Props) {
@@ -121,11 +129,16 @@ export function ConfirmMonthSaveSheet({
                 <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>
                   {summary.daysEdited}
                 </Text>{' '}
-                วัน ·{' '}
-                <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>
-                  {summary.pondCount}
-                </Text>{' '}
-                บ่อ
+                วัน
+                {showPondCount ? (
+                  <>
+                    {' '}·{' '}
+                    <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>
+                      {summary.pondCount}
+                    </Text>{' '}
+                    บ่อ
+                  </>
+                ) : null}
               </Text>
             </View>
             <Pressable
@@ -198,26 +211,28 @@ export function ConfirmMonthSaveSheet({
           </View>
 
           {/* Offline note */}
-          <View
-            style={{
-              marginHorizontal: 14,
-              marginBottom: 14,
-              paddingHorizontal: 12,
-              paddingVertical: 9,
-              borderRadius: 11,
-              backgroundColor: t.warnSoft,
-              borderWidth: 1,
-              borderColor: t.warnSoft,
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              gap: 8,
-            }}
-          >
-            <Icon.alert size={14} color={t.warn} />
-            <Text style={{ fontSize: 11.5, color: t.warn, lineHeight: 17, flex: 1 }}>
-              ออฟไลน์อยู่ — ข้อมูลจะถูกเก็บไว้ในเครื่องและอัปโหลดเมื่อกลับมาออนไลน์
-            </Text>
-          </View>
+          {showOfflineNote ? (
+            <View
+              style={{
+                marginHorizontal: 14,
+                marginBottom: 14,
+                paddingHorizontal: 12,
+                paddingVertical: 9,
+                borderRadius: 11,
+                backgroundColor: t.warnSoft,
+                borderWidth: 1,
+                borderColor: t.warnSoft,
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 8,
+              }}
+            >
+              <Icon.alert size={14} color={t.warn} />
+              <Text style={{ fontSize: 11.5, color: t.warn, lineHeight: 17, flex: 1 }}>
+                ออฟไลน์อยู่ — ข้อมูลจะถูกเก็บไว้ในเครื่องและอัปโหลดเมื่อกลับมาออนไลน์
+              </Text>
+            </View>
+          ) : null}
 
           {/* Actions */}
           <View style={{ paddingHorizontal: 14, flexDirection: 'row', gap: 10 }}>

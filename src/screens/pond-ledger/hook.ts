@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import {
   useDailyLogData,
   useUpsertDailyLog,
@@ -11,6 +10,7 @@ import {
 } from '@/features/daily-log';
 import { usePondData, usePondActivitiesData, type PondActivityModel } from '@/features/pond';
 import { COLS, isCellValueInvalid, type ColKey } from '@/screens/daily-log/constants';
+import type { MonthSummary } from '@/screens/daily-log/hook';
 
 /** One editable day's five values, empty string = untouched/absent. */
 export type CellValues = {
@@ -91,13 +91,19 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
     return out;
   }, [log]);
 
+  // Map each server entry to CellValues once per fetch. Stable object refs let
+  // memoized rows for unedited days skip re-render while another day is being
+  // typed — without this, `entryToValues` minted a fresh object every render so
+  // every row re-rendered on each keystroke.
+  const serverValues = useMemo<Record<number, CellValues>>(() => {
+    const out: Record<number, CellValues> = {};
+    for (const e of Object.values(serverByDay)) out[e.day] = entryToValues(e);
+    return out;
+  }, [serverByDay]);
+
   const valuesForDay = useCallback(
-    (day: number): CellValues => {
-      if (drafts[day]) return drafts[day];
-      const e = serverByDay[day];
-      return e ? entryToValues(e) : EMPTY_VALUES;
-    },
-    [drafts, serverByDay],
+    (day: number): CellValues => drafts[day] ?? serverValues[day] ?? EMPTY_VALUES,
+    [drafts, serverValues],
   );
 
   // A day is "logged" (renders tall, counts toward totals) when the server has
@@ -166,6 +172,43 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
       }).length,
     [dirtyDays, valuesForDay],
   );
+
+  // By-feed-type recap of the days about to be saved — feeds the confirm sheet
+  // (same shape/component as the farm daily-log). Single pond ⇒ pondCount 1.
+  const saveSummary = useMemo<MonthSummary>(() => {
+    let pelletTotal = 0;
+    let freshTotal = 0;
+    let deathTotal = 0;
+    let pelletDays = 0;
+    let freshDays = 0;
+    let deathDays = 0;
+    dirtyDays.forEach((day) => {
+      const v = valuesForDay(day);
+      const pellet = toNum(v.pm) + toNum(v.pe);
+      const fresh = toNum(v.fresh);
+      const death = toNum(v.death);
+      if (pellet > 0) {
+        pelletTotal += pellet;
+        pelletDays += 1;
+      }
+      if (fresh > 0) {
+        freshTotal += fresh;
+        freshDays += 1;
+      }
+      if (death > 0) {
+        deathTotal += death;
+        deathDays += 1;
+      }
+    });
+    return {
+      month: ym,
+      daysEdited: dirtyDays.length,
+      pondCount: dirtyDays.length > 0 ? 1 : 0,
+      pellet: { total: pelletTotal, days: pelletDays },
+      fresh: { total: freshTotal, days: freshDays },
+      death: { total: deathTotal, days: deathDays },
+    };
+  }, [dirtyDays, valuesForDay, ym]);
 
   const setCell = useCallback(
     (day: number, col: ColKey, value: number | '', feedId?: number | null) => {
@@ -242,10 +285,24 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
   const startMonth = pond?.startDate ? monthStrFromDate(new Date(pond.startDate)) : null;
   const canGoPrev = startMonth == null || ym > startMonth;
 
+  // Bounds for the month/year picker sheet ({ y, m } with 0-based month).
+  const startYm = useMemo(() => {
+    if (!startMonth) return null;
+    const parts = startMonth.split('-');
+    return { y: Number(parts[0]), m: Number(parts[1]) - 1 };
+  }, [startMonth]);
+  const todayYm = useMemo(() => ({ y: refNow.getFullYear(), m: refNow.getMonth() }), [refNow]);
+
   const setMonth = useCallback((next: string) => {
     setYm(next);
     setEditing(null);
   }, []);
+  const goToMonth = useCallback(
+    (y: number, monthIdx: number) => {
+      setMonth(`${y}-${String(monthIdx + 1).padStart(2, '0')}`);
+    },
+    [setMonth],
+  );
   const goPrevMonth = useCallback(() => {
     if (startMonth != null && ym <= startMonth) return;
     setMonth(addMonthsStr(ym, -1));
@@ -255,8 +312,11 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
     setMonth(addMonthsStr(ym, 1));
   }, [ym, isCurrentMonth, setMonth]);
 
-  const save = useCallback(async () => {
-    if (dirtyDays.length === 0 || invalidCount > 0) return;
+  // Fires the upsert and reports the outcome back to the view, which drives the
+  // confirm sheet → status toast (saving → success/error). No Alert here: the
+  // toast owns the result surface, matching the farm daily-log.
+  const save = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
+    if (dirtyDays.length === 0 || invalidCount > 0) return { ok: false };
     const entries: DailyLogEntry[] = dirtyDays.map((day) => {
       const v = valuesForDay(day);
       return {
@@ -284,12 +344,13 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
       });
       setFeedPick({});
       setEditing(null);
+      return { ok: true };
     } catch (err) {
       const message =
         (err as { message?: string; details?: string })?.details ??
         (err as { message?: string })?.message ??
         'บันทึกไม่สำเร็จ — โปรดลองใหม่';
-      Alert.alert('บันทึกไม่สำเร็จ', message);
+      return { ok: false, error: message };
     }
   }, [dirtyDays, invalidCount, valuesForDay, ym, feedPick, log, upsert]);
 
@@ -311,11 +372,14 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
     eventsByDay,
     dirtyDays,
     invalidCount,
+    saveSummary,
     editing,
     lastUsedFeedId,
     isLastCell,
     saving: upsert.isPending,
     canGoPrev,
+    startYm,
+    todayYm,
     isFutureDay,
     setCell,
     openCell,
@@ -323,6 +387,7 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
     closeKeypad: () => setEditing(null),
     goPrevMonth,
     goNextMonth,
+    goToMonth,
     save,
   };
 }

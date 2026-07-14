@@ -20,8 +20,9 @@ type Mode = ReturnType<typeof useTheme>['mode'];
 
 /** Fixed width of the day column; the five value columns share the rest (flex). */
 export const DAY_W = 46;
-export const ROW_H_LOGGED = 46;
-export const ROW_H_EMPTY = 34;
+/** Every day row is the same height so the grid reads as an even ledger —
+ *  emphasis for logged days comes from value weight/size/colour, not height. */
+export const ROW_H = 44;
 
 export type GroupTone = { soft: string; ink: string; dot: string };
 
@@ -68,11 +69,15 @@ export const LEDGER_LEAVES: { key: ColKey; group: GroupKey; leaf: string }[] = [
   { key: 'cat', group: 'catch', leaf: '' },
 ];
 
-/** Format a ledger cell — integers bare, one decimal otherwise; null when absent. */
+/** Format a ledger cell — integers bare, one decimal otherwise. Returns null
+ *  when there's nothing to show: absent (`''`/null) OR zero. The farmer's paper
+ *  ledger leaves untouched cells blank rather than writing a wall of 0s, so day
+ *  rows render a faint "–" for zeros; the totals row + stat strip re-add an
+ *  explicit "0" via `?? '0'` where a running total genuinely reads as zero. */
 export function fmtCell(v: number | '' | null | undefined): string | null {
   if (v === '' || v == null) return null;
   const num = Number(v);
-  if (!Number.isFinite(num)) return null;
+  if (!Number.isFinite(num) || num === 0) return null;
   return num % 1 === 0 ? String(num) : num.toFixed(1);
 }
 
