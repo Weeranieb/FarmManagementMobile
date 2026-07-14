@@ -30,7 +30,7 @@ import type { PondLedgerState } from './hook';
 // small devices, smaller on large), and deriving it from ROW_H keeps it honest
 // instead of a magic number — the earlier 64 was ~1.45 rows and read as too
 // much empty space on shorter (iOS) viewports.
-const NUMPAD_REVEAL_MARGIN = ROW_H;
+const NUMPAD_REVEAL_MARGIN = 1.2 * ROW_H;
 
 export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBack?: () => void }) {
   const { t } = useTheme();
