@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
@@ -33,6 +33,18 @@ export function SheetUpdatePrice({ visible, feed, onClose, onSubmit }: Props) {
     const pct = currentPrice === 0 ? 0 : (delta / currentPrice) * 100;
     return { delta, pct };
   }, [currentPrice, next]);
+
+  // Modal keeps this sheet mounted, so the useState seeds run only once. Re-seed
+  // from the current feed on each open — otherwise reopening for a different
+  // feed shows the previous feed's suggested price and date.
+  const wasVisible = useRef(false);
+  useEffect(() => {
+    if (visible && !wasVisible.current) {
+      setNext(currentPrice != null ? String(currentPrice + 2) : '');
+      setEffectiveDate(new Date());
+    }
+    wasVisible.current = visible;
+  }, [visible, currentPrice]);
 
   if (!feed) {
     return (

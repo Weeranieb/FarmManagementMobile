@@ -4,7 +4,9 @@ import { radii, space, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { dangerInk, warnInk } from '@/theme/ink';
 import { Row } from '@/components/layout/Row';
+import { Pill } from '@/components/ui';
 import { fmt } from '@/utils/fmt';
+import { thaiDate } from '@/locale/thaiDate';
 import { SheetShell } from '@/screens/account-info/components/SheetShell';
 import type { FeedCollectionModel } from '@/features/feed-collection';
 import { FEED_PILL_TONE_BY_KIND, FEED_TYPE_LABEL_TH } from '../feedPalette';
@@ -27,7 +29,7 @@ export function SheetFeedActions({
   onUpdatePrice,
   onDelete,
 }: Props) {
-  const { t, mode } = useTheme();
+  const { t, mode, shadow } = useTheme();
   const danger = dangerInk(mode, t);
 
   if (!feed) {
@@ -38,55 +40,112 @@ export function SheetFeedActions({
   const tone = FEED_PILL_TONE_BY_KIND[feed.kind];
   const tileBg = tone === 'warn' ? t.warnSoft : t.brandSoft;
   const toneInk = tone === 'warn' ? warnInk(mode, t) : t.brandInk;
-  const toneSoft = tone === 'warn' ? t.warnSoft : t.brandSoft;
+  const toneEdge = tone === 'warn' ? t.warn : t.brand;
+  const updatedLabel = thaiDate.short(new Date(feed.updatedAt));
 
   return (
     <SheetShell visible={visible} onClose={onClose} fitContent showClose>
       <View style={{ paddingHorizontal: space[5], paddingTop: space[1], paddingBottom: space[3] }}>
+        {/* Identity — who this is. Price context lives on the update action below. */}
         <Row gap={space[3]} style={{ marginBottom: space[4] }}>
           <View
             style={{
-              width: 40,
-              height: 40,
+              width: 46,
+              height: 46,
               borderRadius: radii.md,
               backgroundColor: tileBg,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Glyph size={20} stroke={2} color={toneInk} />
+            <Glyph size={24} stroke={2} color={toneInk} />
           </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text numberOfLines={1} style={{ fontSize: type.sizes.base, fontFamily: type.familyBold, color: t.ink }}>
+          <View style={{ flex: 1, minWidth: 0, gap: space[1] }}>
+            <Text
+              numberOfLines={1}
+              style={{ fontSize: type.sizes.lg, fontFamily: type.familyBold, color: t.ink, lineHeight: 24 }}
+            >
               {feed.name}
             </Text>
-            <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.familyNum, marginTop: 2 }}>
-              {feed.price != null ? `${fmt.baht(feed.price)}/${feed.unit} · ` : ''}
-              {FEED_TYPE_LABEL_TH[feed.kind]}
-            </Text>
+            <Pill tone={tone}>{`อาหาร${FEED_TYPE_LABEL_TH[feed.kind]}`}</Pill>
           </View>
         </Row>
 
+        {/* Primary — the daily action, given hero weight + live decision context. */}
+        <Pressable
+          onPress={onUpdatePrice}
+          accessibilityRole="button"
+          android_ripple={{ color: toneEdge }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.92 : 1 })}
+        >
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: space[3],
+              padding: space[3],
+              marginBottom: space[3],
+              borderRadius: radii.md,
+              backgroundColor: tileBg,
+              borderWidth: 1.5,
+              borderColor: toneEdge,
+              ...shadow,
+            }}
+          >
+            <View
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: radii.sm,
+                backgroundColor: t.surface,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <FeedChartIcon size={22} color={toneInk} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ fontSize: type.sizes.md, fontFamily: type.familyBold, color: toneInk }}>
+                อัปเดตราคา
+              </Text>
+              {feed.price != null ? (
+                <Text
+                  numberOfLines={1}
+                  style={{ fontSize: type.sizes.sm, color: toneInk, fontFamily: type.family, marginTop: 2 }}
+                >
+                  ล่าสุด{' '}
+                  <Text style={{ fontFamily: type.familyNumSemi }}>{fmt.baht(feed.price)}</Text>
+                  /{feed.unit} · <Text style={{ fontFamily: type.familyNum }}>{updatedLabel}</Text>
+                </Text>
+              ) : (
+                <Text
+                  style={{ fontSize: type.sizes.sm, color: toneInk, fontFamily: type.family, marginTop: 2 }}
+                >
+                  ยังไม่มีราคา — ตั้งราคาแรก
+                </Text>
+              )}
+            </View>
+            <Icon.chevR size={18} color={toneInk} />
+          </View>
+        </Pressable>
+
+        {/* Secondary — quieter, no card fill. */}
         <ActionRow
           icon={<Icon.edit size={18} color={t.inkSoft} />}
           label="แก้ไขรายละเอียด"
           sub="ชื่อ · ประเภท · FCR"
           onPress={onEdit}
         />
-        <ActionRow
-          icon={<FeedChartIcon size={18} color={toneInk} />}
-          iconBg={t.surface}
-          label="อัปเดตราคา"
-          sub="บันทึกราคาใหม่ในประวัติ"
-          highlightBg={toneSoft}
-          onPress={onUpdatePrice}
-        />
+
+        {/* Destructive — demoted, separated, no chevron. */}
+        <View style={{ height: 1, backgroundColor: t.border, marginVertical: space[2] }} />
         <ActionRow
           icon={<Icon.trash size={18} color={danger} />}
           iconBg={t.dangerSoft}
           label="ลบรายการ"
           sub="ใช้กับการบันทึกในอนาคตเท่านั้น"
           labelColor={danger}
+          showChevron={false}
           onPress={onDelete}
         />
       </View>
@@ -99,16 +158,16 @@ function ActionRow({
   iconBg,
   label,
   sub,
-  highlightBg,
   labelColor,
+  showChevron = true,
   onPress,
 }: {
   icon: React.ReactNode;
   iconBg?: string;
   label: string;
   sub: string;
-  highlightBg?: string;
   labelColor?: string;
+  showChevron?: boolean;
   onPress?: () => void;
 }) {
   const { t } = useTheme();
@@ -120,16 +179,15 @@ function ActionRow({
         flexDirection: 'row',
         alignItems: 'center',
         gap: space[3],
-        paddingHorizontal: space[3],
+        paddingHorizontal: space[2],
         paddingVertical: space[3],
         borderRadius: radii.md,
-        backgroundColor: highlightBg ?? 'transparent',
       }}
     >
       <View
         style={{
-          width: 40,
-          height: 40,
+          width: 42,
+          height: 42,
           borderRadius: radii.sm,
           backgroundColor: iconBg ?? t.surfaceAlt,
           alignItems: 'center',
@@ -146,7 +204,7 @@ function ActionRow({
           {sub}
         </Text>
       </View>
-      <Icon.chevR size={16} color={t.inkSoft} />
+      {showChevron ? <Icon.chevR size={16} color={t.inkSoft} /> : null}
     </Pressable>
   );
 }
