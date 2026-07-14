@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, View, Text, useWindowDimensions } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  interpolateColor,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useFeedCollectionsData } from '@/features/feed-collection';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
@@ -48,6 +55,11 @@ type Props = {
    *  feed type (death / catch). */
   onCommit: (value: number | '', feedId: number | null) => void;
   onNext: (value: number | '', feedId: number | null) => void;
+  /** Reports the sheet's actual rendered height (incl. bottom inset) on layout.
+   *  Lets the host scroll the edited cell clear of the real keypad rather than
+   *  an estimate — so it stays correct across screen sizes, densities, columns
+   *  (feed selector on/off), and when the validation hint grows the sheet. */
+  onHeight?: (h: number) => void;
 };
 
 function applyKey(prev: string, key: string, integer: boolean): string {
@@ -68,6 +80,78 @@ function parseValue(buf: string): number | '' {
   return Number.isFinite(n) ? n : '';
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/**
+ * A keypad key with tactile press feedback: on touch it scales down and its
+ * surface darkens a step (border strengthens), then springs back on release —
+ * so a tap reads as a real button press, not a flat hit target. Runs on the UI
+ * thread via a shared value (no React state per keystroke) and drops the scale
+ * under reduce-motion while keeping the color feedback.
+ */
+function NumKey({
+  label,
+  dim,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  dim: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const { t } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const press = useSharedValue(0);
+  const restBg = dim ? t.surfaceAlt : t.surface;
+  const pressBg = dim ? t.surfaceSunk : t.surfaceAlt;
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: reduceMotion ? 1 : 1 - press.value * 0.06 }],
+    backgroundColor: interpolateColor(press.value, [0, 1], [restBg, pressBg]),
+    borderColor: interpolateColor(press.value, [0, 1], [t.border, t.borderStrong]),
+  }));
+  return (
+    <AnimatedPressable
+      disabled={disabled}
+      onPressIn={() => {
+        press.value = withTiming(1, { duration: 55 });
+      }}
+      onPressOut={() => {
+        press.value = withTiming(0, { duration: 160 });
+      }}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={[
+        {
+          flex: 1,
+          borderRadius: 14,
+          borderWidth: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: disabled ? 0.4 : 1,
+        },
+        animStyle,
+      ]}
+    >
+      {label === '⌫' ? (
+        <Icon.back size={22} color={t.inkSoft} />
+      ) : (
+        <Text
+          style={{
+            fontFamily: type.familyNumSemi,
+            fontSize: 24,
+            color: dim ? t.inkSoft : t.ink,
+            letterSpacing: -0.5,
+          }}
+        >
+          {label}
+        </Text>
+      )}
+    </AnimatedPressable>
+  );
+}
+
 export function Numpad({
   visible,
   pondId,
@@ -80,6 +164,7 @@ export function Numpad({
   onCancel,
   onCommit,
   onNext,
+  onHeight,
 }: Props) {
   const { t } = useTheme();
   const meta = COLS.find((c) => c.key === col);
@@ -186,6 +271,9 @@ export function Numpad({
         </Animated.View>
 
         <Animated.View
+          // Report the sheet's actual rendered height so the host lifts the
+          // active cell clear of the real keypad top (screenH − height).
+          onLayout={(e) => onHeight?.(e.nativeEvent.layout.height)}
           style={[
             {
               position: 'absolute',
@@ -412,44 +500,15 @@ export function Numpad({
                   marginBottom: ri < 3 ? NUMPAD_KEY_ROW_GAP : 0,
                 }}
               >
-                {row.map((k) => {
-                  const dim = k === '.' || k === '⌫';
-                  const disabled = k === '.' && integerOnly;
-                  return (
-                    <Pressable
-                      key={k}
-                      disabled={disabled}
-                      onPress={() => handleKey(k)}
-                      style={{
-                        flex: 1,
-                        borderRadius: 14,
-                        backgroundColor: dim ? t.surfaceAlt : t.surface,
-                        borderWidth: 1,
-                        borderColor: t.border,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        opacity: disabled ? 0.4 : 1,
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={k}
-                    >
-                      {k === '⌫' ? (
-                        <Icon.back size={22} color={t.inkSoft} />
-                      ) : (
-                        <Text
-                          style={{
-                            fontFamily: type.familyNumSemi,
-                            fontSize: 24,
-                            color: dim ? t.inkSoft : t.ink,
-                            letterSpacing: -0.5,
-                          }}
-                        >
-                          {k}
-                        </Text>
-                      )}
-                    </Pressable>
-                  );
-                })}
+                {row.map((k) => (
+                  <NumKey
+                    key={k}
+                    label={k}
+                    dim={k === '.' || k === '⌫'}
+                    disabled={k === '.' && integerOnly}
+                    onPress={() => handleKey(k)}
+                  />
+                ))}
               </View>
             ))}
           </View>

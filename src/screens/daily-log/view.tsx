@@ -115,6 +115,11 @@ export function DailyLogView({
   // Live vertical scroll offset, used to turn a measured row position into an
   // absolute scrollTo target when the numpad covers the active row.
   const scrollYRef = useRef(0);
+  // Numpad's actual rendered height, measured on layout (its `onHeight`). Used
+  // for the scroll-to-reveal target so the active row clears the *real* keypad
+  // on any screen size / density, not the `numpadSheetHeight` estimate. The
+  // estimate is the fallback only until the sheet first measures.
+  const [numpadH, setNumpadH] = useState(0);
 
   const tableWidth = TABLE_W;
 
@@ -192,23 +197,49 @@ export function DailyLogView({
     verticalRef.current?.scrollTo({ y: target, animated: true });
   }, [ponds]);
 
+  // The active row's last measurement, so the reveal can be re-applied when the
+  // numpad reports its real height (the effect below).
+  const lastRowMeasure = useRef<{ pageY: number; height: number; scrollY: number } | null>(null);
+
   // Keyboard-avoidance for the numpad, keyboard-style: the active row measures
   // its own on-screen position when it becomes active (tap or ถัดไป). We only
   // scroll if the numpad would cover it, and just enough to lift it clear —
   // rows already visible (e.g. the first one) don't move, and the header chrome
   // is left untouched so it never vanishes/reappears.
-  const onActiveRowMeasure = useCallback(
-    (pageY: number, height: number) => {
+  const revealActiveRow = useCallback(
+    (m: { pageY: number; height: number; scrollY: number }) => {
       const screenH = Dimensions.get('window').height;
-      const sheetTop = screenH - numpadSheetHeight(bottomInset);
-      const rowBottom = pageY + height;
+      const sheetTop = screenH - (numpadH || numpadSheetHeight(bottomInset));
+      // Current on-screen bottom = measured bottom, adjusted by how far we've
+      // scrolled since it was measured — so re-applying after a scroll (below)
+      // stays correct.
+      const rowBottom = m.pageY + m.height - (scrollYRef.current - m.scrollY);
       const limit = sheetTop - NUMPAD_REVEAL_MARGIN;
       if (rowBottom <= limit) return; // already fully visible above the sheet
       const target = Math.max(0, scrollYRef.current + (rowBottom - limit));
       verticalRef.current?.scrollTo({ y: target, animated: true });
     },
-    [bottomInset],
+    [bottomInset, numpadH],
   );
+
+  const onActiveRowMeasure = useCallback(
+    (pageY: number, height: number) => {
+      const m = { pageY, height, scrollY: scrollYRef.current };
+      lastRowMeasure.current = m;
+      revealActiveRow(m);
+    },
+    [revealActiveRow],
+  );
+
+  // Re-apply the reveal once the numpad reports its real height (or changes it
+  // for a different column). Without this the first cell of a session — measured
+  // while `numpadH` is still 0 (estimate) — stays under a taller-than-estimated
+  // keypad until the next cell. `revealActiveRow` is recreated when `numpadH`
+  // changes, so this effect fires exactly then. Mirrors the pond-ledger fix.
+  useEffect(() => {
+    const m = lastRowMeasure.current;
+    if (m) revealActiveRow(m);
+  }, [revealActiveRow]);
 
   const navigateMonth = useCallback(
     (delta: number) => {
@@ -578,6 +609,7 @@ export function DailyLogView({
           lastUsedFeedId={lastUsedFeedIdForActiveCell}
           isLastCell={activeCellIsLast}
           bottomInset={bottomInset}
+          onHeight={setNumpadH}
           onChange={onNumpadChange}
           onCancel={onNumpadCancel}
           onCommit={onNumpadCommit}
