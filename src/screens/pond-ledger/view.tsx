@@ -25,8 +25,12 @@ import type { PondLedgerState } from './hook';
 
 // Breathing room kept between the lifted row and the top edge of the numpad
 // sheet, so the active cell sits clearly separated from the keypad rather than
-// hugging its top edge (~one row-height of gap).
-const NUMPAD_REVEAL_MARGIN = 64;
+// hugging its top edge. Exactly one row-height: a fixed dp gap reads
+// consistently across screen sizes (a screen-relative gap would look bigger on
+// small devices, smaller on large), and deriving it from ROW_H keeps it honest
+// instead of a magic number — the earlier 64 was ~1.45 rows and read as too
+// much empty space on shorter (iOS) viewports.
+const NUMPAD_REVEAL_MARGIN = ROW_H;
 
 export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBack?: () => void }) {
   const { t } = useTheme();
