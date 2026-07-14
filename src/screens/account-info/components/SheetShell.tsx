@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   Dimensions,
   KeyboardAvoidingView,
@@ -8,7 +9,12 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space } from '@/theme/tokens';
@@ -39,6 +45,18 @@ export function SheetShell({
   const insets = useSafeAreaInsets();
   const screenH = Dimensions.get('window').height;
 
+  // Slide the sheet up via a manual translateY that always rests at 0. Reanimated's
+  // `entering={SlideInDown}` resolves the resting position from a layout pass that,
+  // on Android's new architecture, runs before the nav-bar inset is applied — so the
+  // sheet settled floating above the true bottom until a touch forced a relayout.
+  // Same fix the daily-log sheets use (useSheetSlideIn); applied here for every sheet
+  // built on SheetShell. Starts a full screen-height below its resting spot.
+  const slideY = useSharedValue(screenH);
+  useEffect(() => {
+    slideY.value = visible ? withTiming(0, { duration: 240 }) : screenH;
+  }, [visible, screenH, slideY]);
+  const sheetAnim = useAnimatedStyle(() => ({ transform: [{ translateY: slideY.value }] }));
+
   const sheetStyle: ViewStyle = {
     ...(fitContent ? { maxHeight: screenH * 0.9 } : { height: screenH * heightPct }),
     backgroundColor: t.bg,
@@ -55,11 +73,7 @@ export function SheetShell({
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          exiting={FadeOut.duration(180)}
-          style={StyleSheet.absoluteFill}
-        >
+        <Animated.View entering={FadeIn.duration(180)} style={StyleSheet.absoluteFill}>
           <Pressable
             onPress={onClose}
             accessibilityLabel="dismiss"
@@ -67,7 +81,7 @@ export function SheetShell({
           />
         </Animated.View>
 
-        <Animated.View entering={SlideInDown.duration(260)} exiting={SlideOutDown.duration(220)}>
+        <Animated.View style={sheetAnim}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={sheetStyle}>
               <View style={{ paddingTop: 10, paddingBottom: 6 }}>
