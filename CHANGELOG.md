@@ -9,6 +9,13 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.12](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.11...v0.2.12) (2026-07-15)
+
+
+### Bug Fixes
+
+* android sheet pill numpad ([#34](https://github.com/Weeranieb/FarmManagementMobile/issues/34)) ([d36590c](https://github.com/Weeranieb/FarmManagementMobile/commit/d36590c5b6007e0333c504a8d44bd88d9fc9681e))
+
 ## [0.2.11](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.10...v0.2.11) (2026-07-14)
 
 
