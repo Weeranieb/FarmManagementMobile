@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import {
   Dimensions,
   KeyboardAvoidingView,
@@ -9,16 +8,12 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import Animated, {
-  FadeIn,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { useSheetSlideIn } from '@/screens/daily-log/components/useSheetSlideIn';
 
 type Props = {
   visible: boolean;
@@ -44,18 +39,7 @@ export function SheetShell({
   const { t, shadowLg } = useTheme();
   const insets = useSafeAreaInsets();
   const screenH = Dimensions.get('window').height;
-
-  // Slide the sheet up via a manual translateY that always rests at 0. Reanimated's
-  // `entering={SlideInDown}` resolves the resting position from a layout pass that,
-  // on Android's new architecture, runs before the nav-bar inset is applied — so the
-  // sheet settled floating above the true bottom until a touch forced a relayout.
-  // Same fix the daily-log sheets use (useSheetSlideIn); applied here for every sheet
-  // built on SheetShell. Starts a full screen-height below its resting spot.
-  const slideY = useSharedValue(screenH);
-  useEffect(() => {
-    slideY.value = visible ? withTiming(0, { duration: 240 }) : screenH;
-  }, [visible, screenH, slideY]);
-  const sheetAnim = useAnimatedStyle(() => ({ transform: [{ translateY: slideY.value }] }));
+  const sheetAnim = useSheetSlideIn(screenH, visible);
 
   const sheetStyle: ViewStyle = {
     ...(fitContent ? { maxHeight: screenH * 0.9 } : { height: screenH * heightPct }),

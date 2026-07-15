@@ -318,6 +318,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
           pondId={pond?.name ?? ''}
           col={editing.col}
           initialValue={valuesForDay(editing.day)[editing.col]}
+          cellKey={`${editing.day}:${editing.col}`}
           lastUsedFeedId={lastUsedFeedId}
           isLastCell={isLastCell}
           bottomInset={insets.bottom}

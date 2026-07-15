@@ -185,9 +185,18 @@ export function DailyLogView({
 
   const handleCellTap = useCallback(
     (pondKey: string, col: (typeof COLS)[number]['key']) => {
+      // Tapping another cell while one is being edited commits the outgoing cell
+      // first, then opens the tapped one. The in-progress value lives only in
+      // `liveValue` (which resets on switch), so without this commit the typed
+      // digits would be lost. Reads current cell + value from refs so this stays
+      // stable across keystrokes. No-op commit when the value is unchanged.
+      const cur = activeCellRef.current;
+      if (cur && (cur.pondKey !== pondKey || cur.col !== col)) {
+        setCellValue(cur.pondKey, cur.col, liveValueRef.current);
+      }
       setActiveCell({ pondKey, col });
     },
-    [setActiveCell],
+    [setCellValue, setActiveCell],
   );
 
   const scrollToFirstDirty = useCallback(() => {
@@ -434,16 +443,21 @@ export function DailyLogView({
   // `overrides`/`setCellValue` so a keystroke doesn't rebuild the `ponds`
   // array (and re-render every row) on every digit; only the one active
   // row receives a changed prop (wired below). Committed to real state via
-  // `setCellValue` only on Next/Done, same as before this preview existed.
+  // `setCellValue` only on Next/Done. Re-seed only when the cell identity
+  // changes (not when pond data refreshes mid-edit).
+  const cellKey = activeCell ? `${activeCell.pondKey}:${activeCell.col}` : null;
   const [liveValue, setLiveValue] = useState<number | ''>('');
-  useEffect(() => {
-    if (!activeCell) {
-      setLiveValue('');
-      return;
-    }
-    setLiveValue(activePond ? activePond.v[activeCell.col] : '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCell?.pondKey, activeCell?.col]);
+  const seededCell = useRef<string | null>(null);
+  if (cellKey !== seededCell.current) {
+    seededCell.current = cellKey;
+    setLiveValue(activeValue);
+  }
+
+  // Latest cell + typed value for `handleCellTap` (memoized without these deps).
+  const activeCellRef = useRef(activeCell);
+  const liveValueRef = useRef(liveValue);
+  activeCellRef.current = activeCell;
+  liveValueRef.current = liveValue;
 
   const rememberFeedPick = useCallback(
     (cell: NonNullable<typeof activeCell>, feedId: number | null) => {
@@ -500,7 +514,14 @@ export function DailyLogView({
           onScroll={onScroll}
           scrollEventThrottle={16}
           stickyHeaderIndices={[1]}
-          contentContainerStyle={{ paddingBottom: SAVE_BAR_HEIGHT_PADDING + bottomInset }}
+          contentContainerStyle={{
+            // While editing, reserve the keypad's real height so any row can
+            // scroll clear of it (mirrors the pond-ledger table). Otherwise
+            // leave room for the floating SaveBar.
+            paddingBottom: activeCell
+              ? (numpadH || numpadSheetHeight(bottomInset)) + 24
+              : SAVE_BAR_HEIGHT_PADDING + bottomInset,
+          }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -600,12 +621,13 @@ export function DailyLogView({
         )}
       </View>
 
-      {activeCell && activePond ? (
+      {activeCell && activePond && cellKey ? (
         <Numpad
           visible={true}
           pondId={activePond.id}
           col={activeCell.col}
           initialValue={activeValue}
+          cellKey={cellKey}
           lastUsedFeedId={lastUsedFeedIdForActiveCell}
           isLastCell={activeCellIsLast}
           bottomInset={bottomInset}
