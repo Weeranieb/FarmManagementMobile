@@ -8,11 +8,12 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { useSheetSlideIn } from '@/screens/daily-log/components/useSheetSlideIn';
 
 type Props = {
   visible: boolean;
@@ -38,6 +39,7 @@ export function SheetShell({
   const { t, shadowLg } = useTheme();
   const insets = useSafeAreaInsets();
   const screenH = Dimensions.get('window').height;
+  const sheetAnim = useSheetSlideIn(screenH, visible);
 
   const sheetStyle: ViewStyle = {
     ...(fitContent ? { maxHeight: screenH * 0.9 } : { height: screenH * heightPct }),
@@ -55,11 +57,7 @@ export function SheetShell({
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <Animated.View
-          entering={FadeIn.duration(180)}
-          exiting={FadeOut.duration(180)}
-          style={StyleSheet.absoluteFill}
-        >
+        <Animated.View entering={FadeIn.duration(180)} style={StyleSheet.absoluteFill}>
           <Pressable
             onPress={onClose}
             accessibilityLabel="dismiss"
@@ -67,7 +65,7 @@ export function SheetShell({
           />
         </Animated.View>
 
-        <Animated.View entering={SlideInDown.duration(260)} exiting={SlideOutDown.duration(220)}>
+        <Animated.View style={sheetAnim}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={sheetStyle}>
               <View style={{ paddingTop: 10, paddingBottom: 6 }}>

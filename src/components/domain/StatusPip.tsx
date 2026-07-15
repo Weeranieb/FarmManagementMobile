@@ -14,7 +14,10 @@ export function StatusPip({ kind }: { kind: DailyStatus }) {
       <Pill tone="success">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Icon.check size={12} color={t.statusActive} />
-          <Text style={{ color: t.statusActive, fontSize: 12, fontFamily: type.familyMedium }}>
+          <Text
+            numberOfLines={1}
+            style={{ color: t.statusActive, fontSize: 12, fontFamily: type.familyMedium }}
+          >
             บันทึกแล้ว
           </Text>
         </View>
@@ -27,7 +30,9 @@ export function StatusPip({ kind }: { kind: DailyStatus }) {
       <Pill tone="danger">
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <Icon.alert size={12} color={fg} />
-          <Text style={{ color: fg, fontSize: 12, fontFamily: type.familyMedium }}>เลยกำหนด</Text>
+          <Text numberOfLines={1} style={{ color: fg, fontSize: 12, fontFamily: type.familyMedium }}>
+            เลยกำหนด
+          </Text>
         </View>
       </Pill>
     );
@@ -37,7 +42,9 @@ export function StatusPip({ kind }: { kind: DailyStatus }) {
     <Pill tone="warn">
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
         <Icon.clock size={12} color={fg} />
-        <Text style={{ color: fg, fontSize: 12, fontFamily: type.familyMedium }}>รอบันทึก</Text>
+        <Text numberOfLines={1} style={{ color: fg, fontSize: 12, fontFamily: type.familyMedium }}>
+          รอบันทึก
+        </Text>
       </View>
     </Pill>
   );

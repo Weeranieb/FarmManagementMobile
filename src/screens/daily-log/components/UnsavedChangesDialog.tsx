@@ -11,6 +11,9 @@ type Props = {
   visible: boolean;
   dirtyCount: number;
   source: Source;
+  /** Counter word for `dirtyCount` — "บ่อ" (ponds) for the farm daily-log,
+   *  "วัน" (days) for the single-pond ledger. */
+  unit?: string;
   error?: string | null;
   onDismiss: () => void;
   onDiscard: () => void;
@@ -28,6 +31,7 @@ export function UnsavedChangesDialog({
   visible,
   dirtyCount,
   source,
+  unit = 'บ่อ',
   error,
   onDismiss,
   onDiscard,
@@ -123,10 +127,8 @@ export function UnsavedChangesDialog({
                   }}
                 >
                   คุณมีข้อมูล{' '}
-                  <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>
-                    {dirtyCount}
-                  </Text>{' '}
-                  บ่อที่ยังไม่ได้บันทึก {SOURCE_COPY[source]} ข้อมูลจะหายไป
+                  <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>{dirtyCount}</Text>{' '}
+                  {unit}ที่ยังไม่ได้บันทึก {SOURCE_COPY[source]} ข้อมูลจะหายไป
                 </Text>
               </View>
             </View>
@@ -219,9 +221,8 @@ export function UnsavedChangesDialog({
                     fontFamily: type.familyBold,
                   }}
                 >
-                  บันทึก{' '}
-                  <Text style={{ fontFamily: type.familyNumBold }}>{dirtyCount}</Text>{' '}
-                  บ่อแล้วออก
+                  บันทึก <Text style={{ fontFamily: type.familyNumBold }}>{dirtyCount}</Text> {unit}
+                  แล้วออก
                 </Text>
               </Pressable>
 

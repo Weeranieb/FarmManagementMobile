@@ -13,12 +13,13 @@ import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reani
  *
  * `distance` should be at least the sheet's height so it starts off-screen
  * (pass the measured height when known, otherwise a value larger than the
- * sheet).
+ * sheet). Pass `visible: false` to park the sheet off-screen again (no exit
+ * animation) — used by long-lived Modal shells that stay mounted.
  */
-export function useSheetSlideIn(distance: number) {
+export function useSheetSlideIn(distance: number, visible = true) {
   const ty = useSharedValue(distance);
   useEffect(() => {
-    ty.value = withTiming(0, { duration: 240 });
-  }, [ty]);
+    ty.value = visible ? withTiming(0, { duration: 240 }) : distance;
+  }, [ty, visible, distance]);
   return useAnimatedStyle(() => ({ transform: [{ translateY: ty.value }] }));
 }

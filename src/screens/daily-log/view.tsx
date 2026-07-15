@@ -115,6 +115,40 @@ export function DailyLogView({
   // Live vertical scroll offset, used to turn a measured row position into an
   // absolute scrollTo target when the numpad covers the active row.
   const scrollYRef = useRef(0);
+  // Numpad's actual rendered height, measured on layout (its `onHeight`). Used
+  // for the scroll-to-reveal target so the active row clears the *real* keypad
+  // on any screen size / density, not the `numpadSheetHeight` estimate. The
+  // estimate is the fallback only until the sheet first measures.
+  const [numpadH, setNumpadH] = useState(0);
+
+  // Latest cell / typed value / feed pick for commit-on-switch + leave-flush
+  // (callbacks below are memoized without these in deps). `.current` synced
+  // after `liveValue` / `activeValue` are computed.
+  const activeCellRef = useRef(activeCell);
+  const liveValueRef = useRef<number | ''>('');
+  const activeValueRef = useRef<number | ''>('');
+  const liveFeedIdRef = useRef<number | null>(null);
+
+  const rememberFeedPick = useCallback(
+    (cell: NonNullable<typeof activeCell>, feedId: number | null) => {
+      if (feedId == null) return;
+      const group = COLS.find((c) => c.key === cell.col)?.group;
+      if (group === 'pellet' || group === 'fresh') {
+        setFeedSelection(cell.pondKey, group, feedId);
+      }
+    },
+    [setFeedSelection],
+  );
+
+  // Commit the in-progress keypad amount + feed id (backend requires the id
+  // when logging pellet/fresh amounts).
+  const commitLiveEdit = useCallback(
+    (cell: NonNullable<typeof activeCell>) => {
+      rememberFeedPick(cell, liveFeedIdRef.current);
+      setCellValue(cell.pondKey, cell.col, liveValueRef.current);
+    },
+    [rememberFeedPick, setCellValue],
+  );
 
   const tableWidth = TABLE_W;
 
@@ -180,9 +214,17 @@ export function DailyLogView({
 
   const handleCellTap = useCallback(
     (pondKey: string, col: (typeof COLS)[number]['key']) => {
+      // Tapping another cell while one is being edited commits the outgoing cell
+      // first, then opens the tapped one. The in-progress value lives only in
+      // `liveValue` (which resets on switch), so without this commit the typed
+      // digits would be lost.
+      const cur = activeCellRef.current;
+      if (cur && (cur.pondKey !== pondKey || cur.col !== col)) {
+        commitLiveEdit(cur);
+      }
       setActiveCell({ pondKey, col });
     },
-    [setActiveCell],
+    [commitLiveEdit, setActiveCell],
   );
 
   const scrollToFirstDirty = useCallback(() => {
@@ -192,23 +234,49 @@ export function DailyLogView({
     verticalRef.current?.scrollTo({ y: target, animated: true });
   }, [ponds]);
 
+  // The active row's last measurement, so the reveal can be re-applied when the
+  // numpad reports its real height (the effect below).
+  const lastRowMeasure = useRef<{ pageY: number; height: number; scrollY: number } | null>(null);
+
   // Keyboard-avoidance for the numpad, keyboard-style: the active row measures
   // its own on-screen position when it becomes active (tap or ถัดไป). We only
   // scroll if the numpad would cover it, and just enough to lift it clear —
   // rows already visible (e.g. the first one) don't move, and the header chrome
   // is left untouched so it never vanishes/reappears.
-  const onActiveRowMeasure = useCallback(
-    (pageY: number, height: number) => {
+  const revealActiveRow = useCallback(
+    (m: { pageY: number; height: number; scrollY: number }) => {
       const screenH = Dimensions.get('window').height;
-      const sheetTop = screenH - numpadSheetHeight(bottomInset);
-      const rowBottom = pageY + height;
+      const sheetTop = screenH - (numpadH || numpadSheetHeight(bottomInset));
+      // Current on-screen bottom = measured bottom, adjusted by how far we've
+      // scrolled since it was measured — so re-applying after a scroll (below)
+      // stays correct.
+      const rowBottom = m.pageY + m.height - (scrollYRef.current - m.scrollY);
       const limit = sheetTop - NUMPAD_REVEAL_MARGIN;
       if (rowBottom <= limit) return; // already fully visible above the sheet
       const target = Math.max(0, scrollYRef.current + (rowBottom - limit));
       verticalRef.current?.scrollTo({ y: target, animated: true });
     },
-    [bottomInset],
+    [bottomInset, numpadH],
   );
+
+  const onActiveRowMeasure = useCallback(
+    (pageY: number, height: number) => {
+      const m = { pageY, height, scrollY: scrollYRef.current };
+      lastRowMeasure.current = m;
+      revealActiveRow(m);
+    },
+    [revealActiveRow],
+  );
+
+  // Re-apply the reveal once the numpad reports its real height (or changes it
+  // for a different column). Without this the first cell of a session — measured
+  // while `numpadH` is still 0 (estimate) — stays under a taller-than-estimated
+  // keypad until the next cell. `revealActiveRow` is recreated when `numpadH`
+  // changes, so this effect fires exactly then. Mirrors the pond-ledger fix.
+  useEffect(() => {
+    const m = lastRowMeasure.current;
+    if (m) revealActiveRow(m);
+  }, [revealActiveRow]);
 
   const navigateMonth = useCallback(
     (delta: number) => {
@@ -237,32 +305,46 @@ export function DailyLogView({
     [navigateMonth, onChangeFarm, onBack],
   );
 
+  // Flush the in-progress keypad edit before leaving (nav/back/picker are
+  // tappable behind the sheet). Without this the typed value — only in
+  // `liveValue` — is dropped and the dirty guard misses it.
+  const flushActiveEdit = useCallback(() => {
+    const cur = activeCellRef.current;
+    let flushedDirty = false;
+    if (cur) {
+      flushedDirty = liveValueRef.current !== activeValueRef.current;
+      commitLiveEdit(cur);
+      setActiveCell(null);
+    }
+    return monthEditsCount > 0 || flushedDirty;
+  }, [monthEditsCount, commitLiveEdit, setActiveCell]);
+
   const requestMonthChange = useCallback(
     (delta: number) => {
-      // Guard on the whole month's drafts, not just the visible day — leaving
-      // a month with any unsaved edit prompts save/discard so drafts can't be
-      // stranded on a day the user can't see.
-      if (monthEditsCount > 0) {
+      // Guard on the whole month's drafts (incl. the in-progress edit), not just
+      // the visible day — leaving a month with any unsaved edit prompts
+      // save/discard so drafts can't be stranded on a day the user can't see.
+      if (flushActiveEdit()) {
         setSaveError(null);
         setPending({ kind: 'month', delta });
         return;
       }
       navigateMonth(delta);
     },
-    [monthEditsCount, navigateMonth],
+    [flushActiveEdit, navigateMonth],
   );
 
   const onPrevMonth = useCallback(() => requestMonthChange(-1), [requestMonthChange]);
   const onNextMonth = useCallback(() => requestMonthChange(1), [requestMonthChange]);
 
   const onBackPress = useCallback(() => {
-    if (monthEditsCount > 0) {
+    if (flushActiveEdit()) {
       setSaveError(null);
       setPending({ kind: 'back' });
       return;
     }
     onBack?.();
-  }, [monthEditsCount, onBack]);
+  }, [flushActiveEdit, onBack]);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -291,14 +373,14 @@ export function DailyLogView({
       const target = year * 12 + monthIdx;
       const delta = target - cur;
       if (delta === 0) return;
-      if (monthEditsCount > 0) {
+      if (flushActiveEdit()) {
         setSaveError(null);
         setPending({ kind: 'month', delta });
         return;
       }
       navigateMonth(delta);
     },
-    [selectedDate, monthEditsCount, navigateMonth],
+    [selectedDate, flushActiveEdit, navigateMonth],
   );
 
   const onFarmPress = useCallback(() => setPickerOpen(true), []);
@@ -307,14 +389,14 @@ export function DailyLogView({
     (id: number) => {
       setPickerOpen(false);
       if (id === activeFarmId) return;
-      if (monthEditsCount > 0) {
+      if (flushActiveEdit()) {
         setSaveError(null);
         setPending({ kind: 'farm', farmId: id });
         return;
       }
       onChangeFarm(id);
     },
-    [activeFarmId, monthEditsCount, onChangeFarm],
+    [activeFarmId, flushActiveEdit, onChangeFarm],
   );
 
   const onGuardDismiss = useCallback(() => {
@@ -403,27 +485,19 @@ export function DailyLogView({
   // `overrides`/`setCellValue` so a keystroke doesn't rebuild the `ponds`
   // array (and re-render every row) on every digit; only the one active
   // row receives a changed prop (wired below). Committed to real state via
-  // `setCellValue` only on Next/Done, same as before this preview existed.
+  // `setCellValue` only on Next/Done. Re-seed only when the cell identity
+  // changes (not when pond data refreshes mid-edit).
+  const cellKey = activeCell ? `${activeCell.pondKey}:${activeCell.col}` : null;
   const [liveValue, setLiveValue] = useState<number | ''>('');
-  useEffect(() => {
-    if (!activeCell) {
-      setLiveValue('');
-      return;
-    }
-    setLiveValue(activePond ? activePond.v[activeCell.col] : '');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCell?.pondKey, activeCell?.col]);
+  const seededCell = useRef<string | null>(null);
+  if (cellKey !== seededCell.current) {
+    seededCell.current = cellKey;
+    setLiveValue(activeValue);
+  }
 
-  const rememberFeedPick = useCallback(
-    (cell: NonNullable<typeof activeCell>, feedId: number | null) => {
-      if (feedId == null) return;
-      const group = COLS.find((c) => c.key === cell.col)?.group;
-      if (group === 'pellet' || group === 'fresh') {
-        setFeedSelection(cell.pondKey, group, feedId);
-      }
-    },
-    [setFeedSelection],
-  );
+  activeCellRef.current = activeCell;
+  liveValueRef.current = liveValue;
+  activeValueRef.current = activeValue;
 
   const onNumpadCommit = useCallback(
     (value: number | '', feedId: number | null) => {
@@ -450,6 +524,10 @@ export function DailyLogView({
   // (opens the numpad), never a direct text input.
   const onNumpadChange = useCallback((value: number | '') => setLiveValue(value), []);
 
+  const onNumpadFeedChange = useCallback((feedId: number | null) => {
+    liveFeedIdRef.current = feedId;
+  }, []);
+
   const onNumpadCancel = useCallback(() => setActiveCell(null), [setActiveCell]);
 
   return (
@@ -469,7 +547,14 @@ export function DailyLogView({
           onScroll={onScroll}
           scrollEventThrottle={16}
           stickyHeaderIndices={[1]}
-          contentContainerStyle={{ paddingBottom: SAVE_BAR_HEIGHT_PADDING + bottomInset }}
+          contentContainerStyle={{
+            // While editing, reserve the keypad's real height so any row can
+            // scroll clear of it (mirrors the pond-ledger table). Otherwise
+            // leave room for the floating SaveBar.
+            paddingBottom: activeCell
+              ? (numpadH || numpadSheetHeight(bottomInset)) + 24
+              : SAVE_BAR_HEIGHT_PADDING + bottomInset,
+          }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -569,15 +654,18 @@ export function DailyLogView({
         )}
       </View>
 
-      {activeCell && activePond ? (
+      {activeCell && activePond && cellKey ? (
         <Numpad
           visible={true}
           pondId={activePond.id}
           col={activeCell.col}
           initialValue={activeValue}
+          cellKey={cellKey}
           lastUsedFeedId={lastUsedFeedIdForActiveCell}
           isLastCell={activeCellIsLast}
           bottomInset={bottomInset}
+          onHeight={setNumpadH}
+          onFeedChange={onNumpadFeedChange}
           onChange={onNumpadChange}
           onCancel={onNumpadCancel}
           onCommit={onNumpadCommit}

@@ -59,6 +59,11 @@ export function Pill({ tone = 'neutral', children, style }: Props) {
     >
       {typeof children === 'string' ? (
         <Text
+          // Single line: Android segments Thai by ICU dictionary, so a
+          // multi-word label ("ใช้งาน" → ใช้·งาน) in this shrink-to-fit row
+          // gets measured at word width and wraps, clipping to "ใช้". Pinning
+          // one line makes the pill size to the full label on every device.
+          numberOfLines={1}
           style={{
             color: fg,
             fontSize: 12,
@@ -97,6 +102,7 @@ export function PillText({
   };
   return (
     <Text
+      numberOfLines={1}
       style={{
         color: fgMap[tone],
         fontSize: 12,
