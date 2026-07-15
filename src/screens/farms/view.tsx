@@ -4,7 +4,6 @@ import { radii, type } from '@/theme/tokens';
 import { SearchHeader, TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Col } from '@/components/layout/Row';
-import { fmt } from '@/utils/fmt';
 import type { FarmModel } from '@/features/farm';
 import { FarmCard } from './components/FarmCard';
 
@@ -95,108 +94,13 @@ export function FarmsView({
             helper="ลองค้นด้วยชื่อฟาร์ม"
           />
         ) : (
-          <>
-            {!searchOpen && farms.length > 0 ? <PortfolioSummary farms={farms} /> : null}
-            <Col gap={12} style={{ paddingHorizontal: 20 }}>
-              {filteredFarms.map((fm) => (
-                <FarmCard key={fm.id} farm={fm} onPress={() => onOpenFarm?.(fm.id)} />
-              ))}
-            </Col>
-          </>
+          <Col gap={12} style={{ paddingHorizontal: 20 }}>
+            {filteredFarms.map((fm) => (
+              <FarmCard key={fm.id} farm={fm} onPress={() => onOpenFarm?.(fm.id)} />
+            ))}
+          </Col>
         )}
       </ScrollView>
-    </View>
-  );
-}
-
-/** Whole-operation pulse: total fish in system + pond utilisation. */
-function PortfolioSummary({ farms }: { farms: FarmModel[] }) {
-  const { t } = useTheme();
-  let fish = 0;
-  let active = 0;
-  let ponds = 0;
-  for (const f of farms) {
-    fish += f.totalStock;
-    active += f.activePonds;
-    ponds += f.pondCount;
-  }
-  return (
-    <View
-      style={{
-        paddingHorizontal: 20,
-        paddingBottom: 18,
-        flexDirection: 'row',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-      }}
-    >
-      <View>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-          <Text
-            style={{
-              fontFamily: type.familyNumBold,
-              fontSize: type.sizes.xxl,
-              color: t.ink,
-              lineHeight: 34,
-            }}
-          >
-            {fmt.num(fish)}
-          </Text>
-          <Text
-            style={{
-              fontSize: type.sizes.sm,
-              fontFamily: type.familyMedium,
-              color: t.inkMute,
-              marginLeft: 6,
-            }}
-          >
-            ตัว
-          </Text>
-        </View>
-        <Text
-          style={{
-            fontSize: type.sizes.sm,
-            fontFamily: type.family,
-            color: t.inkMute,
-            marginTop: 2,
-          }}
-        >
-          ปลาในระบบทั้งหมด
-        </Text>
-      </View>
-      <View style={{ alignItems: 'flex-end' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-          <Text
-            style={{
-              fontFamily: type.familyNumSemi,
-              fontSize: type.sizes.lg,
-              color: active > 0 ? t.statusActive : t.inkMute,
-            }}
-          >
-            {active}
-          </Text>
-          <Text
-            style={{
-              fontFamily: type.familyNum,
-              fontSize: type.sizes.sm,
-              color: t.inkMute,
-              marginLeft: 3,
-            }}
-          >
-            / {ponds}
-          </Text>
-        </View>
-        <Text
-          style={{
-            fontSize: type.sizes.xs,
-            fontFamily: type.family,
-            color: t.inkMute,
-            marginTop: 2,
-          }}
-        >
-          บ่อที่ใช้งาน
-        </Text>
-      </View>
     </View>
   );
 }

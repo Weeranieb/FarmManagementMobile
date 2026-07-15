@@ -1,10 +1,11 @@
 import { Pressable, Text, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { maintInk } from '@/theme/ink';
 import { Icon } from '@/components/icons';
 import { Col } from '@/components/layout/Row';
-import { fmt, displayFarmName } from '@/utils/fmt';
+import { displayFarmName } from '@/utils/fmt';
 import type { FarmModel } from '@/features/farm';
 
 type Props = {
@@ -13,9 +14,11 @@ type Props = {
 };
 
 /**
- * Flat, fixed-height farm row. Active / maintenance / empty all share one
- * two-line skeleton (icon + name/status, one utilisation meta line) so the list
- * reads as an even rhythm; farms with ponds carry a compact fish-count metric.
+ * Farm row with the name on its own full-width line so long names wrap to two
+ * lines instead of hard-truncating. The right rail carries a pond-utilisation
+ * ring (active / total) rather than a raw fish count — in a farm chooser, "how
+ * much of this farm is running" reads at a glance where a bare stock number was
+ * just noise.
  */
 export function FarmCard({ farm, onPress }: Props) {
   const { t, shadow, mode } = useTheme();
@@ -33,8 +36,7 @@ export function FarmCard({ farm, onPress }: Props) {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingHorizontal: space[4],
-        paddingVertical: space[5],
+        padding: space[4],
         borderRadius: radii.lg,
         borderWidth: 1,
         borderColor: isEmpty ? t.border : t.borderStrong,
@@ -44,14 +46,14 @@ export function FarmCard({ farm, onPress }: Props) {
     >
       <IconTile mode={tileMode} />
 
-      <Col gap={3} style={{ flex: 1, minWidth: 0 }}>
+      <Col gap={6} style={{ flex: 1, minWidth: 0 }}>
         <Text
-          numberOfLines={1}
+          numberOfLines={2}
           style={{
-            fontSize: type.sizes.lg,
+            fontSize: type.sizes.md,
             fontFamily: type.familyBold,
             color: isEmpty ? t.inkSoft : t.ink,
-            lineHeight: 24,
+            lineHeight: 22,
           }}
         >
           {name}
@@ -93,6 +95,7 @@ export function FarmCard({ farm, onPress }: Props) {
               lineHeight: 18,
             }}
           >
+            <Text>บ่อใช้งาน </Text>
             <Text
               style={{
                 fontFamily: type.familyNumSemi,
@@ -101,38 +104,65 @@ export function FarmCard({ farm, onPress }: Props) {
             >
               {farm.activePonds}
             </Text>
-            <Text style={{ fontFamily: type.familyNum }}> / {farm.pondCount}</Text>
-            <Text> บ่อใช้งาน</Text>
+            <Text style={{ fontFamily: type.familyNum }}> จาก {farm.pondCount}</Text>
           </Text>
         )}
       </Col>
 
-      {!isEmpty ? (
-        <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-          <Text
-            style={{
-              fontFamily: type.familyNumBold,
-              fontSize: type.sizes.xl,
-              color: farm.totalStock > 0 ? t.ink : t.inkMute,
-            }}
-          >
-            {fmt.num(farm.totalStock)}
-          </Text>
-          <Text
-            style={{
-              fontSize: type.sizes.xs,
-              color: t.inkMute,
-              fontFamily: type.familyMedium,
-              marginLeft: 3,
-            }}
-          >
-            ตัว
-          </Text>
-        </View>
+      {!isEmpty && !isMaint ? (
+        <UtilRing active={farm.activePonds} total={farm.pondCount} />
       ) : null}
 
       <Icon.chevR size={18} color={isEmpty ? t.inkMute : t.inkSoft} />
     </Pressable>
+  );
+}
+
+/** Active-pond gauge: arc fills to active/total, active count sits in the centre. */
+function UtilRing({ active, total }: { active: number; total: number }) {
+  const { t } = useTheme();
+  const size = 44;
+  const stroke = 5;
+  const r = (size - stroke) / 2;
+  const c = size / 2;
+  const circ = 2 * Math.PI * r;
+  const pct = total > 0 ? Math.min(1, Math.max(0, active / total)) : 0;
+  const on = active > 0;
+  const arc = on ? t.statusActive : t.inkMute;
+
+  return (
+    <View
+      style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Svg width={size} height={size} style={{ position: 'absolute' }}>
+        <Circle cx={c} cy={c} r={r} stroke={t.border} strokeWidth={stroke} fill="none" />
+        {pct > 0 ? (
+          <Circle
+            cx={c}
+            cy={c}
+            r={r}
+            stroke={arc}
+            strokeWidth={stroke}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={circ * (1 - pct)}
+            transform={`rotate(-90 ${c} ${c})`}
+          />
+        ) : null}
+      </Svg>
+      <Text
+        style={{
+          fontFamily: type.familyNumSemi,
+          fontSize: type.sizes.sm,
+          color: on ? t.statusActive : t.inkMute,
+        }}
+      >
+        {active}
+      </Text>
+    </View>
   );
 }
 

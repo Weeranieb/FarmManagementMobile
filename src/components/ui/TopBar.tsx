@@ -39,7 +39,15 @@ export function TopBar({ title, subtitle, leading, trailing, dense, style }: Pro
         ) : null}
 
         {subtitle ? (
-          <Text style={{ fontSize: 12, color: t.inkMute, marginTop: 2, fontFamily: type.family }}>
+          <Text
+            style={{
+              fontSize: type.sizes.sm,
+              lineHeight: 18,
+              color: t.inkSoft,
+              marginTop: 2,
+              fontFamily: type.familyMedium,
+            }}
+          >
             {subtitle}
           </Text>
         ) : null}

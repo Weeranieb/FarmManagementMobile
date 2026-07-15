@@ -8,8 +8,6 @@ export type FarmModel = {
   status: 'active' | 'maintenance';
   pondCount: number;
   activePonds: number;
-  /** Filled by `FarmsScreen` from pond list when live `/farm` data is active. */
-  totalStock: number;
   createdAt?: string;
 };
 
@@ -22,7 +20,6 @@ export function adaptFarm(f: FarmResponse): FarmModel {
     status,
     pondCount: f.pondCount ?? 0,
     activePonds: f.activePonds ?? 0,
-    totalStock: 0,
     createdAt: f.createdAt,
   };
 }

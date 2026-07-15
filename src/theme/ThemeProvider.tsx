@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { themes, type ThemeMode, type ThemePalette } from './tokens';
-import { shadow, shadowLg } from './shadows';
+import { shadow, shadowLg, shadowXl } from './shadows';
 import type { ViewStyle } from 'react-native';
 
 type ThemeCtx = {
@@ -10,6 +10,7 @@ type ThemeCtx = {
   setMode: (m: ThemeMode) => void;
   shadow: ViewStyle;
   shadowLg: ViewStyle;
+  shadowXl: ViewStyle;
 };
 
 const STORAGE_KEY = 'farmos.theme.mode';
@@ -46,6 +47,7 @@ export function ThemeProvider({ initialMode = 'light', children }: Props) {
       setMode,
       shadow: shadow(mode),
       shadowLg: shadowLg(mode),
+      shadowXl: shadowXl(mode),
     }),
     [mode, setMode],
   );

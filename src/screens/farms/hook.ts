@@ -1,14 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useQueries, useQueryClient } from '@tanstack/react-query';
-import { useAuthStore } from '@/features/auth';
-import {
-  farmKeys,
-  useFarms,
-  useFarmsData,
-  type FarmModel,
-  type FarmResponse,
-} from '@/features/farm';
-import { listPonds, pondKeys } from '@/features/pond';
+import { useQueryClient } from '@tanstack/react-query';
+import { farmKeys, useFarmsData, type FarmModel } from '@/features/farm';
 import { useSearchQuery } from '@/hooks/useSearchQuery';
 
 export function useFarmsScreen(): {
@@ -25,42 +17,10 @@ export function useFarmsScreen(): {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const { searchOpen, query, onOpenSearch, onCloseSearch, onChangeQuery } = useSearchQuery();
-  const { data: farmsRaw } = useFarmsData();
-  const farmsQuery = useFarms();
-  const hasToken = useAuthStore((s) => s.token != null);
-  /** Only merge `/pond` rollups when the farm list loaded successfully from the API. */
-  const useLivePondRollup = hasToken && farmsQuery.isSuccess && Array.isArray(farmsQuery.data);
-
-  const baseline = Array.isArray(farmsRaw) ? farmsRaw : [];
-
-  const pondQueries = useQueries({
-    queries: useLivePondRollup
-      ? baseline.map((f) => ({
-          queryKey: pondKeys.byFarm(f.id),
-          queryFn: () => listPonds(f.id),
-          enabled: useLivePondRollup,
-          staleTime: 60_000,
-        }))
-      : [],
-  });
-
-  const farms = useMemo(() => {
-    if (!useLivePondRollup) return baseline;
-
-    return baseline.map((f, idx) => {
-      const ponds = pondQueries[idx]?.data;
-      if (!Array.isArray(ponds)) return f;
-
-      let totalStock = 0;
-      let activeFromPonds = 0;
-      for (const p of ponds) {
-        if (p.status === 'active') activeFromPonds++;
-        totalStock += p.totalFish ?? 0;
-      }
-
-      return { ...f, activePonds: activeFromPonds, totalStock };
-    });
-  }, [baseline, pondQueries, useLivePondRollup]);
+  // `activePonds` and `pondCount` come straight from the farm-list DTO, which is
+  // refetched whenever a fill/move/sell mutation invalidates `farmKeys.all()`.
+  // No per-farm `/pond` rollup needed — the list carries everything this screen shows.
+  const { data: farms } = useFarmsData();
 
   const filteredFarms = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -72,12 +32,6 @@ export function useFarmsScreen(): {
     setRefreshing(true);
     try {
       await queryClient.refetchQueries({ queryKey: farmKeys.all() });
-      const farmsList = queryClient.getQueryData<FarmResponse[]>(farmKeys.all());
-      if (Array.isArray(farmsList) && farmsList.length > 0) {
-        await Promise.all(
-          farmsList.map((f) => queryClient.refetchQueries({ queryKey: pondKeys.byFarm(f.id) })),
-        );
-      }
     } finally {
       setRefreshing(false);
     }

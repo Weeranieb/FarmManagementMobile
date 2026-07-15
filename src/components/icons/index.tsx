@@ -93,6 +93,13 @@ export const Icon = {
       <Circle cx="12" cy="18" r="0.6" fill="currentColor" />
     </Frame>
   ),
+  info: (p: IconProps) => (
+    <Frame {...p}>
+      <Circle cx="12" cy="12" r="9" />
+      <Path d="M12 11v5" />
+      <Path d="M12 8h.01" />
+    </Frame>
+  ),
   search: (p: IconProps) => (
     <Frame {...p}>
       <Circle cx="11" cy="11" r="7" />

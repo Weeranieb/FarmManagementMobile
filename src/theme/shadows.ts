@@ -37,9 +37,30 @@ const lgDark = {
   elevation: 6,
 } as const;
 
+// Modal-grade lift. Deeper + wider than `lg` so a dialog reads as clearly
+// floating above the screen without needing a dimmed/blurred backdrop.
+const xl = {
+  shadowColor: '#0a0e14',
+  shadowOffset: { width: 0, height: 14 },
+  shadowOpacity: 0.18,
+  shadowRadius: 32,
+  elevation: 16,
+} as const;
+
+const xlDark = {
+  shadowColor: '#000000',
+  shadowOffset: { width: 0, height: 16 },
+  shadowOpacity: 0.62,
+  shadowRadius: 36,
+  elevation: 20,
+} as const;
+
 export function shadow(mode: ThemeMode): ViewStyle {
   return mode === 'dark' ? smDark : sm;
 }
 export function shadowLg(mode: ThemeMode): ViewStyle {
   return mode === 'dark' ? lgDark : lg;
+}
+export function shadowXl(mode: ThemeMode): ViewStyle {
+  return mode === 'dark' ? xlDark : xl;
 }
