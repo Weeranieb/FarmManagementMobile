@@ -35,10 +35,7 @@ const TH_DAYS_SHORT = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 export const thaiDate = {
   long: (d: Date): string =>
     `วัน${TH_DAYS[d.getDay()]}ที่ ${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`,
-  longNoYear: (d: Date): string =>
-    `วัน${TH_DAYS[d.getDay()]}ที่ ${d.getDate()} ${TH_MONTHS[d.getMonth()]}`,
   monthYear: (d: Date): string => `${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`,
-  monthYearShort: (d: Date): string => `${TH_MONTHS_SHORT[d.getMonth()]} ${d.getFullYear() + 543}`,
   short: (d: Date): string =>
     `${d.getDate()} ${TH_MONTHS_SHORT[d.getMonth()]} ${(d.getFullYear() + 543) % 100}`,
   weekdayShort: (i: number): string => TH_DAYS_SHORT[i] ?? '',
@@ -53,5 +50,6 @@ export const thaiDate = {
 };
 
 export const TH_WEEKDAYS_SHORT = TH_DAYS_SHORT;
-export const TH_MONTH_NAMES = TH_MONTHS;
 export const TH_MONTH_NAMES_SHORT = TH_MONTHS_SHORT;
+/** Full Thai month names (index 0 = January). */
+export const TH_MONTH_NAMES_FULL = TH_MONTHS;

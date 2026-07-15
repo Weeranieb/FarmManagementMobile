@@ -5,7 +5,7 @@ import { Btn } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { FormInput } from './FormInput';
-import { SheetShell } from './SheetShell';
+import { SheetShell } from '@/components/sheet';
 
 export const WRONG_CURRENT_PASSWORD = 'WRONG_CURRENT_PASSWORD';
 
@@ -26,10 +26,12 @@ export function ChangePasswordSheet({ visible, onClose, onSubmit }: Props) {
 
   const tooShort = next.length > 0 && next.length < 8;
   const mismatch = confirm.length > 0 && confirm !== next;
-  const valid =
-    current.length > 0 && next.length >= 8 && confirm === next && !submitting;
+  const valid = current.length > 0 && next.length >= 8 && confirm === next && !submitting;
 
-  const newError = useMemo(() => (tooShort ? tx('profile.password.tooShort') : undefined), [tooShort, tx]);
+  const newError = useMemo(
+    () => (tooShort ? tx('profile.password.tooShort') : undefined),
+    [tooShort, tx],
+  );
   const confirmError = useMemo(
     () => (mismatch ? tx('profile.password.mismatch') : undefined),
     [mismatch, tx],
@@ -61,7 +63,10 @@ export function ChangePasswordSheet({ visible, onClose, onSubmit }: Props) {
       reset();
       onClose();
     } catch (err) {
-      const code = err && typeof err === 'object' && 'code' in err ? String((err as { code: unknown }).code) : '';
+      const code =
+        err && typeof err === 'object' && 'code' in err
+          ? String((err as { code: unknown }).code)
+          : '';
       if (code === WRONG_CURRENT_PASSWORD) {
         setCurrentError(tx('profile.password.wrongCurrent'));
       }

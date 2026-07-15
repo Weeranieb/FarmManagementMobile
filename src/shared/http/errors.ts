@@ -7,3 +7,11 @@ export type ApiError = {
   details?: string;
   status: number;
 };
+
+/** Pull a user-facing message from a thrown API/unknown error. */
+export function apiErrorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === 'object' && 'message' in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return fallback;
+}

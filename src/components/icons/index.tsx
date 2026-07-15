@@ -75,11 +75,6 @@ export const Icon = {
       <Path d="M15 18l-6-6 6-6" />
     </Frame>
   ),
-  forward: (p: IconProps) => (
-    <Frame {...p}>
-      <Path d="M9 6l6 6-6 6" />
-    </Frame>
-  ),
   check: (p: IconProps) => (
     <Frame {...p}>
       <Path d="M5 12l4 4 10-10" />
@@ -148,13 +143,6 @@ export const Icon = {
     <Frame {...p}>
       <Path d="M3 12a9 9 0 0114-7l3 3" />
       <Path d="M21 12a9 9 0 01-14 7l-3-3" />
-    </Frame>
-  ),
-  refresh: (p: IconProps) => (
-    <Frame {...p}>
-      <Path d="M21 12a9 9 0 01-15 6.7L3 16" />
-      <Path d="M3 12a9 9 0 0115-6.7L21 8" />
-      <Path d="M21 3v5h-5M3 21v-5h5" />
     </Frame>
   ),
   trash: (p: IconProps) => (
@@ -272,6 +260,6 @@ export const Icon = {
       <Path d="M5 12v8h14v-8" />
     </Frame>
   ),
-} satisfies Record<string, (p: IconProps) => React.ReactElement>;
+};
 
 export type IconName = keyof typeof Icon;

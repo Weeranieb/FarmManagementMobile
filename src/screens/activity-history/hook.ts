@@ -4,6 +4,7 @@ import { adaptActivityFeedItem, useActivityFeed } from '@/features/activity';
 import { thaiDate } from '@/locale/thaiDate';
 import { today } from '@/shared/time';
 import type { ActivityItem, ActivityKind } from '@/screens/home/components/activity-row';
+import { toActivityItem } from '@/screens/home/components/activity-row';
 import { FILTERS, log, type FilterId } from './constants';
 
 export type DayGroupModel = {
@@ -54,24 +55,19 @@ export function useActivityHistoryScreen(): ActivityHistoryState {
     const raw = Array.isArray(q.data) ? q.data : [];
     return raw.map((item) => {
       const e = adaptActivityFeedItem(item);
-      const row: ActivityItem & { dateKey: string } = {
-        id: String(e.id),
-        kind: e.kind,
-        whenLabel: e.whenLabel,
-        pond: e.pondLabel,
-        text: e.text,
-        by: e.byUsername === me ? 'คุณ' : e.byName,
-        extra: e.merchant,
-        recordType: e.kind,
-        recordId: e.id,
-        dateKey: e.dateKey,
-      };
-      return row;
+      return { ...toActivityItem(e, me), dateKey: e.dateKey };
     });
   }, [q.data, me]);
 
   const counts = useMemo(() => {
-    const c: Record<FilterId, number> = { all: rows.length, feed: 0, fill: 0, move: 0, sell: 0, buy: 0 };
+    const c: Record<FilterId, number> = {
+      all: rows.length,
+      feed: 0,
+      fill: 0,
+      move: 0,
+      sell: 0,
+      buy: 0,
+    };
     for (const r of rows) c[r.kind] += 1;
     return c;
   }, [rows]);

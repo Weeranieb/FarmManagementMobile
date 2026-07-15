@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, ScrollView, View, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
+import { toIsoDate } from '@/shared/time';
 import { CHROME, DAY_PILL_H, DAY_STRIP_PAD_V, VIBRANT_BRAND, thDow } from '../constants';
 
 type Props = {
@@ -18,14 +19,6 @@ function sameDay(a: Date, b: Date) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
-}
-
-function pad2(n: number): string {
-  return n < 10 ? `0${n}` : String(n);
-}
-
-function dKeyFor(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
 const PILL_WIDTH = 42;
@@ -88,7 +81,7 @@ export function DayStripRow({ selectedDate, onSelectDate, daysWithDrafts }: Prop
           const isSelected = sameDay(d.date, selectedDate);
           const isToday = sameDay(d.date, today);
           const isFuture = d.date.getTime() > today.getTime();
-          const hasDraft = daysWithDrafts?.has(dKeyFor(d.date)) ?? false;
+          const hasDraft = daysWithDrafts?.has(toIsoDate(d.date)) ?? false;
           return (
             <Pressable
               key={i}

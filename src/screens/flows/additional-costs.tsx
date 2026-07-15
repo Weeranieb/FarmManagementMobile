@@ -7,6 +7,7 @@
 // and feed into the mutation payload. The parent seeds `[]` — the empty state
 // is just the chip menu, so there are no phantom blank rows.
 
+import type { AdditionalCostItem } from '@/features/pond';
 import { Platform, Pressable, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type, type ThemePalette } from '@/theme/tokens';
@@ -15,6 +16,15 @@ import { Col } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
 
 export type CostRow = { category: string; amount: string };
+
+/** Map UI rows to the wire-format `AdditionalCostItem[]`. Empty rows are
+ *  dropped; partial rows (title but no amount, or vice-versa) keep their
+ *  non-empty side and default the other to a sensible value. */
+export function toWireCosts(rows: CostRow[]): AdditionalCostItem[] {
+  return rows
+    .map((r) => ({ title: r.category.trim(), cost: parseFloat(r.amount) || 0 }))
+    .filter((c) => c.title.length > 0 && c.cost > 0);
+}
 
 const PRESETS = ['ค่าขนส่ง', 'ค่าแรง', 'ค่ารถ', 'ค่าอาหาร'] as const;
 
@@ -69,7 +79,10 @@ function AddChip({
       accessibilityRole="button"
       accessibilityState={{ disabled: !!used }}
       accessibilityLabel={used ? `${label} — เพิ่มแล้ว` : `เพิ่ม${label}`}
-      style={({ pressed }) => ({ opacity: used ? 0.5 : pressed ? 0.85 : 1, alignSelf: 'flex-start' })}
+      style={({ pressed }) => ({
+        opacity: used ? 0.5 : pressed ? 0.85 : 1,
+        alignSelf: 'flex-start',
+      })}
     >
       <View
         style={{
@@ -193,7 +206,9 @@ function CostRowItem({
             textAlign: 'right',
           }}
         />
-        <Text style={{ color: t.inkMute, fontSize: type.sizes.sm, fontFamily: type.familyNum }}>฿</Text>
+        <Text style={{ color: t.inkMute, fontSize: type.sizes.sm, fontFamily: type.familyNum }}>
+          ฿
+        </Text>
       </View>
 
       <Pressable
@@ -240,7 +255,13 @@ export function AdditionalCostsEditor({ tone, rows, onChange }: Props) {
           "อื่นๆ" appends a custom, free-text row. */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
         {PRESETS.map((p) => (
-          <AddChip key={p} label={p} ink={c.ink} used={usedPresets.has(p)} onPress={() => addPreset(p)} />
+          <AddChip
+            key={p}
+            label={p}
+            ink={c.ink}
+            used={usedPresets.has(p)}
+            onPress={() => addPreset(p)}
+          />
         ))}
         <AddChip label="อื่นๆ" ink={c.ink} onPress={addCustom} />
       </View>

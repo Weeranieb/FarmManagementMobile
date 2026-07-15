@@ -13,10 +13,6 @@ export function login(body: LoginRequest): Promise<LoginResponse> {
   return http.post('/auth/login', body);
 }
 
-export function logout(): Promise<void> {
-  return http.post('/auth/logout');
-}
-
 export function getMe(): Promise<UserResponse> {
   return http.get('/user');
 }

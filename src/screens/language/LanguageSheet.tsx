@@ -4,7 +4,7 @@ import { Card } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
-import { SheetShell } from '@/screens/account-info/components/SheetShell';
+import { SheetShell } from '@/components/sheet';
 import type { LanguageCode } from './hook';
 
 type Props = {
@@ -84,7 +84,14 @@ export function LanguageSheet({ visible, selected, onPick, onClose }: Props) {
                   <Text style={{ fontFamily: type.familySemi, fontSize: 16, color: t.ink }}>
                     {l.native}
                   </Text>
-                  <Text style={{ fontFamily: type.family, fontSize: 12, color: t.inkMute, marginTop: 2 }}>
+                  <Text
+                    style={{
+                      fontFamily: type.family,
+                      fontSize: 12,
+                      color: t.inkMute,
+                      marginTop: 2,
+                    }}
+                  >
                     {l.alt}
                   </Text>
                 </View>

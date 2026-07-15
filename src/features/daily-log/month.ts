@@ -6,9 +6,10 @@
 // เหยื่อสด is measured in ลัง (crates), never kg — keep it out of kg feed totals.
 
 import type { DailyLogEntry } from './types';
+import { toMonthKey } from '@/shared/time';
 
 export function monthStrFromDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return toMonthKey(d);
 }
 
 export function monthStrToStartDate(ym: string): Date {

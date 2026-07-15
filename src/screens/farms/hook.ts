@@ -9,6 +9,7 @@ import {
   type FarmResponse,
 } from '@/features/farm';
 import { listPonds, pondKeys } from '@/features/pond';
+import { useSearchQuery } from '@/hooks/useSearchQuery';
 
 export function useFarmsScreen(): {
   farms: FarmModel[];
@@ -23,8 +24,7 @@ export function useFarmsScreen(): {
 } {
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const { searchOpen, query, onOpenSearch, onCloseSearch, onChangeQuery } = useSearchQuery();
   const { data: farmsRaw } = useFarmsData();
   const farmsQuery = useFarms();
   const hasToken = useAuthStore((s) => s.token != null);
@@ -67,13 +67,6 @@ export function useFarmsScreen(): {
     if (!q) return farms;
     return farms.filter((f) => f.name.toLowerCase().includes(q));
   }, [farms, query]);
-
-  const onOpenSearch = useCallback(() => setSearchOpen(true), []);
-  const onCloseSearch = useCallback(() => {
-    setSearchOpen(false);
-    setQuery('');
-  }, []);
-  const onChangeQuery = useCallback((s: string) => setQuery(s), []);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

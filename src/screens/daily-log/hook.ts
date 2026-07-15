@@ -9,6 +9,7 @@ import {
   type DailyLogResponse,
 } from '@/features/daily-log';
 import { adaptPond, usePonds, type PondModel } from '@/features/pond';
+import { toIsoDate, toMonthKey } from '@/shared/time';
 import { COLS, isCellValueInvalid, type ColKey } from './constants';
 
 export type CellState = 'saved' | 'dirty' | 'empty';
@@ -193,33 +194,17 @@ function computeDirtyCols(next: CellValues, ref: CellValues): ReadonlySet<ColKey
   return out;
 }
 
-function pad2(n: number): string {
-  return n < 10 ? `0${n}` : String(n);
-}
-
-function monthKey(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
-}
-
-function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+function startDateKey(startDate: string | null): string | null {
+  if (!startDate) return null;
+  const d = new Date(startDate);
+  if (isNaN(d.getTime())) return null;
+  return toIsoDate(d);
 }
 
 // Slice a dKey ("YYYY-MM-DD") back into its month key ("YYYY-MM") and 1-based
 // day number — used to group/filter overrides by month for the month-wide save.
 const dKeyMonth = (dk: string): string => dk.slice(0, 7);
 const dKeyDay = (dk: string): number => Number(dk.slice(8, 10));
-
-// Pond `startDate` from the API is an ISO timestamp. Normalize to the same
-// YYYY-MM-DD key dateKey() emits so we can compare against the selected day
-// without timezone-shifted off-by-one bugs (the user's day starts when their
-// local day starts, not at UTC midnight).
-function startDateKey(startDate: string | null): string | null {
-  if (!startDate) return null;
-  const d = new Date(startDate);
-  if (isNaN(d.getTime())) return null;
-  return dateKey(d);
-}
 
 function entryToValues(e: DailyLogEntry): CellValues {
   return {
@@ -309,9 +294,9 @@ export function useDailyLogV6(
     [],
   );
 
-  const month = useMemo(() => monthKey(selectedDate), [selectedDate]);
+  const month = useMemo(() => toMonthKey(selectedDate), [selectedDate]);
   const day = selectedDate.getDate();
-  const dKey = useMemo(() => dateKey(selectedDate), [selectedDate]);
+  const dKey = useMemo(() => toIsoDate(selectedDate), [selectedDate]);
 
   // Fetch monthly daily-log data for ALL ponds — a pond currently in
   // maintenance may still have historical entries from when it was active,
@@ -382,7 +367,7 @@ export function useDailyLogV6(
     const d = new Date(selectedDate);
     d.setDate(1);
     d.setMonth(d.getMonth() - 1);
-    return monthKey(d);
+    return toMonthKey(d);
   }, [selectedDate]);
 
   const activePondPrevMonthQuery = useQuery({

@@ -1,2 +1,3 @@
-export { http, apiFetch, API_BASE_URL } from './client';
+export { http } from './client';
 export type { ApiError } from './errors';
+export { apiErrorMessage } from './errors';

@@ -17,27 +17,3 @@ export type FarmListResponse = {
   total?: number;
   totalActive?: number;
 };
-
-export type FarmDetailSummary = {
-  totalStock: number;
-  activePonds: number;
-  totalPonds: number;
-  maintenancePonds: number;
-};
-
-export type FarmDetailPondItem = {
-  id: number;
-  name: string;
-  status: string;
-};
-
-/** GET /farm/:id payload. */
-export type FarmDetailResponse = {
-  id: number;
-  clientId: number;
-  name: string;
-  status: string;
-  createdAt?: string;
-  summary: FarmDetailSummary;
-  ponds: FarmDetailPondItem[];
-};

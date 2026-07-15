@@ -1,28 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { useFarmsData } from '@/features/farm';
-import {
-  useMovePond,
-  usePondData,
-  usePondsData,
-  type AdditionalCostItem,
-} from '@/features/pond';
+import { useMovePond, usePondData, usePondsData } from '@/features/pond';
 import { useAuthStore } from '@/features/auth';
+import { apiErrorMessage } from '@/shared/http';
 import { toIsoDate } from '@/shared/time';
-import {
-  additionalCostsTotal,
-  type CostRow,
-} from '../additional-costs';
+import { additionalCostsTotal, toWireCosts, type CostRow } from '../additional-costs';
 
 // Standard species ordering — same canonical list the fill flow uses. Keeps
 // the chip order stable across flows so users see a consistent picker.
 const STANDARD_FISH_TYPES = ['kaphong', 'nil', 'kang', 'duk'];
-
-function toWireCosts(rows: CostRow[]): AdditionalCostItem[] {
-  return rows
-    .map((r) => ({ title: r.category.trim(), cost: parseFloat(r.amount) || 0 }))
-    .filter((c) => c.title.length > 0 && c.cost > 0);
-}
 
 export function useMoveFlow(initialFromId: number | undefined, onClose?: () => void) {
   const fromFab = initialFromId == null;
@@ -177,11 +164,7 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
       });
       onClose?.();
     } catch (err) {
-      const msg =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : 'บันทึกไม่สำเร็จ';
-      Alert.alert('ย้ายปลาไม่สำเร็จ', msg);
+      Alert.alert('ย้ายปลาไม่สำเร็จ', apiErrorMessage(err, 'บันทึกไม่สำเร็จ'));
     }
   };
 

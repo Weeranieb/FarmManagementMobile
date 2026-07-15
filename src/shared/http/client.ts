@@ -138,10 +138,7 @@ function buildHeaders(token: string | null, headers?: HeadersInit): HeadersInit 
   };
 }
 
-export async function apiFetch<TResponse>(
-  path: string,
-  options: FetchOptions = {},
-): Promise<TResponse> {
+async function apiFetch<TResponse>(path: string, options: FetchOptions = {}): Promise<TResponse> {
   const { body, query, headers, ...rest } = options;
   const token = useAuthStore.getState().token;
 
@@ -186,5 +183,3 @@ export const http = {
     return apiFetch<TResponse>(path, { method: 'DELETE' });
   },
 };
-
-export const API_BASE_URL = API_BASE;

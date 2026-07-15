@@ -9,6 +9,7 @@ import {
   type FeedCollectionModel,
   type FeedPriceHistoryEntry,
 } from '@/features/feed-collection';
+import { toNoonUtcIso } from '@/shared/time';
 import { chronological, priceAroundDaysAgo, sliceByRange, type RangeId } from './historyUtils';
 
 export type UpdatePricePayload = {
@@ -114,9 +115,7 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
 
   const handleUpdatePrice = useCallback(
     (payload: UpdatePricePayload) => {
-      // Anchor at noon UTC so timezone wobble doesn't slip the day — same trick
-      // used by useFeedCollectionScreen.handleUpdatePrice.
-      const iso = new Date(`${payload.effectiveDate}T12:00:00Z`).toISOString();
+      const iso = toNoonUtcIso(payload.effectiveDate);
       addPriceMutation.mutate(
         {
           feedCollectionId: payload.id,
