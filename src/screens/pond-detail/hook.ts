@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useFarmsData } from '@/features/farm';
 import { usePondData, type PondModel } from '@/features/pond';
 
-export type PondDetailTab = 'feed' | 'history';
+export type PondDetailTab = 'feed' | 'history' | 'cycles';
 
 export function usePondDetailScreen(pondId: number) {
   const [tab, setTab] = useState<PondDetailTab>('feed');

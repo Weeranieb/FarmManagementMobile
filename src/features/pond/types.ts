@@ -13,6 +13,13 @@ export type PondResponse = {
   latestActivityType?: 'fill' | 'move' | 'sell' | string | null;
   loggedToday?: boolean;
   lateDays?: number;
+  /** Live cycle-to-date P&L for the active cycle (null if no active cycle).
+   *  Same values `applyCloseFeedSnapshot` (Go) will freeze if this pond closes
+   *  right now — see feed_cost_calculator.go. */
+  totalCost?: number | null;
+  totalRevenue?: number | null;
+  feedCost?: number | null;
+  netResult?: number | null;
 };
 
 /** One row of additional costs. Mirrors `dto.AdditionalCostItem` (Go). */
@@ -25,8 +32,10 @@ export type AdditionalCostItem = {
 export type FillPondRequest = {
   fishType: string;
   amount: number;
-  /** Optional avg weight per fish in kg. */
-  fishWeight?: number;
+  /** Required avg weight per fish in kg (decimal_gt0 server-side) — fill cost
+   *  is amount × fishWeight × pricePerUnit, so a missing weight would book a
+   *  zero stock cost. */
+  fishWeight: number;
   /** Required price per kg (decimal_gt0 server-side). */
   pricePerUnit: number;
   additionalCosts?: AdditionalCostItem[];
@@ -49,12 +58,14 @@ export type MovePondRequest = {
   markToClose?: boolean;
 };
 
-/** A single fish-size-grade line in a sell request. */
+/** A single fish-size-grade line in a sell request. Backend decrements the
+ *  pond's head count by fishCount, so it's required (`validate:"required,min=1"`
+ *  server-side — see `dto.PondSellDetailItem`, Go). */
 export type SellPondDetailItem = {
   fishSizeGradeId: number;
   weight: number;
   pricePerUnit: number;
-  fishCount?: number;
+  fishCount: number;
 };
 
 /** Body for POST /pond/:pondId/sell. Mirrors `dto.PondSellRequest`. */
@@ -97,6 +108,29 @@ export type MerchantOption = {
 export type SizeGradeOption = {
   id: number;
   name: string;
+};
+
+/**
+ * One production cycle (active or closed) with its P&L, returned by
+ * GET /pond/:pondId/cycles. Mirrors `dto.PondCycleResponse` (Go).
+ *
+ * `feedCost` is null for legacy cycles closed before feed-cost accounting
+ * existed; for those the `netResult` does NOT yet subtract feed. For the active
+ * cycle feed cost is derived live and `netResult = totalRevenue − totalCost −
+ * feedCost`; for a closed cycle both are the values frozen at close. Never
+ * recompute these client-side — display as received.
+ */
+export type PondCycleResponse = {
+  id: number;
+  startDate: string;
+  endDate: string | null;
+  isActive: boolean;
+  totalFish: number;
+  fishTypes: string[];
+  totalCost: number;
+  totalRevenue: number;
+  feedCost: number | null;
+  netResult: number;
 };
 
 /** One row of the pond activity timeline returned by GET /pond/:pondId/activities. */

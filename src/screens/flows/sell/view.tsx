@@ -778,20 +778,7 @@ function SellRowEditor({
       </Row>
 
       <View style={{ marginBottom: 10 }}>
-        <Row justify="space-between" align="baseline" style={{ marginBottom: 4 }}>
-          <Text
-            style={{
-              fontSize: 11,
-              color: t.inkMute,
-              fontFamily: type.familySemi,
-            }}
-          >
-            จำนวนตัว
-          </Text>
-          <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>
-            ไม่บังคับ
-          </Text>
-        </Row>
+        <FieldLabel required>จำนวนตัว</FieldLabel>
         <Input
           keyboardType="number-pad"
           suffix="ตัว"

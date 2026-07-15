@@ -10,6 +10,13 @@ export const fmt = {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`,
+  /** Baht with an explicit sign (U+2212 minus), thousands-separated, rounded.
+   *  Sign is decided AFTER rounding so a value like −0.4 shows "+฿0", not "−฿0". */
+  signedBaht: (n: number): string => {
+    const rounded = Math.round(n);
+    const sign = rounded < 0 ? '−' : '+';
+    return `${sign}฿${Math.abs(rounded).toLocaleString('en-US')}`;
+  },
 };
 
 export const FISH_TH: Record<string, string> = {

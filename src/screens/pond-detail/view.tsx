@@ -13,6 +13,7 @@ import type { PondModel } from '@/features/pond';
 import { ActionPill } from './components/ActionPill';
 import { DailyFeedBody } from './components/DailyFeedBody';
 import { HistoryBody } from './components/HistoryBody';
+import { CycleBody } from './components/CycleBody';
 import type { PondDetailTab } from './hook';
 
 const LATEST_ACTIVITY_LABEL: Record<'fill' | 'move' | 'sell', string> = {
@@ -175,12 +176,12 @@ export function PondDetailView({
             borderBottomColor: t.border,
             paddingHorizontal: 20,
             flexDirection: 'row',
-            gap: 24,
           }}
         >
           {(
             [
               { id: 'feed', label: 'ข้อมูลรายวัน' },
+              { id: 'cycles', label: 'รอบเลี้ยง' },
               { id: 'history', label: 'ประวัติกิจกรรม' },
             ] as const
           ).map((opt) => {
@@ -190,6 +191,8 @@ export function PondDetailView({
                 key={opt.id}
                 onPress={() => setTab(opt.id)}
                 style={{
+                  flex: 1,
+                  alignItems: 'center',
                   paddingVertical: 12,
                   borderBottomWidth: 2,
                   borderBottomColor: sel ? t.brand : 'transparent',
@@ -197,6 +200,7 @@ export function PondDetailView({
                 }}
               >
                 <Text
+                  numberOfLines={1}
                   style={{
                     color: sel ? t.ink : t.inkMute,
                     fontFamily: sel ? type.familyBold : type.familyMedium,
@@ -216,8 +220,10 @@ export function PondDetailView({
             onOpenLedger={onOpenLedger}
             onOpenDailyLog={() => onOpenDailyLog?.({ farmId: pond.farmId, pondId: pond.id })}
           />
-        ) : (
+        ) : tab === 'history' ? (
           <HistoryBody pondId={pond.id} />
+        ) : (
+          <CycleBody pondId={pond.id} />
         )}
       </ScrollView>
     </View>

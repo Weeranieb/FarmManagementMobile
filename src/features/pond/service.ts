@@ -3,6 +3,7 @@ import type {
   ActivityResponse,
   FillPondRequest,
   MovePondRequest,
+  PondCycleResponse,
   PondResponse,
   SellPondRequest,
 } from './types';
@@ -17,6 +18,10 @@ export function getPond(id: number): Promise<PondResponse> {
 
 export function listPondActivities(pondId: number): Promise<ActivityResponse[]> {
   return http.get(`/pond/${pondId}/activities`);
+}
+
+export function listPondCycles(pondId: number): Promise<PondCycleResponse[]> {
+  return http.get(`/pond/${pondId}/cycles`);
 }
 
 export function fillPond(pondId: number, body: FillPondRequest): Promise<unknown> {

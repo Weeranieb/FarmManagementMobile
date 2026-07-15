@@ -90,6 +90,8 @@ export function useFillFlow(initialPondId: number | undefined, onClose?: () => v
     }
     try {
       const wireCosts = toWireCosts(additionalCosts);
+      // Submit is disabled below `parseFloat(avgWeightKg) > 0`, so weight is
+      // always positive by the time this runs.
       const weight = parseFloat(avgWeightKg || '0');
       await fillMutation.mutateAsync({
         fishType,
@@ -97,7 +99,7 @@ export function useFillFlow(initialPondId: number | undefined, onClose?: () => v
         // Server validates pricePerUnit > 0; treat empty as 0 and let the
         // server reject so the message surfaces back to the user.
         pricePerUnit: parseFloat(pricePerUnit || '0'),
-        ...(weight > 0 ? { fishWeight: weight } : {}),
+        fishWeight: weight,
         ...(wireCosts.length > 0 ? { additionalCosts: wireCosts } : {}),
         activityDate: toIsoDate(date),
         remark: remark || undefined,

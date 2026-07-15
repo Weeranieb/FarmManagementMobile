@@ -1,4 +1,9 @@
-import type { ActivityResponse, PondActivityModel, PondResponse } from './types';
+import type {
+  ActivityResponse,
+  PondActivityModel,
+  PondCycleResponse,
+  PondResponse,
+} from './types';
 
 /** UI-facing model rendered by every pond screen / card. */
 export type PondModel = {
@@ -17,6 +22,11 @@ export type PondModel = {
   latestActivityDate: string | null;
   loggedToday: boolean;
   lateDays: number;
+  /** Live cycle-to-date P&L for the active cycle; null if no active cycle. */
+  totalCost: number | null;
+  totalRevenue: number | null;
+  feedCost: number | null;
+  netResult: number | null;
 };
 
 function normalizeActivityType(
@@ -41,6 +51,43 @@ export function adaptPond(p: PondResponse): PondModel {
     latestActivityDate: p.latestActivityDate ?? null,
     loggedToday: p.loggedToday ?? false,
     lateDays: p.lateDays ?? 0,
+    totalCost: p.totalCost ?? null,
+    totalRevenue: p.totalRevenue ?? null,
+    feedCost: p.feedCost ?? null,
+    netResult: p.netResult ?? null,
+  };
+}
+
+/** UI model for one pond production cycle (from API via `adaptCycle`). */
+export type PondCycleModel = {
+  id: number;
+  startDate: string;
+  /** null while the cycle is still active. */
+  endDate: string | null;
+  isActive: boolean;
+  totalFish: number;
+  fishTypes: string[];
+  totalCost: number;
+  totalRevenue: number;
+  /** null for legacy cycles closed before feed-cost accounting. */
+  feedCost: number | null;
+  netResult: number;
+};
+
+/** Maps the backend PondCycleResponse onto the UI cycle model (defensive
+ *  defaults only — the P&L figures are displayed exactly as received). */
+export function adaptCycle(c: PondCycleResponse): PondCycleModel {
+  return {
+    id: c.id,
+    startDate: c.startDate,
+    endDate: c.endDate ?? null,
+    isActive: !!c.isActive,
+    totalFish: c.totalFish ?? 0,
+    fishTypes: c.fishTypes ?? [],
+    totalCost: c.totalCost ?? 0,
+    totalRevenue: c.totalRevenue ?? 0,
+    feedCost: c.feedCost ?? null,
+    netResult: c.netResult ?? 0,
   };
 }
 

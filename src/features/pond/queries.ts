@@ -1,16 +1,29 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsAuthenticated } from '@/features/auth';
 import { farmKeys } from '@/features/farm';
-import { fillPond, getPond, listPondActivities, listPonds, movePond, sellPond } from './service';
-import type { FillPondRequest, MovePondRequest, SellPondRequest } from './types';
-import { adaptActivity, adaptPond, type PondModel } from './adapters';
-import type { PondActivityModel } from './types';
+import {
+  fillPond,
+  getPond,
+  listPondActivities,
+  listPondCycles,
+  listPonds,
+  movePond,
+  sellPond,
+} from './service';
+import type {
+  FillPondRequest,
+  MovePondRequest,
+  PondActivityModel,
+  SellPondRequest,
+} from './types';
+import { adaptActivity, adaptCycle, adaptPond, type PondCycleModel, type PondModel } from './adapters';
 
 export const pondKeys = {
   all: () => ['ponds'] as const,
   byFarm: (farmId: number) => ['ponds', farmId] as const,
   detail: (id: number) => ['pond', id] as const,
   activities: (pondId: number) => ['pond', pondId, 'activities'] as const,
+  cycles: (pondId: number) => ['pond', pondId, 'cycles'] as const,
 } as const;
 
 export function usePonds(farmId?: number, options?: { enabled?: boolean }) {
@@ -47,6 +60,15 @@ export function usePondActivities(pondId: number | undefined) {
   });
 }
 
+export function usePondCycles(pondId: number | undefined) {
+  const enabled = useIsAuthenticated();
+  return useQuery({
+    queryKey: pondKeys.cycles(pondId ?? 0),
+    queryFn: () => listPondCycles(pondId as number),
+    enabled: enabled && pondId != null,
+  });
+}
+
 type DataState<T> = { data: T; isLoading: boolean; isError: boolean };
 
 export function usePondsData(farmId?: number): DataState<PondModel[]> {
@@ -63,27 +85,44 @@ export function usePondsData(farmId?: number): DataState<PondModel[]> {
   };
 }
 
-export function usePondActivitiesData(pondId: number | undefined): DataState<PondActivityModel[]> {
-  const enabled = useIsAuthenticated();
-  const q = usePondActivities(enabled ? pondId : undefined);
-
-  if (!enabled || pondId == null) {
+/** Shared shaping for a `useQuery<TRaw[]>` result into a `DataState<TModel[]>` —
+ *  used by every pond list query (activities, cycles) so the auth/pending/error
+ *  branches can't drift between them. */
+function useListDataState<TRaw, TModel>(
+  enabled: boolean,
+  id: number | undefined,
+  query: { isPending: boolean; isError: boolean; data: TRaw[] | undefined },
+  adapter: (raw: TRaw) => TModel,
+): DataState<TModel[]> {
+  if (!enabled || id == null) {
     return { data: [], isLoading: false, isError: !enabled };
   }
 
-  if (q.isPending) {
+  if (query.isPending) {
     return { data: [], isLoading: true, isError: false };
   }
 
-  if (q.isError || !Array.isArray(q.data)) {
+  if (query.isError || !Array.isArray(query.data)) {
     return { data: [], isLoading: false, isError: true };
   }
 
   return {
-    data: q.data.map(adaptActivity),
+    data: query.data.map(adapter),
     isLoading: false,
     isError: false,
   };
+}
+
+export function usePondActivitiesData(pondId: number | undefined): DataState<PondActivityModel[]> {
+  const enabled = useIsAuthenticated();
+  const q = usePondActivities(enabled ? pondId : undefined);
+  return useListDataState(enabled, pondId, q, adaptActivity);
+}
+
+export function usePondCyclesData(pondId: number | undefined): DataState<PondCycleModel[]> {
+  const enabled = useIsAuthenticated();
+  const q = usePondCycles(enabled ? pondId : undefined);
+  return useListDataState(enabled, pondId, q, adaptCycle);
 }
 
 export function usePondData(id: number | undefined): DataState<PondModel | null> {
@@ -116,6 +155,7 @@ export function useFillPond(pondId: number) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: pondKeys.detail(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.activities(pondId) });
+      void qc.invalidateQueries({ queryKey: pondKeys.cycles(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
       // Fill can transition a maintenance pond back to active, which changes
       // farm.activePonds — invalidate the farms cache so dashboard counts
@@ -134,6 +174,10 @@ export function useMovePond(pondId: number) {
       void qc.invalidateQueries({ queryKey: pondKeys.activities(variables.toPondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.detail(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.detail(variables.toPondId) });
+      // markToClose closes the source cycle and opens/extends the destination
+      // one — both cycle lists must refresh.
+      void qc.invalidateQueries({ queryKey: pondKeys.cycles(pondId) });
+      void qc.invalidateQueries({ queryKey: pondKeys.cycles(variables.toPondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
       // markToClose can flip the source pond to maintenance — farm counts go
       // stale; same with destination if it was previously empty/maintenance.
@@ -149,6 +193,7 @@ export function useSellPond(pondId: number) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: pondKeys.detail(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.activities(pondId) });
+      void qc.invalidateQueries({ queryKey: pondKeys.cycles(pondId) });
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
       // markToClose can transition the pond to maintenance — farm counts go
       // stale; refresh the farms cache so dashboards see the new totals.

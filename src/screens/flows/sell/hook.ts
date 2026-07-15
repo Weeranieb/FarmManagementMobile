@@ -27,7 +27,7 @@ export type SellRow = {
   gradeId: number | null;
   weightKg: string;
   pricePerKg: string;
-  /** Optional fish count; backend treats it as a hint, not a constraint. */
+  /** Required: the backend decrements the pond's head count by this per line. */
   fishCount: string;
 };
 
@@ -43,7 +43,12 @@ function emptyRow(): SellRow {
 }
 
 function rowIsSubmittable(r: SellRow): boolean {
-  return r.gradeId != null && parseFloat(r.weightKg) > 0 && parseFloat(r.pricePerKg) > 0;
+  return (
+    r.gradeId != null &&
+    parseFloat(r.weightKg) > 0 &&
+    parseFloat(r.pricePerKg) > 0 &&
+    parseInt(r.fishCount, 10) > 0
+  );
 }
 
 function rowSubtotal(r: SellRow): number {
@@ -127,8 +132,8 @@ export function useSellFlow(initialPondId: number | undefined, onClose?: () => v
   const netRevenue = useMemo(() => grossRevenue - extraTotal, [grossRevenue, extraTotal]);
 
   // Fish count sanity check: the user-entered ตัว totals must not exceed
-  // the source pond's stock. fishCount is optional per-row, so we only sum
-  // rows that supplied one.
+  // the source pond's stock. Sums whatever has been typed so far (including
+  // not-yet-submittable rows), so the warning appears while editing.
   const totalFishCount = useMemo(
     () =>
       rows.reduce((sum, r) => {
@@ -170,15 +175,13 @@ export function useSellFlow(initialPondId: number | undefined, onClose?: () => v
     if (!hasAnyValidRow) return;
     try {
       const wireCosts = toWireCosts(additionalCosts);
-      const details: SellPondDetailItem[] = submittableRows.map((r) => {
-        const count = parseInt(r.fishCount, 10);
-        return {
-          fishSizeGradeId: r.gradeId as number,
-          weight: parseFloat(r.weightKg),
-          pricePerUnit: parseFloat(r.pricePerKg),
-          ...(Number.isFinite(count) && count > 0 ? { fishCount: count } : {}),
-        };
-      });
+      // rowIsSubmittable already guarantees fishCount > 0 for every row here.
+      const details: SellPondDetailItem[] = submittableRows.map((r) => ({
+        fishSizeGradeId: r.gradeId as number,
+        weight: parseFloat(r.weightKg),
+        pricePerUnit: parseFloat(r.pricePerKg),
+        fishCount: parseInt(r.fishCount, 10),
+      }));
       await sellMutation.mutateAsync({
         activityDate: toIsoDate(date),
         details,
