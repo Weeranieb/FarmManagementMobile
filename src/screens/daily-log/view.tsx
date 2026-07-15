@@ -121,6 +121,35 @@ export function DailyLogView({
   // estimate is the fallback only until the sheet first measures.
   const [numpadH, setNumpadH] = useState(0);
 
+  // Latest cell / typed value / feed pick for commit-on-switch + leave-flush
+  // (callbacks below are memoized without these in deps). `.current` synced
+  // after `liveValue` / `activeValue` are computed.
+  const activeCellRef = useRef(activeCell);
+  const liveValueRef = useRef<number | ''>('');
+  const activeValueRef = useRef<number | ''>('');
+  const liveFeedIdRef = useRef<number | null>(null);
+
+  const rememberFeedPick = useCallback(
+    (cell: NonNullable<typeof activeCell>, feedId: number | null) => {
+      if (feedId == null) return;
+      const group = COLS.find((c) => c.key === cell.col)?.group;
+      if (group === 'pellet' || group === 'fresh') {
+        setFeedSelection(cell.pondKey, group, feedId);
+      }
+    },
+    [setFeedSelection],
+  );
+
+  // Commit the in-progress keypad amount + feed id (backend requires the id
+  // when logging pellet/fresh amounts).
+  const commitLiveEdit = useCallback(
+    (cell: NonNullable<typeof activeCell>) => {
+      rememberFeedPick(cell, liveFeedIdRef.current);
+      setCellValue(cell.pondKey, cell.col, liveValueRef.current);
+    },
+    [rememberFeedPick, setCellValue],
+  );
+
   const tableWidth = TABLE_W;
 
   const onRowsHorizontalScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -188,15 +217,14 @@ export function DailyLogView({
       // Tapping another cell while one is being edited commits the outgoing cell
       // first, then opens the tapped one. The in-progress value lives only in
       // `liveValue` (which resets on switch), so without this commit the typed
-      // digits would be lost. Reads current cell + value from refs so this stays
-      // stable across keystrokes. No-op commit when the value is unchanged.
+      // digits would be lost.
       const cur = activeCellRef.current;
       if (cur && (cur.pondKey !== pondKey || cur.col !== col)) {
-        setCellValue(cur.pondKey, cur.col, liveValueRef.current);
+        commitLiveEdit(cur);
       }
       setActiveCell({ pondKey, col });
     },
-    [setCellValue, setActiveCell],
+    [commitLiveEdit, setActiveCell],
   );
 
   const scrollToFirstDirty = useCallback(() => {
@@ -277,32 +305,46 @@ export function DailyLogView({
     [navigateMonth, onChangeFarm, onBack],
   );
 
+  // Flush the in-progress keypad edit before leaving (nav/back/picker are
+  // tappable behind the sheet). Without this the typed value — only in
+  // `liveValue` — is dropped and the dirty guard misses it.
+  const flushActiveEdit = useCallback(() => {
+    const cur = activeCellRef.current;
+    let flushedDirty = false;
+    if (cur) {
+      flushedDirty = liveValueRef.current !== activeValueRef.current;
+      commitLiveEdit(cur);
+      setActiveCell(null);
+    }
+    return monthEditsCount > 0 || flushedDirty;
+  }, [monthEditsCount, commitLiveEdit, setActiveCell]);
+
   const requestMonthChange = useCallback(
     (delta: number) => {
-      // Guard on the whole month's drafts, not just the visible day — leaving
-      // a month with any unsaved edit prompts save/discard so drafts can't be
-      // stranded on a day the user can't see.
-      if (monthEditsCount > 0) {
+      // Guard on the whole month's drafts (incl. the in-progress edit), not just
+      // the visible day — leaving a month with any unsaved edit prompts
+      // save/discard so drafts can't be stranded on a day the user can't see.
+      if (flushActiveEdit()) {
         setSaveError(null);
         setPending({ kind: 'month', delta });
         return;
       }
       navigateMonth(delta);
     },
-    [monthEditsCount, navigateMonth],
+    [flushActiveEdit, navigateMonth],
   );
 
   const onPrevMonth = useCallback(() => requestMonthChange(-1), [requestMonthChange]);
   const onNextMonth = useCallback(() => requestMonthChange(1), [requestMonthChange]);
 
   const onBackPress = useCallback(() => {
-    if (monthEditsCount > 0) {
+    if (flushActiveEdit()) {
       setSaveError(null);
       setPending({ kind: 'back' });
       return;
     }
     onBack?.();
-  }, [monthEditsCount, onBack]);
+  }, [flushActiveEdit, onBack]);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -331,14 +373,14 @@ export function DailyLogView({
       const target = year * 12 + monthIdx;
       const delta = target - cur;
       if (delta === 0) return;
-      if (monthEditsCount > 0) {
+      if (flushActiveEdit()) {
         setSaveError(null);
         setPending({ kind: 'month', delta });
         return;
       }
       navigateMonth(delta);
     },
-    [selectedDate, monthEditsCount, navigateMonth],
+    [selectedDate, flushActiveEdit, navigateMonth],
   );
 
   const onFarmPress = useCallback(() => setPickerOpen(true), []);
@@ -347,14 +389,14 @@ export function DailyLogView({
     (id: number) => {
       setPickerOpen(false);
       if (id === activeFarmId) return;
-      if (monthEditsCount > 0) {
+      if (flushActiveEdit()) {
         setSaveError(null);
         setPending({ kind: 'farm', farmId: id });
         return;
       }
       onChangeFarm(id);
     },
-    [activeFarmId, monthEditsCount, onChangeFarm],
+    [activeFarmId, flushActiveEdit, onChangeFarm],
   );
 
   const onGuardDismiss = useCallback(() => {
@@ -453,22 +495,9 @@ export function DailyLogView({
     setLiveValue(activeValue);
   }
 
-  // Latest cell + typed value for `handleCellTap` (memoized without these deps).
-  const activeCellRef = useRef(activeCell);
-  const liveValueRef = useRef(liveValue);
   activeCellRef.current = activeCell;
   liveValueRef.current = liveValue;
-
-  const rememberFeedPick = useCallback(
-    (cell: NonNullable<typeof activeCell>, feedId: number | null) => {
-      if (feedId == null) return;
-      const group = COLS.find((c) => c.key === cell.col)?.group;
-      if (group === 'pellet' || group === 'fresh') {
-        setFeedSelection(cell.pondKey, group, feedId);
-      }
-    },
-    [setFeedSelection],
-  );
+  activeValueRef.current = activeValue;
 
   const onNumpadCommit = useCallback(
     (value: number | '', feedId: number | null) => {
@@ -494,6 +523,10 @@ export function DailyLogView({
   // `liveValue` only, never `overrides`. The cell itself stays a Pressable
   // (opens the numpad), never a direct text input.
   const onNumpadChange = useCallback((value: number | '') => setLiveValue(value), []);
+
+  const onNumpadFeedChange = useCallback((feedId: number | null) => {
+    liveFeedIdRef.current = feedId;
+  }, []);
 
   const onNumpadCancel = useCallback(() => setActiveCell(null), [setActiveCell]);
 
@@ -632,6 +665,7 @@ export function DailyLogView({
           isLastCell={activeCellIsLast}
           bottomInset={bottomInset}
           onHeight={setNumpadH}
+          onFeedChange={onNumpadFeedChange}
           onChange={onNumpadChange}
           onCancel={onNumpadCancel}
           onCommit={onNumpadCommit}

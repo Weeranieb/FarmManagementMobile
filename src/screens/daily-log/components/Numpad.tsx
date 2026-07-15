@@ -64,6 +64,12 @@ type Props = {
    *  an estimate — so it stays correct across screen sizes, densities, columns
    *  (feed selector on/off), and when the validation hint grows the sheet. */
   onHeight?: (h: number) => void;
+  /** Reports the selected feed-collection id (null for columns without a feed
+   *  type) whenever it changes — including the initial default. Lets the host
+   *  record the pick as soon as the cell is focused, so a pellet/fresh amount
+   *  is never committed (via cell-switch or a live edit) without the feed id
+   *  the backend requires. */
+  onFeedChange?: (feedId: number | null) => void;
 };
 
 function applyKey(prev: string, key: string, integer: boolean): string {
@@ -163,6 +169,7 @@ export function Numpad({
   onCommit,
   onNext,
   onHeight,
+  onFeedChange,
 }: Props) {
   const { t } = useTheme();
   const meta = COLS.find((c) => c.key === col);
@@ -205,6 +212,12 @@ export function Numpad({
       lastUsedFeedId != null && feeds.some((f) => f.id === lastUsedFeedId) ? lastUsedFeedId : null;
     setSelectedFeedId(fromLastEntry ?? feeds[0]?.id ?? null);
   }, [feeds, supportsFeedType, selectedFeedId, lastUsedFeedId]);
+
+  // Surface the effective feed pick (default or user-chosen) to the host so it
+  // can record it the moment the cell is focused — see `onFeedChange` doc.
+  useEffect(() => {
+    onFeedChange?.(supportsFeedType ? selectedFeedId : null);
+  }, [selectedFeedId, supportsFeedType, onFeedChange]);
 
   // Re-seed only when the *cell* changes — not when `initialValue` changes
   // (pond-ledger writes live on every keystroke; reseeding would clobber typing).

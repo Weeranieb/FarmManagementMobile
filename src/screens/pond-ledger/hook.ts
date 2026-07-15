@@ -63,7 +63,9 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
   const [ym, setYm] = useState(ymProp ?? currentMonthStr);
   // Drafts are keyed by month (YYYY-MM) so unsaved edits in one month never
   // bleed into another when the user navigates the month arrows.
-  const [draftsByMonth, setDraftsByMonth] = useState<Record<string, Record<number, CellValues>>>({});
+  const [draftsByMonth, setDraftsByMonth] = useState<Record<string, Record<number, CellValues>>>(
+    {},
+  );
   const drafts = draftsByMonth[ym] ?? EMPTY_DRAFTS;
   // Feed-collection picks made in the keypad (per group) win over the ids the
   // month GET returned — mirrors the daily-log editor's save contract.
@@ -354,6 +356,18 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
     }
   }, [dirtyDays, invalidCount, valuesForDay, ym, feedPick, log, upsert]);
 
+  // Drop the current month's drafts (used by the "leave without saving" path of
+  // the unsaved-changes prompt). Other months keep their pending edits, mirroring
+  // `save`'s cleanup.
+  const discardMonth = useCallback(() => {
+    setDraftsByMonth((prev) => {
+      if (!(ym in prev)) return prev;
+      const { [ym]: _omit, ...rest } = prev;
+      return rest;
+    });
+    setEditing(null);
+  }, [ym]);
+
   return {
     pond,
     isLoading,
@@ -389,6 +403,7 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
     goNextMonth,
     goToMonth,
     save,
+    discardMonth,
   };
 }
 

@@ -10,6 +10,7 @@ import { Numpad } from '@/screens/daily-log/components/Numpad';
 import { SaveBar } from '@/screens/daily-log/components/SaveBar';
 import { MonthYearPickerSheet } from '@/screens/daily-log/components/MonthYearPickerSheet';
 import { ConfirmMonthSaveSheet } from '@/screens/daily-log/components/ConfirmMonthSaveSheet';
+import { UnsavedChangesDialog } from '@/screens/daily-log/components/UnsavedChangesDialog';
 import {
   SaveStatusToast,
   type SaveToastStatus,
@@ -66,6 +67,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
     goNextMonth,
     goToMonth,
     save,
+    discardMonth,
   } = state;
 
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -88,6 +90,67 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
   }, [saveToast, dirtyDays.length, save]);
   const dismissToast = useCallback(() => setSaveToast(null), []);
 
+  // Prompt when leaving with drafts (nav/back tappable behind keypad).
+  type LeaveIntent =
+    | { kind: 'prev' }
+    | { kind: 'next' }
+    | { kind: 'goto'; y: number; m: number }
+    | { kind: 'back' };
+  const [leave, setLeave] = useState<LeaveIntent | null>(null);
+  const [leaveError, setLeaveError] = useState<string | null>(null);
+
+  const doLeave = useCallback(
+    (intent: LeaveIntent) => {
+      if (intent.kind === 'prev') goPrevMonth();
+      else if (intent.kind === 'next') goNextMonth();
+      else if (intent.kind === 'goto') goToMonth(intent.y, intent.m);
+      else onBack?.();
+    },
+    [goPrevMonth, goNextMonth, goToMonth, onBack],
+  );
+
+  const requestLeave = useCallback(
+    (intent: LeaveIntent) => {
+      if (dirtyDays.length > 0) {
+        closeKeypad();
+        setLeaveError(null);
+        setLeave(intent);
+        return;
+      }
+      doLeave(intent);
+    },
+    [dirtyDays.length, closeKeypad, doLeave],
+  );
+
+  const onLeaveDiscard = useCallback(() => {
+    const intent = leave;
+    if (!intent) return;
+    setLeave(null);
+    discardMonth();
+    doLeave(intent);
+  }, [leave, discardMonth, doLeave]);
+
+  const onLeaveSaveAndExit = useCallback(async () => {
+    const intent = leave;
+    if (!intent) return;
+    if (invalidCount > 0) {
+      setLeaveError('มีค่าที่เกินกำหนด แก้ไขก่อนจึงจะบันทึกได้');
+      return;
+    }
+    const result = await save();
+    if (result.ok) {
+      setLeave(null);
+      doLeave(intent);
+    } else {
+      setLeaveError(result.error ?? 'บันทึกไม่สำเร็จ — โปรดลองใหม่');
+    }
+  }, [leave, invalidCount, save, doLeave]);
+
+  const onLeaveDismiss = useCallback(() => {
+    setLeave(null);
+    setLeaveError(null);
+  }, []);
+
   const fishType = pond?.fishTypes?.[0] ? (FISH_TH[pond.fishTypes[0]] ?? pond.fishTypes[0]) : '';
   const subtitle = [pond?.farmName, fishType, pond ? `${fmt.num(pond.totalFish)} ตัว` : '']
     .filter(Boolean)
@@ -97,6 +160,11 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
   const scrollYRef = useRef(0);
   const rowNodes = useRef<Record<number, View | null>>({});
   const rowY = useRef<Record<number, number>>({}); // content offset (y within scroll content) per day
+  // Numpad feed pick — written with the amount on every keystroke.
+  const liveFeedIdRef = useRef<number | null>(null);
+  const onNumpadFeedChange = useCallback((feedId: number | null) => {
+    liveFeedIdRef.current = feedId;
+  }, []);
   // Actual rendered numpad height, measured on layout (Numpad's `onHeight`).
   // Drives both the scroll-to-reveal target and the scroll padding so the
   // edited cell clears the *real* keypad — correct on any screen size /
@@ -161,7 +229,9 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
             paddingBottom: 10,
           }}
         >
-          {onBack ? <IconBtn onPress={onBack} icon="back" label="ย้อนกลับ" /> : null}
+          {onBack ? (
+            <IconBtn onPress={() => requestLeave({ kind: 'back' })} icon="back" label="ย้อนกลับ" />
+          ) : null}
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text
               numberOfLines={1}
@@ -188,7 +258,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
         <View style={{ paddingHorizontal: 12, paddingBottom: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <IconBtn
-              onPress={goPrevMonth}
+              onPress={() => requestLeave({ kind: 'prev' })}
               icon="chevL"
               label="เดือนก่อน"
               size={34}
@@ -215,7 +285,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
               <Icon.arrowDown size={13} color={t.inkSoft} />
             </Pressable>
             <IconBtn
-              onPress={goNextMonth}
+              onPress={() => requestLeave({ kind: 'next' })}
               icon="chevR"
               label="เดือนถัดไป"
               size={34}
@@ -323,7 +393,8 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
           isLastCell={isLastCell}
           bottomInset={insets.bottom}
           onHeight={setNumpadH}
-          onChange={(v) => setCell(editing.day, editing.col, v)}
+          onFeedChange={onNumpadFeedChange}
+          onChange={(v) => setCell(editing.day, editing.col, v, liveFeedIdRef.current)}
           onCancel={closeKeypad}
           onCommit={(v, feedId) => {
             setCell(editing.day, editing.col, v, feedId);
@@ -346,8 +417,9 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
         bottomInset={insets.bottom}
         onClose={() => setPickerOpen(false)}
         onConfirm={(y, monthIdx) => {
-          goToMonth(y, monthIdx);
           setPickerOpen(false);
+          if (y === year && monthIdx === m0) return; // same month — nothing to leave
+          requestLeave({ kind: 'goto', y, m: monthIdx });
         }}
       />
 
@@ -363,6 +435,17 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
           onConfirm={runSave}
         />
       ) : null}
+
+      <UnsavedChangesDialog
+        visible={leave !== null}
+        dirtyCount={dirtyDays.length}
+        unit="วัน"
+        source={leave?.kind === 'back' ? 'back' : 'month'}
+        error={leaveError}
+        onDismiss={onLeaveDismiss}
+        onDiscard={onLeaveDiscard}
+        onSaveAndExit={onLeaveSaveAndExit}
+      />
     </View>
   );
 }
