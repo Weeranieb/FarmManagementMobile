@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useFarmsData } from '@/features/farm';
 import { FISH_TH } from '@/utils/fmt';
 import { usePondsData, type PondModel } from '@/features/pond';
+import { useSearchQuery } from '@/hooks/useSearchQuery';
 
 export type PondFilter = 'all' | 'active' | 'maintenance';
 
@@ -28,8 +29,7 @@ export function useFarmPondsScreen(farmId: number): {
   const ponds = useMemo(() => (Array.isArray(pondsRaw) ? pondsRaw : []), [pondsRaw]);
 
   const [filter, setFilter] = useState<PondFilter>('all');
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const { searchOpen, query, onOpenSearch, onCloseSearch, onChangeQuery } = useSearchQuery();
 
   const counts = useMemo<PondCounts>(
     () => ({
@@ -63,12 +63,6 @@ export function useFarmPondsScreen(farmId: number): {
   }, [ponds, filter, query, searchOpen]);
 
   const onChangeFilter = useCallback((f: PondFilter) => setFilter(f), []);
-  const onOpenSearch = useCallback(() => setSearchOpen(true), []);
-  const onCloseSearch = useCallback(() => {
-    setSearchOpen(false);
-    setQuery('');
-  }, []);
-  const onChangeQuery = useCallback((s: string) => setQuery(s), []);
 
   return {
     farmTitle,

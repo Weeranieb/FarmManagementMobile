@@ -3,7 +3,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { Btn } from '@/components/ui';
-import { BottomSheet } from '@/components/sheet';
+import { SheetShell } from '@/components/sheet';
 import type { MerchantModel } from '@/features/merchant';
 
 /**
@@ -33,7 +33,7 @@ export function MerchantSheet({
 }) {
   const { t } = useTheme();
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="เลือกผู้ซื้อ / ตลาด" maxHeight="72%">
+    <SheetShell visible={visible} onClose={onClose} title="เลือกผู้ซื้อ / ตลาด" heightPct={0.72}>
       {merchants.length === 0 ? (
         <View
           style={{
@@ -160,6 +160,6 @@ export function MerchantSheet({
           })}
         </ScrollView>
       )}
-    </BottomSheet>
+    </SheetShell>
   );
 }

@@ -30,15 +30,3 @@ export function movePond(pondId: number, body: MovePondRequest): Promise<unknown
 export function sellPond(pondId: number, body: SellPondRequest): Promise<unknown> {
   return http.post(`/pond/${pondId}/sell`, body);
 }
-
-export function previewFillPond(pondId: number, body: FillPondRequest): Promise<unknown> {
-  return http.post(`/pond/${pondId}/fill/preview`, body);
-}
-
-export function previewMovePond(pondId: number, body: MovePondRequest): Promise<unknown> {
-  return http.post(`/pond/${pondId}/move/preview`, body);
-}
-
-export function previewSellPond(pondId: number, body: SellPondRequest): Promise<unknown> {
-  return http.post(`/pond/${pondId}/sell/preview`, body);
-}

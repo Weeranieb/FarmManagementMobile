@@ -7,7 +7,7 @@ import { pondKeys } from '@/features/pond';
 import { thaiDate } from '@/locale/thaiDate';
 import { log, type HomeDigest } from './constants';
 import { useHomeDigest } from './useHomeDigest';
-import type { ActivityItem } from './components/activity-row';
+import { toActivityItem, type ActivityItem } from './components/activity-row';
 
 // How many recent events the Home strip shows (matches the design's 6-row cap).
 const HOME_ACTIVITY_LIMIT = 6;
@@ -69,15 +69,8 @@ export function useHomeScreen({ variant, justSavedCount = 0 }: HookProps): HomeS
   const activity = useMemo<ActivityItem[]>(() => {
     if (isEmpty) return [];
     return feed.data.slice(0, HOME_ACTIVITY_LIMIT).map((m) => ({
-      id: String(m.id),
-      kind: m.kind,
+      ...toActivityItem(m, me),
       whenLabel: homeWhenLabel(m.dateKey, m.whenLabel),
-      pond: m.pondLabel,
-      text: m.text,
-      by: m.byUsername === me ? 'คุณ' : m.byName,
-      extra: m.merchant,
-      recordType: m.kind,
-      recordId: m.id,
     }));
   }, [feed.data, me, isEmpty]);
 

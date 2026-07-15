@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
-import { SheetShell } from '@/screens/account-info/components/SheetShell';
+import { toIsoDate } from '@/shared/time';
+import { SheetShell } from '@/components/sheet';
 import type { FeedCollectionModel } from '@/features/feed-collection';
 import { feedPaletteFor } from '../feedPalette';
 import { DateField } from '@/components/date-selector';
 import { feedGlyphFor } from './FeedIcons';
+import { FInput } from './FInput';
 
 type Props = {
   visible: boolean;
@@ -63,7 +65,7 @@ export function SheetUpdatePrice({ visible, feed, onClose, onSubmit }: Props) {
     onSubmit?.({
       id: feed.id,
       price: Number.isFinite(n) ? n : fallback,
-      effectiveDate: toYmd(effectiveDate),
+      effectiveDate: toIsoDate(effectiveDate),
     });
     onClose();
   };
@@ -170,7 +172,15 @@ export function SheetUpdatePrice({ visible, feed, onClose, onSubmit }: Props) {
         </View>
 
         <Field label="ราคาใหม่">
-          <PriceInput value={next} onChangeText={setNext} suffix={`฿/${feed.unit}`} />
+          <FInput
+            value={next}
+            onChangeText={setNext}
+            suffix={`฿/${feed.unit}`}
+            numeric
+            hero
+            keyboardType="decimal-pad"
+            placeholder="0"
+          />
         </Field>
 
         <Field label="วันที่มีผล">
@@ -230,57 +240,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </View>
   );
-}
-
-function PriceInput({
-  value,
-  onChangeText,
-  suffix,
-}: {
-  value: string;
-  onChangeText: (s: string) => void;
-  suffix: string;
-}) {
-  const { t } = useTheme();
-  return (
-    <View
-      style={{
-        height: 52,
-        borderRadius: radii.md,
-        backgroundColor: t.surface,
-        borderWidth: 1.5,
-        borderColor: t.border,
-        paddingHorizontal: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-      }}
-    >
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType="decimal-pad"
-        placeholder="0"
-        placeholderTextColor={t.inkMute}
-        style={{
-          flex: 1,
-          color: t.ink,
-          fontFamily: type.familyNumBold,
-          fontSize: 22,
-          letterSpacing: -0.3,
-          paddingVertical: 0,
-        }}
-      />
-      <Text style={{ fontSize: 14, color: t.inkMute, fontFamily: type.familyNum }}>{suffix}</Text>
-    </View>
-  );
-}
-
-function toYmd(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
 }
 
 function DiffHint({ delta, pct }: { delta: number; pct: number }) {

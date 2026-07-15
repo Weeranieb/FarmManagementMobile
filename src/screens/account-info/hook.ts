@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { changeMyPassword, getMe, updateMe, useAuthStore } from '@/features/auth';
 import type { UserResponse } from '@/features/auth';
+import { apiErrorMessage } from '@/shared/http';
 import { WRONG_CURRENT_PASSWORD } from './components/ChangePasswordSheet';
 
 const WRONG_CURRENT_PASSWORD_CODE = '500021';
@@ -123,11 +124,10 @@ export function useAccountInfoForm() {
       Alert.alert(tx('profile.account.toast.saved'));
       router.back();
     } catch (err) {
-      const message =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : tx('profile.account.toast.error');
-      Alert.alert(tx('profile.account.toast.error'), message);
+      Alert.alert(
+        tx('profile.account.toast.error'),
+        apiErrorMessage(err, tx('profile.account.toast.error')),
+      );
     } finally {
       setSaving(false);
     }
@@ -162,10 +162,7 @@ export function useAccountInfoForm() {
             code: WRONG_CURRENT_PASSWORD,
           });
         }
-        const message =
-          err && typeof err === 'object' && 'message' in err
-            ? String((err as { message: unknown }).message)
-            : tx('profile.account.toast.error');
+        const message = apiErrorMessage(err, tx('profile.account.toast.error'));
         Alert.alert(tx('profile.password.title'), message);
         throw err;
       }

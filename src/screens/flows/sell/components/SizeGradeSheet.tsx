@@ -2,7 +2,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
-import { BottomSheet } from '@/components/sheet';
+import { SheetShell } from '@/components/sheet';
 import type { SizeGradeModel } from '@/features/size-grade';
 
 /**
@@ -26,7 +26,7 @@ export function SizeGradeSheet({
 }) {
   const { t } = useTheme();
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="เลือกไซส์ปลา" maxHeight="72%">
+    <SheetShell visible={visible} onClose={onClose} title="เลือกไซส์ปลา" heightPct={0.72}>
       {grades.length === 0 ? (
         <View style={{ paddingVertical: 24, alignItems: 'center' }}>
           <Text style={{ fontSize: 13, color: t.inkMute, fontFamily: type.family }}>
@@ -72,6 +72,6 @@ export function SizeGradeSheet({
           })}
         </ScrollView>
       )}
-    </BottomSheet>
+    </SheetShell>
   );
 }

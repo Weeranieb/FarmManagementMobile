@@ -1,4 +1,5 @@
 import { FISH_TH, fmt } from '@/utils/fmt';
+import { toIsoDate } from '@/shared/time';
 import type { ActivityFeedItem } from './types';
 
 /** UI-facing model for one feed event — presentation strings precomposed
@@ -29,11 +30,6 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-/** Local-time YYYY-MM-DD of a timestamp. */
-function localYmd(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-}
-
 function composeText(a: ActivityFeedItem): string {
   const fish = fishLabel(a.fishType);
   switch (a.mode) {
@@ -56,7 +52,7 @@ export function adaptActivityFeedItem(a: ActivityFeedItem): ActivityEventModel {
   // would shift the day for UTC-negative zones).
   const dateKey = a.activityDate.slice(0, 10);
   const created = new Date(a.createdAt);
-  const sameDay = localYmd(created) === dateKey;
+  const sameDay = toIsoDate(created) === dateKey;
   const whenLabel = sameDay
     ? `${pad2(created.getHours())}:${pad2(created.getMinutes())} น.`
     : 'บันทึกย้อนหลัง';

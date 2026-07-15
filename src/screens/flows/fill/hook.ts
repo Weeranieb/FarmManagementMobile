@@ -1,27 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { useFarmsData } from '@/features/farm';
-import {
-  useFillPond,
-  usePondData,
-  usePondsData,
-  type AdditionalCostItem,
-} from '@/features/pond';
+import { useFillPond, usePondData, usePondsData } from '@/features/pond';
 import { useAuthStore } from '@/features/auth';
+import { apiErrorMessage } from '@/shared/http';
 import { toIsoDate } from '@/shared/time';
-import {
-  additionalCostsTotal,
-  type CostRow,
-} from '../additional-costs';
-
-/** Map UI rows to the wire-format `AdditionalCostItem[]`. Empty rows are
- *  dropped; partial rows (title but no amount, or vice-versa) keep their
- *  non-empty side and default the other to a sensible value. */
-function toWireCosts(rows: CostRow[]): AdditionalCostItem[] {
-  return rows
-    .map((r) => ({ title: r.category.trim(), cost: parseFloat(r.amount) || 0 }))
-    .filter((c) => c.title.length > 0 && c.cost > 0);
-}
+import { additionalCostsTotal, toWireCosts, type CostRow } from '../additional-costs';
 
 export function useFillFlow(initialPondId: number | undefined, onClose?: () => void) {
   const fromFab = initialPondId == null;
@@ -120,11 +104,7 @@ export function useFillFlow(initialPondId: number | undefined, onClose?: () => v
       });
       onClose?.();
     } catch (err) {
-      const msg =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : 'บันทึกไม่สำเร็จ';
-      Alert.alert('บันทึกไม่สำเร็จ', msg);
+      Alert.alert('บันทึกไม่สำเร็จ', apiErrorMessage(err, 'บันทึกไม่สำเร็จ'));
     }
   };
 

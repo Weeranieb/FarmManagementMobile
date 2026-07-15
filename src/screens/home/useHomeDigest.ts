@@ -9,22 +9,13 @@ import {
   type DailyLogEntry,
   type DailyLogResponse,
 } from '@/features/daily-log';
-import { today } from '@/shared/time';
+import { today, toMonthKey } from '@/shared/time';
 import type { HomeDigest, PendingPond } from './constants';
 
 // Per-pond month queries are cheap to keep warm and rarely change within a
 // session — match the staleTime the Farms / Daily Log screens use so the three
 // screens share one set of cached queries instead of refetching on every hop.
 const STALE = 60_000;
-
-function pad2(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
-/** YYYY-MM in local time — the `month` query param the daily-log endpoint expects. */
-function monthKey(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
-}
 
 /**
  * Consecutive unlogged days immediately before `day`, read off the month's set
@@ -127,7 +118,7 @@ export function useHomeDigest(): HomeDigestState {
 
   // (2) Per-active-pond monthly daily-log. Keyed exactly like the Daily Log
   //     screen (dailyLogKeys.month) so the cache is shared, not duplicated.
-  const month = monthKey(today);
+  const month = toMonthKey(today);
   const day = today.getDate();
   const activePondIds = useMemo(() => activePonds.map((p) => p.id), [activePonds]);
   const logQueries = useQueries({

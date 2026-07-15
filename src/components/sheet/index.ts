@@ -1,1 +1,1 @@
-export { BottomSheet } from './BottomSheet';
+export { SheetShell } from './SheetShell';

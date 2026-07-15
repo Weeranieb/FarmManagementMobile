@@ -13,3 +13,15 @@ export function toIsoDate(d: Date): string {
   const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 }
+
+/** Format a Date as YYYY-MM in local time (CE month key for queries). */
+export function toMonthKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** Build an RFC3339 timestamp at noon UTC from a YYYY-MM-DD calendar date.
+ *  Noon avoids timezone slips flipping the calendar day when the server or
+ *  client is west of UTC. */
+export function toNoonUtcIso(ymd: string): string {
+  return new Date(`${ymd}T12:00:00Z`).toISOString();
+}

@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { warnInk } from '@/theme/ink';
 import { Row } from '@/components/layout/Row';
-import { SheetShell } from '@/screens/account-info/components/SheetShell';
+import { toIsoDate } from '@/shared/time';
+import { SheetShell } from '@/components/sheet';
 import type { FeedCollectionModel, FeedKind } from '@/features/feed-collection';
 import { FEED_PILL_TONE_BY_KIND, FEED_UNIT_BY_KIND, feedPaletteFor } from '../feedPalette';
 import { DateField } from '@/components/date-selector';
 import { feedGlyphFor } from './FeedIcons';
+import { FInput } from './FInput';
 
 export type AddFeedSubmitPayload = {
   name: string;
@@ -69,7 +71,7 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
       unit,
       price: Number.isFinite(numericPrice) ? numericPrice : 0,
       fcr: numericFcr != null && Number.isFinite(numericFcr) ? numericFcr : null,
-      effectiveDate: toYmd(effectiveDate),
+      effectiveDate: toIsoDate(effectiveDate),
     });
     onClose();
   };
@@ -99,7 +101,12 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
             </Text>
             <Text
               numberOfLines={1}
-              style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}
+              style={{
+                fontSize: type.sizes.xs,
+                color: t.inkMute,
+                fontFamily: type.family,
+                marginTop: 2,
+              }}
             >
               {isEdit ? 'แก้ไขรายละเอียด · ราคาแก้ไขแยก' : 'กรอกข้อมูลพื้นฐาน + ราคาเริ่มต้น'}
             </Text>
@@ -167,7 +174,9 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
 
         {!isEdit ? (
           <>
-            <View style={{ height: 1, backgroundColor: t.border, marginTop: 4, marginBottom: 18 }} />
+            <View
+              style={{ height: 1, backgroundColor: t.border, marginTop: 4, marginBottom: 18 }}
+            />
             <SectionLabel>ราคาเริ่มต้น</SectionLabel>
 
             <Field label="ราคา">
@@ -265,7 +274,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   const { t } = useTheme();
   return (
     <Text
-      style={{ fontSize: type.sizes.sm, fontFamily: type.familyBold, color: t.inkMute, marginBottom: 12 }}
+      style={{
+        fontSize: type.sizes.sm,
+        fontFamily: type.familyBold,
+        color: t.inkMute,
+        marginBottom: 12,
+      }}
     >
       {children}
     </Text>
@@ -293,83 +307,6 @@ function Field({
       {children}
     </View>
   );
-}
-
-type FInputProps = {
-  value: string;
-  onChangeText: (s: string) => void;
-  placeholder?: string;
-  suffix?: string;
-  /** Hero treatment — taller, sunken panel, xxl number. For the focal price field. */
-  hero?: boolean;
-  numeric?: boolean;
-  editable?: boolean;
-  keyboardType?: 'default' | 'decimal-pad' | 'numeric';
-};
-
-function FInput({
-  value,
-  onChangeText,
-  placeholder,
-  suffix,
-  hero,
-  numeric,
-  editable = true,
-  keyboardType = 'default',
-}: FInputProps) {
-  const { t } = useTheme();
-  return (
-    <View
-      style={{
-        height: hero ? 60 : 52,
-        borderRadius: radii.md,
-        backgroundColor: hero ? t.surfaceSunk : editable ? t.surface : t.surfaceAlt,
-        borderWidth: 1.5,
-        borderColor: t.border,
-        paddingHorizontal: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        opacity: editable ? 1 : 0.55,
-      }}
-    >
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={t.inkMute}
-        editable={editable}
-        keyboardType={keyboardType}
-        autoCorrect={false}
-        style={{
-          flex: 1,
-          color: t.ink,
-          fontFamily: numeric ? (hero ? type.familyNumBold : type.familyNum) : type.family,
-          fontSize: hero ? type.sizes.xxl : 15.5,
-          letterSpacing: hero ? -0.4 : 0,
-          paddingVertical: 0,
-        }}
-      />
-      {suffix ? (
-        <Text
-          style={{
-            fontSize: hero ? 15 : 13,
-            color: t.inkSoft,
-            fontFamily: type.familyNum,
-          }}
-        >
-          {suffix}
-        </Text>
-      ) : null}
-    </View>
-  );
-}
-
-function toYmd(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
 }
 
 function Segmented<T extends string>({

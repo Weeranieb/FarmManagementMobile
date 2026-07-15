@@ -5,24 +5,15 @@ import {
   usePondData,
   usePondsData,
   useSellPond,
-  type AdditionalCostItem,
   type PondModel,
   type SellPondDetailItem,
 } from '@/features/pond';
 import { useMerchantsData } from '@/features/merchant';
 import { useFishSizeGradesData } from '@/features/size-grade';
 import { useAuthStore } from '@/features/auth';
+import { apiErrorMessage } from '@/shared/http';
 import { toIsoDate } from '@/shared/time';
-import {
-  additionalCostsTotal,
-  type CostRow,
-} from '../additional-costs';
-
-function toWireCosts(rows: CostRow[]): AdditionalCostItem[] {
-  return rows
-    .map((r) => ({ title: r.category.trim(), cost: parseFloat(r.amount) || 0 }))
-    .filter((c) => c.title.length > 0 && c.cost > 0);
-}
+import { additionalCostsTotal, toWireCosts, type CostRow } from '../additional-costs';
 
 /**
  * One editable sell-row in the UI. Values are strings so partial input
@@ -197,11 +188,7 @@ export function useSellFlow(initialPondId: number | undefined, onClose?: () => v
       });
       onClose?.();
     } catch (err) {
-      const msg =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : 'บันทึกไม่สำเร็จ';
-      Alert.alert('ขายปลาไม่สำเร็จ', msg);
+      Alert.alert('ขายปลาไม่สำเร็จ', apiErrorMessage(err, 'บันทึกไม่สำเร็จ'));
     }
   };
 

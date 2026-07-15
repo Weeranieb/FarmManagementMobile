@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useFarmsData } from '@/features/farm';
+import { displayFarmName } from '@/utils/fmt';
 import { useDailyLogV6 } from './hook';
 import { DailyLogView } from './view';
 
@@ -34,8 +35,7 @@ export function DailyLogScreen({ farmId, initialPondId, onBack, bottomInset }: P
 
   const activeFarm =
     (activeFarmId != null ? farms.find((f) => f.id === activeFarmId) : undefined) ?? farms[0];
-  const rawName = activeFarm?.name?.trim() ?? '';
-  const farmName = rawName ? (rawName.startsWith('ฟาร์ม') ? rawName : `ฟาร์ม ${rawName}`) : 'ฟาร์ม';
+  const farmName = displayFarmName(activeFarm?.name);
 
   const state = useDailyLogV6(activeFarm?.id ?? null, { initialPondId, farmsLoading });
 

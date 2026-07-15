@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login, useAuthStore } from '@/features/auth';
+import { apiErrorMessage } from '@/shared/http';
 
 export function useLoginScreen() {
   const router = useRouter();
@@ -22,11 +23,7 @@ export function useLoginScreen() {
       await setSession(res.accessToken, res.user);
       router.replace('/(app)/(tabs)/home');
     } catch (err) {
-      const message =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message: unknown }).message)
-          : 'เข้าสู่ระบบล้มเหลว';
-      Alert.alert('เข้าสู่ระบบล้มเหลว', message);
+      Alert.alert('เข้าสู่ระบบล้มเหลว', apiErrorMessage(err, 'เข้าสู่ระบบล้มเหลว'));
     } finally {
       setSubmitting(false);
     }

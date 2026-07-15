@@ -7,7 +7,7 @@ import { Row } from '@/components/layout/Row';
 import { Pill } from '@/components/ui';
 import { fmt } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
-import { SheetShell } from '@/screens/account-info/components/SheetShell';
+import { SheetShell } from '@/components/sheet';
 import type { FeedCollectionModel } from '@/features/feed-collection';
 import { FEED_PILL_TONE_BY_KIND, FEED_TYPE_LABEL_TH } from '../feedPalette';
 import { FeedChartIcon, feedGlyphFor } from './FeedIcons';
@@ -63,7 +63,12 @@ export function SheetFeedActions({
           <View style={{ flex: 1, minWidth: 0, gap: space[1] }}>
             <Text
               numberOfLines={1}
-              style={{ fontSize: type.sizes.lg, fontFamily: type.familyBold, color: t.ink, lineHeight: 24 }}
+              style={{
+                fontSize: type.sizes.lg,
+                fontFamily: type.familyBold,
+                color: t.ink,
+                lineHeight: 24,
+              }}
             >
               {feed.name}
             </Text>
@@ -105,21 +110,33 @@ export function SheetFeedActions({
               <FeedChartIcon size={22} color={toneInk} />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={{ fontSize: type.sizes.md, fontFamily: type.familyBold, color: toneInk }}>
+              <Text
+                style={{ fontSize: type.sizes.md, fontFamily: type.familyBold, color: toneInk }}
+              >
                 อัปเดตราคา
               </Text>
               {feed.price != null ? (
                 <Text
                   numberOfLines={1}
-                  style={{ fontSize: type.sizes.sm, color: toneInk, fontFamily: type.family, marginTop: 2 }}
+                  style={{
+                    fontSize: type.sizes.sm,
+                    color: toneInk,
+                    fontFamily: type.family,
+                    marginTop: 2,
+                  }}
                 >
                   ล่าสุด{' '}
-                  <Text style={{ fontFamily: type.familyNumSemi }}>{fmt.baht(feed.price)}</Text>
-                  /{feed.unit} · <Text style={{ fontFamily: type.familyNum }}>{updatedLabel}</Text>
+                  <Text style={{ fontFamily: type.familyNumSemi }}>{fmt.baht(feed.price)}</Text>/
+                  {feed.unit} · <Text style={{ fontFamily: type.familyNum }}>{updatedLabel}</Text>
                 </Text>
               ) : (
                 <Text
-                  style={{ fontSize: type.sizes.sm, color: toneInk, fontFamily: type.family, marginTop: 2 }}
+                  style={{
+                    fontSize: type.sizes.sm,
+                    color: toneInk,
+                    fontFamily: type.family,
+                    marginTop: 2,
+                  }}
                 >
                   ยังไม่มีราคา — ตั้งราคาแรก
                 </Text>
@@ -197,10 +214,23 @@ function ActionRow({
         {icon}
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={{ fontSize: type.sizes.base, fontFamily: type.familySemi, color: labelColor ?? t.ink }}>
+        <Text
+          style={{
+            fontSize: type.sizes.base,
+            fontFamily: type.familySemi,
+            color: labelColor ?? t.ink,
+          }}
+        >
           {label}
         </Text>
-        <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}>
+        <Text
+          style={{
+            fontSize: type.sizes.sm,
+            color: t.inkMute,
+            fontFamily: type.family,
+            marginTop: 2,
+          }}
+        >
           {sub}
         </Text>
       </View>

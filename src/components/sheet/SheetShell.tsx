@@ -5,13 +5,14 @@ import {
   Platform,
   Pressable,
   StyleSheet,
+  Text,
   View,
   type ViewStyle,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radii, space } from '@/theme/tokens';
+import { radii, space, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { useSheetSlideIn } from '@/screens/daily-log/components/useSheetSlideIn';
 
@@ -25,6 +26,8 @@ type Props = {
   /** Render an explicit close (✕) button top-right — a real dismiss affordance
    *  since the grabber here is decorative (not drag-to-dismiss). */
   showClose?: boolean;
+  /** Optional title row (implies a close control next to the title). */
+  title?: string;
   children?: React.ReactNode;
 };
 
@@ -34,6 +37,7 @@ export function SheetShell({
   heightPct = 0.7,
   fitContent = false,
   showClose = false,
+  title,
   children,
 }: Props) {
   const { t, shadowLg } = useTheme();
@@ -50,9 +54,11 @@ export function SheetShell({
     // Inside a RN Modal the safe-area context can resolve to 0 (the Modal
     // renders outside the provider tree), so floor the fit-content bottom pad
     // to keep the sheet clear of the home indicator either way.
-    paddingBottom: fitContent ? Math.max(insets.bottom, space[4]) : 0,
+    paddingBottom: fitContent ? Math.max(insets.bottom, space[4]) : Math.max(insets.bottom, 0),
     ...shadowLg,
   };
+
+  const showTitleClose = Boolean(title) || showClose;
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
@@ -78,7 +84,7 @@ export function SheetShell({
                     backgroundColor: t.border,
                   }}
                 />
-                {showClose ? (
+                {showClose && !title ? (
                   <Pressable
                     onPress={onClose}
                     accessibilityRole="button"
@@ -100,7 +106,37 @@ export function SheetShell({
                   </Pressable>
                 ) : null}
               </View>
-              {children}
+              {title ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingHorizontal: 20,
+                    marginBottom: 12,
+                  }}
+                >
+                  <Text style={{ fontSize: 16, fontFamily: type.familyBold, color: t.ink }}>
+                    {title}
+                  </Text>
+                  {showTitleClose ? (
+                    <Pressable
+                      onPress={onClose}
+                      hitSlop={10}
+                      style={{ padding: 4 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="ปิด"
+                    >
+                      <Icon.x size={18} color={t.inkMute} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+              {title ? (
+                <View style={{ flex: 1, paddingHorizontal: 20 }}>{children}</View>
+              ) : (
+                children
+              )}
             </View>
           </KeyboardAvoidingView>
         </Animated.View>

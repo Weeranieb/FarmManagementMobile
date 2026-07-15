@@ -13,6 +13,8 @@ import {
   type FeedKind,
   type UpdateFeedCollectionRequest,
 } from '@/features/feed-collection';
+import { useSearchQuery } from '@/hooks/useSearchQuery';
+import { toNoonUtcIso } from '@/shared/time';
 import { FEED_TYPE_LABEL_TH } from './feedPalette';
 
 export type FeedSheetMode = 'actions' | 'add' | 'edit' | 'update-price' | null;
@@ -58,11 +60,6 @@ export type FeedCollectionState = {
   handleOpenHistory: (feed: FeedCollectionModel) => void;
 };
 
-function toIsoTimestamp(yyyyMmDd: string): string {
-  // Anchor the day at noon UTC so timezone wobble doesn't slip the date.
-  return new Date(`${yyyyMmDd}T12:00:00Z`).toISOString();
-}
-
 export function useFeedCollectionScreen(): FeedCollectionState {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -73,8 +70,7 @@ export function useFeedCollectionScreen(): FeedCollectionState {
   const { data: feeds } = useFeedCollectionsData();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const { searchOpen, query, onOpenSearch, onCloseSearch, onChangeQuery } = useSearchQuery();
   const [sheet, setSheet] = useState<FeedSheetMode>(null);
   const [activeFeed, setActiveFeed] = useState<FeedCollectionModel | null>(null);
 
@@ -91,13 +87,6 @@ export function useFeedCollectionScreen(): FeedCollectionState {
       return name.includes(q) || kindLabel.includes(query.trim());
     });
   }, [feeds, query]);
-
-  const onOpenSearch = useCallback(() => setSearchOpen(true), []);
-  const onCloseSearch = useCallback(() => {
-    setSearchOpen(false);
-    setQuery('');
-  }, []);
-  const onChangeQuery = useCallback((s: string) => setQuery(s), []);
 
   const openActions = useCallback((feed: FeedCollectionModel) => {
     setActiveFeed(feed);
@@ -128,7 +117,7 @@ export function useFeedCollectionScreen(): FeedCollectionState {
         feedType: payload.kind,
         fcr: payload.fcr,
         feedPriceHistories: [
-          { price: payload.price, priceUpdatedDate: toIsoTimestamp(payload.effectiveDate) },
+          { price: payload.price, priceUpdatedDate: toNoonUtcIso(payload.effectiveDate) },
         ],
       };
       createMutation.mutate(body);
@@ -156,7 +145,7 @@ export function useFeedCollectionScreen(): FeedCollectionState {
       addPriceMutation.mutate({
         feedCollectionId: payload.id,
         price: payload.price,
-        priceUpdatedDate: toIsoTimestamp(payload.effectiveDate),
+        priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
       });
     },
     [addPriceMutation],

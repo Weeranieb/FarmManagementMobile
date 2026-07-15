@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
+import type { ActivityEventModel } from '@/features/activity';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import type { ThemePalette } from '@/theme/tokens';
@@ -21,6 +22,21 @@ export type ActivityItem = {
   /** When true, render with brand tint + left stripe (fresh save). */
   fresh?: boolean;
 };
+
+/** Map a feed event model to the row shape used by Home + activity history. */
+export function toActivityItem(e: ActivityEventModel, me?: string | null): ActivityItem {
+  return {
+    id: String(e.id),
+    kind: e.kind,
+    whenLabel: e.whenLabel,
+    pond: e.pondLabel,
+    text: e.text,
+    by: e.byUsername === me ? 'คุณ' : e.byName,
+    extra: e.merchant,
+    recordType: e.kind,
+    recordId: e.id,
+  };
+}
 
 type Props = {
   e: ActivityItem;
@@ -73,8 +89,7 @@ export function ActivityRow({ e, divider = false, onPress }: Props) {
   const { t } = useTheme();
   const tone = tonePair(e.kind, t);
 
-  const meta =
-    e.whenLabel + (e.by ? ` · โดย${e.by}` : '') + (e.extra ? ` · ${e.extra}` : '');
+  const meta = e.whenLabel + (e.by ? ` · โดย${e.by}` : '') + (e.extra ? ` · ${e.extra}` : '');
 
   const body = (
     <View
