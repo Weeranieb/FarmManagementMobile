@@ -1,6 +1,7 @@
 import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { PondDetailScreen } from '@/screens/pond-detail';
+import { dailyLogRouteParams } from '@/screens/daily-log/route';
 
 export default function PondDetailRoute() {
   const params = useLocalSearchParams<{ id?: string }>();
@@ -13,10 +14,10 @@ export default function PondDetailRoute() {
         pondId={pondId}
         onBack={() => router.back()}
         onAction={(kind) => router.push(`/(app)/flows/${kind}?pondId=${pondId}`)}
-        onOpenDailyLog={({ farmId, pondId }) =>
+        onOpenDailyLog={(target) =>
           router.push({
             pathname: '/(app)/daily-log',
-            params: { farmId: String(farmId), pondId: String(pondId) },
+            params: dailyLogRouteParams(target),
           })
         }
         onOpenLedger={() =>

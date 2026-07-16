@@ -3,6 +3,7 @@ import { HomeView } from './view';
 import type { SecondaryActionId } from './components/secondary-action-row';
 import type { ActivityItem } from './components/activity-row';
 import type { PendingPond } from './constants';
+import type { DailyLogTarget } from '@/screens/daily-log/route';
 
 type Props = {
   /** Bottom scroll padding so the last row clears the floating toast/tab bar. */
@@ -15,7 +16,7 @@ type Props = {
    *  is `justSaved`. Pass `false` to keep the +3 pill on the card without the
    *  toast (e.g. once it has been dismissed). */
   showSavedToast?: boolean;
-  onOpenDailyLog?: (pondId?: number) => void;
+  onOpenDailyLog?: (target?: DailyLogTarget) => void;
   onOpenActivity?: (e: ActivityItem) => void;
   onOpenSecondaryAction?: (id: SecondaryActionId) => void;
   onCreateFarm?: () => void;

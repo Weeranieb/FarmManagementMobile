@@ -12,6 +12,9 @@ export type PendingPond = {
   /** Pond ID — tap a chip to deep-link Daily Log to this pond. */
   id: number;
   name: string;
+  /** Farm this pond belongs to — needed so the deep link opens the pond's own
+   *  farm, not the default first farm. */
+  farmId: number;
   /** Farm this pond belongs to — the pending list is grouped by farm. */
   farmName: string;
   /** Days the pond has been left unlogged. 0 = today only. */
