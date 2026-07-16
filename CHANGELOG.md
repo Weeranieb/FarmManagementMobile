@@ -9,6 +9,14 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.13](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.12...v0.2.13) (2026-07-15)
+
+
+### Features
+
+* add pond cycle P&L tab and required feed/sell fields ([11ed2e9](https://github.com/Weeranieb/FarmManagementMobile/commit/11ed2e9154a3dfa1719fd2391f2772e64d9964d2))
+* refresh farms list and add close-pond consequences modal ([b9d83e9](https://github.com/Weeranieb/FarmManagementMobile/commit/b9d83e966f394882d69eb2ad5bae3df99e16f456))
+
 ## [0.2.12](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.11...v0.2.12) (2026-07-15)
 
 
