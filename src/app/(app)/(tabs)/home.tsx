@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeProvider';
 import { HomeScreen, type HomeVariant, type SecondaryActionId } from '@/screens/home';
+import { dailyLogRouteParams, type DailyLogTarget } from '@/screens/daily-log/route';
 import type { ActivityItem } from '@/screens/home/components/activity-row';
 import { space } from '@/theme/tokens';
 
@@ -51,9 +52,12 @@ export default function HomeRoute() {
   }, [insets.top]);
 
   const onOpenDailyLog = useCallback(
-    (pondId?: number) => {
-      log('openDailyLog', { pondId });
-      router.push(pondId ? `/(app)/daily-log?pondId=${pondId}` : '/(app)/daily-log');
+    (target?: DailyLogTarget) => {
+      log('openDailyLog', target ?? {});
+      // Thread farmId through so the pond's own farm loads — without it the
+      // Daily Log screen defaults to the first farm and a pond from any other
+      // farm is never found (its chip appears to do nothing).
+      router.push({ pathname: '/(app)/daily-log', params: dailyLogRouteParams(target) });
     },
     [router],
   );

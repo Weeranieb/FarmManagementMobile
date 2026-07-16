@@ -17,6 +17,7 @@ import { EmptyHero, EmptyTrailing } from './components/empty-hero';
 import { SavedToast } from './components/saved-toast';
 import { SectionHeading } from './components/section-heading';
 import { log, type HomeDigest, type PendingPond } from './constants';
+import type { DailyLogTarget } from '@/screens/daily-log/route';
 
 type Props = {
   bottomClearance?: number;
@@ -34,7 +35,7 @@ type Props = {
   /** Toast visibility is independent of `isJustSaved` so the demo can show
    *  the "+3" bump pill on the card without the toast hanging around forever. */
   showSavedToast?: boolean;
-  onOpenDailyLog?: (pondId?: number) => void;
+  onOpenDailyLog?: (target?: DailyLogTarget) => void;
   onOpenActivity?: (e: ActivityItem) => void;
   onOpenSecondaryAction?: (id: SecondaryActionId) => void;
   onCreateFarm?: () => void;
@@ -73,8 +74,13 @@ export function HomeView({
   const bottomPad = bottomClearance ?? space[10];
 
   const handlePending = (pond: PendingPond) => {
-    log('pending chip pressed', { id: pond.id, name: pond.name, lateDays: pond.lateDays });
-    onOpenDailyLog?.(pond.id);
+    log('pending chip pressed', {
+      id: pond.id,
+      name: pond.name,
+      farmId: pond.farmId,
+      lateDays: pond.lateDays,
+    });
+    onOpenDailyLog?.({ pondId: pond.id, farmId: pond.farmId });
   };
   const handleActivity = (e: ActivityItem) => {
     log('activity row pressed', {

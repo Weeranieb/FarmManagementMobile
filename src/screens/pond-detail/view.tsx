@@ -10,6 +10,7 @@ import { fmt } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import { today } from '@/shared/time';
 import type { PondModel } from '@/features/pond';
+import type { DailyLogTarget } from '@/screens/daily-log/route';
 import { ActionPill } from './components/ActionPill';
 import { DailyFeedBody } from './components/DailyFeedBody';
 import { HistoryBody } from './components/HistoryBody';
@@ -35,7 +36,7 @@ type Props = {
   refreshing: boolean;
   onBack?: () => void;
   onAction?: (kind: 'fill' | 'move' | 'sell') => void;
-  onOpenDailyLog?: (ctx: { farmId: number; pondId: number }) => void;
+  onOpenDailyLog?: (target: DailyLogTarget) => void;
   onOpenLedger?: () => void;
   showHeader?: boolean;
 };

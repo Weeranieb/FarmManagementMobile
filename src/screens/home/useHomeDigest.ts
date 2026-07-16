@@ -171,6 +171,7 @@ export function useHomeDigest(): HomeDigestState {
         pending.push({
           id: p.id,
           name: p.name,
+          farmId: p.farmId,
           farmName: farmNameById.get(p.farmId) ?? '',
           lateDays: lateDaysFor(entries, day),
         });
