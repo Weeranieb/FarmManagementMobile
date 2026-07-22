@@ -6,6 +6,7 @@ import type {
   FeedCollectionPageItem,
   FeedPriceHistoryResponse,
   UpdateFeedCollectionRequest,
+  UpdateFeedPriceHistoryRequest,
 } from './types';
 
 /** Backend caps page size; we list the catalogue in a single call. */
@@ -49,6 +50,16 @@ export function addFeedPriceHistory(
   body: CreateFeedPriceHistoryRequest,
 ): Promise<FeedPriceHistoryResponse> {
   return http.post('/feed-price-history', body);
+}
+
+export function updateFeedPriceHistory(
+  body: UpdateFeedPriceHistoryRequest,
+): Promise<unknown> {
+  return http.put('/feed-price-history', body);
+}
+
+export function deleteFeedPriceHistory(id: number): Promise<unknown> {
+  return http.delete(`/feed-price-history/${id}`);
 }
 
 export async function listFeedPriceHistory(

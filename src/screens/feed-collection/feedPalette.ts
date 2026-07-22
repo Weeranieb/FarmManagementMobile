@@ -7,14 +7,18 @@
 import type { FeedKind } from '@/features/feed-collection';
 
 export type FeedPalette = {
-  /** Tile background — primary type color. */
+  /** Tile background — primary type color (flat fallback). */
   tile: string;
+  /** Tile gradient stops [top-left, bottom-right] — the 135° tile fill. */
+  gradient: readonly [string, string];
   /** Tile accent — darker edge / line / focus dot. */
   tileEdge: string;
   /** Soft surface for highlight rows + empty-state hero. */
   soft: string;
   /** Strong ink for use on soft backgrounds. */
   ink: string;
+  /** Solid glow color for the tile drop-shadow (opacity applied separately). */
+  glow: string;
   /** Drop-shadow color, includes alpha. */
   shadow: string;
 };
@@ -22,18 +26,22 @@ export type FeedPalette = {
 /** Warm orange — manufactured / granulated feed. (oklch 0.74 0.16 55 → 0.60 0.18 35) */
 export const FEED_ORANGE: FeedPalette = {
   tile: '#e87a36',
+  gradient: ['#f68c36', '#d64c29'],
   tileEdge: '#c95822',
   soft: '#fbe9d4',
   ink: '#7a3a18',
+  glow: '#b45014',
   shadow: 'rgba(180,80,20,0.45)',
 };
 
 /** Sea aqua — small whole fish / scraps. (oklch 0.74 0.10 200 → 0.54 0.13 205) */
 export const FEED_AQUA: FeedPalette = {
   tile: '#3ba6bc',
+  gradient: ['#4fbec4', '#008292'],
   tileEdge: '#0f6885',
   soft: '#e0eff3',
   ink: '#0e4655',
+  glow: '#0f5a87',
   shadow: 'rgba(15,90,135,0.45)',
 };
 

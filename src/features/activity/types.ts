@@ -20,6 +20,9 @@ export type ActivityFeedItem = {
    *  user record no longer exists. */
   createdByName: string;
   pondName: string;
+  /** Farm the source pond belongs to — shown as a secondary label so a row is
+   *  identifiable when pond names repeat across farms. */
+  farmName: string;
   /** move only — destination pond. */
   toPondName?: string;
   fishType: string;

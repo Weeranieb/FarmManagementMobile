@@ -1,4 +1,4 @@
-import { FISH_TH, fmt } from '@/utils/fmt';
+import { displayFarmName, FISH_TH, fmt } from '@/utils/fmt';
 import { toIsoDate } from '@/shared/time';
 import type { ActivityFeedItem } from './types';
 
@@ -14,6 +14,8 @@ export type ActivityEventModel = {
   whenLabel: string;
   /** "บ่อ B1 → บ่อ B2" for moves, plain pond name otherwise. */
   pondLabel: string;
+  /** "ฟาร์ม …" — the source pond's farm, a secondary disambiguating label. */
+  farmLabel: string;
   /** e.g. "เติมปลานิล 4,500 ตัว · ฿36,000" — mirrors the design fixtures. */
   text: string;
   /** Raw username — compare with the signed-in user to render "คุณ". */
@@ -63,6 +65,7 @@ export function adaptActivityFeedItem(a: ActivityFeedItem): ActivityEventModel {
     dateKey,
     whenLabel,
     pondLabel: a.toPondName ? `${a.pondName} → ${a.toPondName}` : a.pondName,
+    farmLabel: displayFarmName(a.farmName),
     text: composeText(a),
     byUsername: a.createdBy,
     byName: a.createdByName,

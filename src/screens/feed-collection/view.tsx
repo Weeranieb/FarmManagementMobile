@@ -11,7 +11,7 @@ import { FeedEmptyState } from './components/FeedEmptyState';
 import { SearchSuggestions } from './components/SearchSuggestions';
 import { SheetAddFeed } from './components/SheetAddFeed';
 import { SheetFeedActions } from './components/SheetFeedActions';
-import { SheetUpdatePrice } from './components/SheetUpdatePrice';
+import { SheetPriceEntry } from './components/SheetPriceEntry';
 import type { FeedCollectionState } from './hook';
 
 type Props = FeedCollectionState & { showHeader?: boolean };
@@ -206,8 +206,9 @@ export function FeedCollectionView({
         onSubmit={sheet === 'edit' ? handleEdit : handleCreate}
       />
 
-      <SheetUpdatePrice
+      <SheetPriceEntry
         visible={sheet === 'update-price'}
+        mode="add"
         feed={activeFeed}
         onClose={closeSheet}
         onSubmit={handleUpdatePrice}
@@ -216,9 +217,9 @@ export function FeedCollectionView({
   );
 }
 
-/** 10px vertical gap between feed cards (replaces the old <Col gap={10}>). */
+/** 8px vertical gap between the compact feed cards (Farm OS · J section). */
 function FeedSeparator() {
-  return <View style={{ height: 10 }} />;
+  return <View style={{ height: 8 }} />;
 }
 
 function SearchEmpty({ query }: { query: string }) {
