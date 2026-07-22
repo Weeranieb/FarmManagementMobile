@@ -5,8 +5,7 @@ import { radii, type } from '@/theme/tokens';
 import { Pill, PillText } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
-import { SheetUpdatePrice } from '@/screens/feed-collection/components/SheetUpdatePrice';
-import { FeedChartIcon } from '@/screens/feed-collection/components/FeedIcons';
+import { SheetPriceEntry } from '@/screens/feed-collection/components/SheetPriceEntry';
 import { FEED_PILL_TONE_BY_KIND, FEED_TYPE_LABEL_TH } from '@/screens/feed-collection/feedPalette';
 import { HeroPriceCard } from './components/HeroPriceCard';
 import { RangeSegmented } from './components/RangeSegmented';
@@ -14,6 +13,7 @@ import { PriceChartCard } from './components/PriceChartCard';
 import { StatsRow } from './components/StatsRow';
 import { TimelineList } from './components/TimelineList';
 import { LoadingSkeleton } from './components/LoadingSkeleton';
+import { ConfirmDeleteDialog } from './components/ConfirmDeleteDialog';
 import type { FeedPriceHistoryState } from './hook';
 
 export function FeedPriceHistoryView({
@@ -22,25 +22,36 @@ export function FeedPriceHistoryView({
   isAdmin,
   isLoading,
   chartData,
+  allEntries,
   timelineEntries,
   current,
   deltaPct,
   isEmpty,
+  isSingle,
   range,
   setRange,
   sheet,
-  openUpdatePrice,
+  selectedEntry,
+  openAdd,
+  openEdit,
   closeSheet,
   overflowOpen,
   toggleOverflow,
   closeOverflow,
-  handleUpdatePrice,
+  handleAdd,
+  handleEdit,
+  handleOverwrite,
+  requestDelete,
+  cancelDelete,
+  confirmDelete,
 }: FeedPriceHistoryState) {
   const { t } = useTheme();
   const router = useRouter();
 
   // Show skeleton while waiting for either the parent feed or its history.
   const showSkeleton = isLoading && !current;
+  // Chart / range / stats need at least two points to mean anything.
+  const hasChart = !isEmpty && !isSingle;
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -54,9 +65,7 @@ export function FeedPriceHistoryView({
         onOverflow={toggleOverflow}
       />
 
-      {overflowOpen ? (
-        <OverflowMenu onClose={closeOverflow} onUpdatePrice={openUpdatePrice} />
-      ) : null}
+      {overflowOpen ? <OverflowMenu onClose={closeOverflow} onAddPrice={openAdd} /> : null}
 
       <ScrollView
         delaysContentTouches={false}
@@ -70,7 +79,7 @@ export function FeedPriceHistoryView({
           <NotFoundOrEmpty
             isEmptyForKnownFeed={!feedNotFound && !current}
             isAdmin={isAdmin}
-            onLogPrice={openUpdatePrice}
+            onLogPrice={openAdd}
           />
         ) : (
           <View style={{ paddingHorizontal: 16, paddingTop: 14, gap: 14 }}>
@@ -81,28 +90,48 @@ export function FeedPriceHistoryView({
               deltaPct={deltaPct}
             />
 
-            {!isEmpty ? <RangeSegmented value={range} onChange={setRange} /> : null}
+            {hasChart ? <RangeSegmented value={range} onChange={setRange} /> : null}
 
             <PriceChartCard
               data={chartData}
               kind={feed.kind}
               isEmpty={isEmpty}
+              isSingle={isSingle}
               isAdmin={isAdmin}
-              onLogPrice={openUpdatePrice}
+              onLogPrice={openAdd}
             />
 
-            {!isEmpty ? <StatsRow data={chartData} /> : null}
+            {hasChart ? <StatsRow data={chartData} /> : null}
 
-            {!isEmpty ? <TimelineList entries={timelineEntries} /> : null}
+            <TimelineList
+              entries={timelineEntries}
+              isAdmin={isAdmin}
+              currentId={current.id}
+              onEditEntry={openEdit}
+            />
           </View>
         )}
       </ScrollView>
 
-      <SheetUpdatePrice
-        visible={sheet === 'update-price'}
+      <SheetPriceEntry
+        visible={sheet === 'add' || sheet === 'edit'}
+        mode={sheet === 'edit' ? 'edit' : 'add'}
         feed={feed}
+        entry={sheet === 'edit' ? selectedEntry : null}
+        entries={allEntries}
         onClose={closeSheet}
-        onSubmit={handleUpdatePrice}
+        onSubmit={handleAdd}
+        onSubmitEdit={handleEdit}
+        onOverwrite={handleOverwrite}
+        onDelete={requestDelete}
+      />
+
+      <ConfirmDeleteDialog
+        visible={sheet === 'confirm-delete'}
+        entry={selectedEntry}
+        unit={feed?.unit ?? ''}
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
       />
     </View>
   );
@@ -198,13 +227,13 @@ function iconButtonStyle(borderColor: string) {
   };
 }
 
-// ── Overflow popover (just "อัปเดตราคา" for now) ──────────────────────────
+// ── Overflow popover (just "เพิ่มราคา" for now) ────────────────────────────
 function OverflowMenu({
   onClose,
-  onUpdatePrice,
+  onAddPrice,
 }: {
   onClose: () => void;
-  onUpdatePrice: () => void;
+  onAddPrice: () => void;
 }) {
   const { t, shadowLg } = useTheme();
   return (
@@ -239,7 +268,7 @@ function OverflowMenu({
         ]}
       >
         <Pressable
-          onPress={onUpdatePrice}
+          onPress={onAddPrice}
           accessibilityRole="button"
           style={{
             flexDirection: 'row',
@@ -250,9 +279,9 @@ function OverflowMenu({
             borderRadius: 9,
           }}
         >
-          <FeedChartIcon size={18} color={t.ink} />
+          <Icon.plus size={18} stroke={2.1} color={t.ink} />
           <Text style={{ fontSize: 14, fontFamily: type.familySemi, color: t.ink }}>
-            อัปเดตราคา
+            เพิ่มราคา
           </Text>
         </Pressable>
       </View>

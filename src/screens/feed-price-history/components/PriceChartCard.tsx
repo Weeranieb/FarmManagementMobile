@@ -21,17 +21,23 @@ const PAD = { l: 38, r: 14, t: 22, b: 32 };
 type Props = {
   data: FeedPriceHistoryEntry[];
   kind: FeedKind;
+  /** No history at all — full "start logging" empty state. */
   isEmpty: boolean;
+  /** Exactly one entry — chart needs two points, but the row below stays editable. */
+  isSingle: boolean;
   isAdmin: boolean;
   onLogPrice: () => void;
 };
 
-export function PriceChartCard({ data, kind, isEmpty, isAdmin, onLogPrice }: Props) {
+export function PriceChartCard({ data, kind, isEmpty, isSingle, isAdmin, onLogPrice }: Props) {
   const { t } = useTheme();
   const [tip, setTip] = useState<number | null>(null);
   const [canvasW, setCanvasW] = useState(CHART_W);
   const palette = feedPaletteFor(kind);
 
+  if (isSingle) {
+    return <SingleEntryChartCard palette={palette} isAdmin={isAdmin} onAdd={onLogPrice} />;
+  }
   if (isEmpty || data.length === 0) {
     return <EmptyChartCard palette={palette} isAdmin={isAdmin} onLogPrice={onLogPrice} />;
   }
@@ -68,6 +74,87 @@ export function PriceChartCard({ data, kind, isEmpty, isAdmin, onLogPrice }: Pro
             palette={palette}
           />
         </View>
+      </View>
+    </Card>
+  );
+}
+
+/** One entry in the system — the chart can't draw yet, but the timeline row
+ *  below remains editable. Copy + layout from design ⑬ "price-single". */
+function SingleEntryChartCard({
+  palette,
+  isAdmin,
+  onAdd,
+}: {
+  palette: FeedPalette;
+  isAdmin: boolean;
+  onAdd: () => void;
+}) {
+  const { t } = useTheme();
+  return (
+    <Card padded={false}>
+      <View
+        style={{
+          paddingHorizontal: 24,
+          paddingTop: 34,
+          paddingBottom: 26,
+          alignItems: 'center',
+          gap: 12,
+        }}
+      >
+        <View
+          style={{
+            width: 68,
+            height: 68,
+            borderRadius: 20,
+            backgroundColor: palette.soft,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: hexAlpha(palette.ink, 0.18),
+          }}
+        >
+          <FeedChartIcon size={30} stroke={1.5} color={palette.ink} />
+        </View>
+        <View style={{ alignItems: 'center', gap: 4, maxWidth: 250 }}>
+          <Text
+            style={{ fontSize: 15, fontFamily: type.familyBold, color: t.ink, textAlign: 'center' }}
+          >
+            มีราคาเดียวในระบบ
+          </Text>
+          <Text
+            style={{
+              fontSize: 12.5,
+              color: t.inkMute,
+              fontFamily: type.family,
+              lineHeight: 19,
+              textAlign: 'center',
+            }}
+          >
+            กราฟจะปรากฏเมื่อมีอย่างน้อยสองรายการ — รายการเดียวนี้ยังแก้ไขได้ที่ด้านล่าง
+          </Text>
+        </View>
+        {isAdmin ? (
+          <Pressable
+            onPress={onAdd}
+            accessibilityRole="button"
+            style={{
+              marginTop: 4,
+              height: 44,
+              paddingHorizontal: 20,
+              borderRadius: 12,
+              backgroundColor: t.brand,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <Icon.plus size={18} stroke={2.2} color="#fff" />
+            <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 14 }}>
+              เพิ่มราคา
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </Card>
   );
@@ -191,6 +278,10 @@ function ChartCanvas({ data, tip, onTip, canvasW, palette }: ChartCanvasProps) {
                 strokeWidth={1}
                 strokeDasharray={i === 0 ? undefined : '3,4'}
               />
+              {/* Bare number — no ฿ prefix. familyNum (IBM Plex Sans, Latin)
+                  has no Thai Baht glyph, and react-native-svg draws the
+                  fallback ฿ with zero advance, landing it on top of a digit.
+                  The currency is already clear from the hero card + stat tiles. */}
               <SvgText
                 x={PAD.l - 8}
                 y={y + 4}
@@ -199,7 +290,7 @@ function ChartCanvas({ data, tip, onTip, canvasW, palette }: ChartCanvasProps) {
                 fill={t.inkMute}
                 textAnchor="end"
               >
-                ฿{tk}
+                {tk}
               </SvgText>
             </G>
           );
@@ -235,31 +326,11 @@ function ChartCanvas({ data, tip, onTip, canvasW, palette }: ChartCanvasProps) {
           </>
         ) : null}
 
-        {/* min/max value annotations (skipped when collision with recent) */}
-        {pts.length > 1 && highlightIdx.has(minIdx) && minIdx !== recentIdx && pts[minIdx] && data[minIdx] ? (
-          <SvgText
-            x={pts[minIdx]!.x}
-            y={pts[minIdx]!.y + 18}
-            fontSize="10.5"
-            fontFamily={type.familyNumSemi}
-            fill={t.inkSoft}
-            textAnchor="middle"
-          >
-            ฿{data[minIdx]!.price}
-          </SvgText>
-        ) : null}
-        {pts.length > 1 && highlightIdx.has(maxIdx) && maxIdx !== recentIdx && pts[maxIdx] && data[maxIdx] ? (
-          <SvgText
-            x={pts[maxIdx]!.x}
-            y={pts[maxIdx]!.y - 10}
-            fontSize="10.5"
-            fontFamily={type.familyNumSemi}
-            fill={t.inkSoft}
-            textAnchor="middle"
-          >
-            ฿{data[maxIdx]!.price}
-          </SvgText>
-        ) : null}
+        {/* No on-chart value labels: the min/max/recent prices already appear in
+            the StatsRow tiles and the timeline below, and an edge point (e.g. a
+            2-point series where the max sits at the left edge) would render its
+            label straight over the Y-axis ticks. Highlight dots mark the points;
+            tapping shows the exact value in the tooltip. */}
 
         {/* highlight dots: most-recent has a filled core, min/max are outlined */}
         {pts.map((p, i) => {
@@ -375,11 +446,13 @@ function Tooltip({
       >
         {dateLabel}
       </SvgText>
+      {/* Thai bold font (has the ฿ glyph) — familyNumBold is Latin-only and
+          renders ฿ with broken metrics inside SvgText. */}
       <SvgText
         x={cx + 12}
         y={cy + 34}
         fontSize="14"
-        fontFamily={type.familyNumBold}
+        fontFamily={type.familyBold}
         fill={surface}
       >
         {priceLabel}

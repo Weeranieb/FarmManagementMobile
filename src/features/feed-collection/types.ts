@@ -60,6 +60,14 @@ export type CreateFeedPriceHistoryRequest = {
   priceUpdatedDate: string;
 };
 
+export type UpdateFeedPriceHistoryRequest = {
+  id: number;
+  feedCollectionId: number;
+  price: number;
+  /** ISO 8601 timestamp. */
+  priceUpdatedDate: string;
+};
+
 export type FeedPriceHistoryResponse = {
   id: number;
   feedCollectionId: number;

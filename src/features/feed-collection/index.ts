@@ -3,7 +3,9 @@ export {
   createFeedCollection,
   updateFeedCollection,
   addFeedPriceHistory,
+  deleteFeedPriceHistory,
   listFeedPriceHistory,
+  updateFeedPriceHistory,
 } from './service';
 export {
   feedCollectionKeys,
@@ -12,6 +14,8 @@ export {
   useCreateFeedCollection,
   useUpdateFeedCollection,
   useAddFeedPriceHistory,
+  useUpdateFeedPriceHistory,
+  useDeleteFeedPriceHistory,
   useFeedPriceHistory,
   useFeedPriceHistoryData,
 } from './queries';
@@ -29,6 +33,7 @@ export type {
   CreateFeedPriceHistoryItemRequest,
   CreateFeedPriceHistoryRequest,
   UpdateFeedCollectionRequest,
+  UpdateFeedPriceHistoryRequest,
   FeedPriceHistoryResponse,
   FeedKind,
 } from './types';

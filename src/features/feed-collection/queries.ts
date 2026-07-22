@@ -3,9 +3,11 @@ import { useIsAuthenticated } from '@/features/auth';
 import {
   addFeedPriceHistory,
   createFeedCollection,
+  deleteFeedPriceHistory,
   listFeedCollections,
   listFeedPriceHistory,
   updateFeedCollection,
+  updateFeedPriceHistory,
 } from './service';
 import {
   adaptFeedCollection,
@@ -17,6 +19,7 @@ import type {
   CreateFeedCollectionRequest,
   CreateFeedPriceHistoryRequest,
   UpdateFeedCollectionRequest,
+  UpdateFeedPriceHistoryRequest,
 } from './types';
 
 export const feedCollectionKeys = {
@@ -78,6 +81,34 @@ export function useAddFeedPriceHistory() {
   return useMutation({
     mutationFn: (body: CreateFeedPriceHistoryRequest) => addFeedPriceHistory(body),
     onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: feedCollectionKeys.all() });
+      qc.invalidateQueries({
+        queryKey: feedCollectionKeys.priceHistory(variables.feedCollectionId),
+      });
+    },
+  });
+}
+
+export function useUpdateFeedPriceHistory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateFeedPriceHistoryRequest) => updateFeedPriceHistory(body),
+    onSuccess: (_data, variables) => {
+      // Editing an entry can change the latest price shown on the collection list.
+      qc.invalidateQueries({ queryKey: feedCollectionKeys.all() });
+      qc.invalidateQueries({
+        queryKey: feedCollectionKeys.priceHistory(variables.feedCollectionId),
+      });
+    },
+  });
+}
+
+export function useDeleteFeedPriceHistory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number; feedCollectionId: number }) => deleteFeedPriceHistory(id),
+    onSuccess: (_data, variables) => {
+      // Deleting an entry can change the latest price shown on the collection list.
       qc.invalidateQueries({ queryKey: feedCollectionKeys.all() });
       qc.invalidateQueries({
         queryKey: feedCollectionKeys.priceHistory(variables.feedCollectionId),

@@ -140,6 +140,23 @@ export const Icon = {
       <Path d="M6 9l6 6 6-6" />
     </Frame>
   ),
+  trendUp: (p: IconProps) => (
+    <Frame {...p}>
+      <Path d="M3 17l6-6 4 4 8-8" />
+      <Path d="M14 7h7v7" />
+    </Frame>
+  ),
+  trendDown: (p: IconProps) => (
+    <Frame {...p}>
+      <Path d="M3 7l6 6 4-4 8 8" />
+      <Path d="M14 17h7v-7" />
+    </Frame>
+  ),
+  flat: (p: IconProps) => (
+    <Frame {...p}>
+      <Path d="M4 12h16" />
+    </Frame>
+  ),
   calendar: (p: IconProps) => (
     <Frame {...p}>
       <Rect x="3" y="5" width="18" height="16" rx="2" />

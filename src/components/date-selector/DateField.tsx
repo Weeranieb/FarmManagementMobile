@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -12,7 +12,14 @@ type Props = {
   onChange: (next: Date) => void;
   minimumDate?: Date;
   maximumDate?: Date;
+  /** Danger treatment (red border + icon) — e.g. the chosen date collides with
+   *  another entry and the caller is blocking the save. */
+  warn?: boolean;
 };
+
+/** Imperative handle — lets a caller pop the calendar open (e.g. a
+ *  "เลือกวันอื่น" action next to a date-collision warning). */
+export type DateFieldHandle = { open: () => void };
 
 /** Bottom sheet height as a fraction of the screen — tall enough to sit above the home indicator. */
 const SHEET_HEIGHT_PCT = 0.58;
@@ -30,7 +37,10 @@ function startOfToday(): Date {
  * longer falls back to the OS-native Gregorian dialog. Defaults to today as
  * maximum (no future dates).
  */
-export function DateField({ value, onChange, minimumDate, maximumDate }: Props) {
+export const DateField = forwardRef<DateFieldHandle, Props>(function DateField(
+  { value, onChange, minimumDate, maximumDate, warn = false },
+  ref,
+) {
   const { t } = useTheme();
   const insets = useSafeAreaInsets();
   const sheetHeight = Dimensions.get('window').height * SHEET_HEIGHT_PCT;
@@ -43,6 +53,8 @@ export function DateField({ value, onChange, minimumDate, maximumDate }: Props) 
     setDraft(clampDate(value, minimumDate, maxDate));
     setOpen(true);
   };
+
+  useImperativeHandle(ref, () => ({ open: openPicker }));
 
   const confirmPick = () => {
     onChange(clampDate(draft, minimumDate, maxDate));
@@ -64,14 +76,14 @@ export function DateField({ value, onChange, minimumDate, maximumDate }: Props) 
           borderRadius: radii.md,
           backgroundColor: t.surface,
           borderWidth: 1.5,
-          borderColor: t.border,
+          borderColor: warn ? t.danger : t.border,
           paddingHorizontal: 14,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 10,
         }}
       >
-        <Icon.calendar size={18} color={t.inkSoft} />
+        <Icon.calendar size={18} color={warn ? t.danger : t.inkSoft} />
         <Text style={{ fontSize: 15, color: t.ink, fontFamily: type.family, flex: 1 }}>
           {thaiDate.long(value)}
         </Text>
@@ -147,4 +159,4 @@ export function DateField({ value, onChange, minimumDate, maximumDate }: Props) 
         </Modal>
     </>
   );
-}
+});

@@ -13,6 +13,8 @@ export type ActivityItem = {
   /** Human "เมื่อวาน 16:00" / "2 วันก่อน" / "เมื่อสักครู่" label. */
   whenLabel: string;
   pond: string;
+  /** Farm the pond belongs to — muted secondary label on the title row. */
+  farm?: string;
   text: string;
   by?: string;
   extra?: string;
@@ -30,6 +32,7 @@ export function toActivityItem(e: ActivityEventModel, me?: string | null): Activ
     kind: e.kind,
     whenLabel: e.whenLabel,
     pond: e.pondLabel,
+    farm: e.farmLabel,
     text: e.text,
     by: e.byUsername === me ? 'คุณ' : e.byName,
     extra: e.merchant,
@@ -142,6 +145,11 @@ export function ActivityRow({ e, divider = false, onPress }: Props) {
           <Text style={{ fontSize: type.sizes.xs, fontFamily: type.familySemi, color: tone.ink }}>
             {KIND_LABEL[e.kind]}
           </Text>
+          {e.farm ? (
+            <Text style={{ fontSize: type.sizes.xs, fontFamily: type.family, color: t.inkMute }}>
+              {`· ${e.farm}`}
+            </Text>
+          ) : null}
         </View>
 
         <Text

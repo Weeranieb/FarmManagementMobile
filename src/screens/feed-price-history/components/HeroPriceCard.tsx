@@ -130,21 +130,24 @@ function describeDelta(
       bg: t.surfaceAlt,
       fg: t.inkSoft,
       label: 'ไม่เปลี่ยนแปลง',
-      icon: <Icon.arrow size={13} color={t.inkSoft} />,
+      icon: <Icon.flat size={13} stroke={2} color={t.inkSoft} />,
     };
   }
   if (tone === 'down') {
+    // price went up (bad) — trend arrow points up, in danger red
+    const ink = dangerInk(mode, t);
     return {
       bg: t.dangerSoft,
-      fg: dangerInk(mode, t),
+      fg: ink,
       label: `+${(deltaPct as number).toFixed(1)}% จากเดือนก่อน`,
-      icon: <Icon.arrow size={13} color={dangerInk(mode, t)} />,
+      icon: <Icon.trendUp size={13} stroke={2} color={ink} />,
     };
   }
+  // price went down (good) — trend arrow points down, in fill green
   return {
     bg: t.fillSoft,
     fg: t.fillInk,
     label: `${(deltaPct as number).toFixed(1)}% จากเดือนก่อน`,
-    icon: <Icon.arrow size={13} color={t.fillInk} />,
+    icon: <Icon.trendDown size={13} stroke={2} color={t.fillInk} />,
   };
 }
