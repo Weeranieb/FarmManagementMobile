@@ -109,8 +109,8 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
           </Row>
 
           {/* Line 2 — price · updated ........... ราคาย้อนหลัง */}
-          <Row gap={space[2]} justify="space-between">
-            <Row gap={9} style={{ minWidth: 0 }}>
+          <Row gap={space[2]} justify="space-between" align="center">
+            <Row gap={space[2]} align="baseline" style={{ flex: 1, minWidth: 0 }}>
               {feed.price != null ? (
                 <Row align="baseline" gap={2} style={{ flexShrink: 0 }}>
                   <Text
@@ -132,12 +132,17 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
                   ยังไม่มีราคา
                 </Text>
               )}
-              <Row gap={space[1]} style={{ flexShrink: 0 }}>
-                <Icon.clock size={11} color={t.inkMute} />
-                <Text style={{ fontSize: 11.5, color: t.inkMute, fontFamily: type.familyNum }}>
-                  {thaiDate.short(updated)}
-                </Text>
-              </Row>
+              <Text
+                numberOfLines={1}
+                style={{
+                  flexShrink: 1,
+                  fontSize: 11.5,
+                  color: t.inkMute,
+                  fontFamily: type.familyNum,
+                }}
+              >
+                · {thaiDate.short(updated)}
+              </Text>
             </Row>
 
             {onChart ? (

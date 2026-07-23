@@ -16,6 +16,7 @@ export type AddPricePayload = {
   /** Feed-collection id. */
   id: number;
   price: number;
+  pricePerKg: number | null;
   /** ISO date (YYYY-MM-DD). */
   effectiveDate: string;
 };
@@ -24,6 +25,7 @@ export type EditPricePayload = {
   /** Price-history entry id. */
   entryId: number;
   price: number;
+  pricePerKg: number | null;
   /** ISO date (YYYY-MM-DD). */
   effectiveDate: string;
 };
@@ -71,7 +73,7 @@ export type FeedPriceHistoryState = {
   handleAdd: (payload: AddPricePayload) => void;
   handleEdit: (payload: EditPricePayload) => void;
   /** Add-mode date collision: overwrite the colliding entry's price (its date stays). */
-  handleOverwrite: (payload: { entryId: number; price: number }) => void;
+  handleOverwrite: (payload: { entryId: number; price: number; pricePerKg: number | null }) => void;
 
   /** Opens the delete-confirm dialog (soft delete via DELETE /feed-price-history/:id). */
   requestDelete: () => void;
@@ -154,6 +156,7 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
       addPriceMutation.mutate({
         feedCollectionId: payload.id,
         price: payload.price,
+        pricePerKg: payload.pricePerKg,
         priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
       });
     },
@@ -166,6 +169,7 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
         id: payload.entryId,
         feedCollectionId,
         price: payload.price,
+        pricePerKg: payload.pricePerKg,
         priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
       });
     },
@@ -173,13 +177,14 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
   );
 
   const handleOverwrite = useCallback(
-    (payload: { entryId: number; price: number }) => {
+    (payload: { entryId: number; price: number; pricePerKg: number | null }) => {
       const target = sortedAll.find((e) => e.id === payload.entryId);
       if (!target) return;
       updatePriceMutation.mutate({
         id: target.id,
         feedCollectionId,
         price: payload.price,
+        pricePerKg: payload.pricePerKg,
         priceUpdatedDate: toNoonUtcIso(target.effectiveDate),
       });
     },

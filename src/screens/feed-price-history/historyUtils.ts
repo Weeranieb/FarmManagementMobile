@@ -53,27 +53,64 @@ export function priceAroundDaysAgo(
   return null;
 }
 
-// ── Catmull-Rom → cubic bezier smoothing for the chart line ────────────────
+// ── Monotone cubic smoothing for the chart line ────────────────────────────
+// Catmull-Rom (the previous approach) isn't monotonicity-preserving, so a sharp
+// price move made the line overshoot — arcing above the peak and hooking past
+// the last point, showing prices that never existed. This is a monotone cubic
+// Hermite spline (à la d3 `curveMonotoneX`): still smooth, but each segment
+// stays within its two endpoints, so no overshoot. x is time (strictly
+// increasing), which the algorithm assumes.
 
 export type Pt = { x: number; y: number };
 
+const sign = (x: number): number => (x < 0 ? -1 : 1);
+
 export function smoothPath(pts: Pt[]): string {
-  if (pts.length === 0) return '';
+  const n = pts.length;
+  if (n === 0) return '';
   const first = pts[0]!;
-  if (pts.length === 1) return `M ${first.x},${first.y}`;
-  const second = pts[1]!;
-  if (pts.length === 2) return `M ${first.x},${first.y} L ${second.x},${second.y}`;
-  let d = `M ${first.x},${first.y}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p1 = pts[i]!;
-    const p2 = pts[i + 1]!;
-    const p0 = pts[i - 1] ?? p1;
-    const p3 = pts[i + 2] ?? p2;
-    const c1x = p1.x + (p2.x - p0.x) / 6;
-    const c1y = p1.y + (p2.y - p0.y) / 6;
-    const c2x = p2.x - (p3.x - p1.x) / 6;
-    const c2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C ${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)}`;
+  if (n === 1) return `M ${first.x},${first.y}`;
+  if (n === 2) return `M ${first.x},${first.y} L ${pts[1]!.x},${pts[1]!.y}`;
+
+  // Per-segment run and secant slope.
+  const dx: number[] = [];
+  const slope: number[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const run = pts[i + 1]!.x - pts[i]!.x;
+    dx[i] = run;
+    slope[i] = run !== 0 ? (pts[i + 1]!.y - pts[i]!.y) / run : 0;
+  }
+
+  // Tangent at each point. Endpoints use the adjacent secant; interior points
+  // use the Fritsch–Carlson clamp, forced flat (0) at local extrema so the
+  // curve can't bulge past a peak/valley.
+  const m: number[] = new Array(n);
+  m[0] = slope[0]!;
+  m[n - 1] = slope[n - 2]!;
+  for (let i = 1; i < n - 1; i++) {
+    const s0 = slope[i - 1]!;
+    const s1 = slope[i]!;
+    if (s0 * s1 <= 0) {
+      m[i] = 0;
+    } else {
+      const h0 = dx[i - 1]!;
+      const h1 = dx[i]!;
+      const p = (s0 * h1 + s1 * h0) / (h0 + h1);
+      m[i] = (sign(s0) + sign(s1)) * Math.min(Math.abs(s0), Math.abs(s1), 0.5 * Math.abs(p));
+    }
+  }
+
+  // Emit each Hermite segment as a cubic bezier (control points at ±h/3).
+  let d = `M ${first.x.toFixed(2)},${first.y.toFixed(2)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const a = pts[i]!;
+    const b = pts[i + 1]!;
+    const h = dx[i]!;
+    const c1x = a.x + h / 3;
+    const c1y = a.y + (m[i]! * h) / 3;
+    const c2x = b.x - h / 3;
+    const c2y = b.y - (m[i + 1]! * h) / 3;
+    d += ` C ${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${b.x.toFixed(2)},${b.y.toFixed(2)}`;
   }
   return d;
 }

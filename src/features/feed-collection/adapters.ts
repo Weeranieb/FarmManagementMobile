@@ -9,6 +9,10 @@ export type FeedCollectionModel = {
   /** Latest price for this feed; `null` when no price history has been recorded. */
   price: number | null;
   fcr: number | null;
+  /** kg content of one purchase pack (bag for pellet, crate for fresh); `null` until the user sets it. */
+  packSizeKg: number | null;
+  /** Optional supplier / source (ผู้ขาย / แหล่งที่มา); `null` when not recorded. */
+  supplier: string | null;
   /** ISO date — date the latest price became effective; falls back to record updatedAt. */
   updatedAt: string;
 };
@@ -25,6 +29,8 @@ export function adaptFeedCollection(f: FeedCollectionPageItem): FeedCollectionMo
     unit: f.unit || 'กก.',
     price: f.latestPrice ?? null,
     fcr: f.fcr == null ? null : Number(f.fcr),
+    packSizeKg: f.packSizeKg == null ? null : Number(f.packSizeKg),
+    supplier: f.supplier ?? null,
     updatedAt: f.latestPriceUpdatedDate ?? f.updatedAt,
   };
 }
@@ -34,6 +40,8 @@ export type FeedPriceHistoryEntry = {
   id: number;
   feedCollectionId: number;
   price: number;
+  /** Price per kg snapshotted at entry time; `null` for entries recorded before this existed. */
+  pricePerKg: number | null;
   /** ISO `YYYY-MM-DD` — day the price became effective. */
   effectiveDate: string;
 };
@@ -53,6 +61,7 @@ export function adaptFeedPriceHistory(p: FeedPriceHistoryResponse): FeedPriceHis
     id: p.id,
     feedCollectionId: p.feedCollectionId,
     price: Number(p.price),
+    pricePerKg: p.pricePerKg == null ? null : Number(p.pricePerKg),
     effectiveDate: toYmd(p.priceUpdatedDate),
   };
 }

@@ -89,16 +89,16 @@ export function FeedCollectionView({
             title="คลังอาหาร"
             subtitle={isEmpty ? 'ยังไม่มีรายการ' : `${feeds.length} รายการ`}
             leading={
-              router.canGoBack() ? (
-                <Pressable
-                  onPress={() => router.back()}
-                  accessibilityRole="button"
-                  accessibilityLabel="ย้อนกลับ"
-                  style={iconButtonStyle(t.border)}
-                >
-                  <Icon.back size={18} color={t.ink} />
-                </Pressable>
-              ) : null
+              <Pressable
+                onPress={() =>
+                  router.canGoBack() ? router.back() : router.replace('/(app)/(tabs)/manage')
+                }
+                accessibilityRole="button"
+                accessibilityLabel="ย้อนกลับ"
+                style={iconButtonStyle(t.border)}
+              >
+                <Icon.back size={18} color={t.ink} />
+              </Pressable>
             }
             trailing={
               !isEmpty ? (

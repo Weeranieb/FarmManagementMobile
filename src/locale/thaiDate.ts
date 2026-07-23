@@ -36,6 +36,9 @@ export const thaiDate = {
   long: (d: Date): string =>
     `วัน${TH_DAYS[d.getDay()]}ที่ ${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`,
   monthYear: (d: Date): string => `${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`,
+  /** Day + full month + Buddhist year, no weekday — e.g. "23 กรกฎาคม 2569". */
+  medium: (d: Date): string =>
+    `${d.getDate()} ${TH_MONTHS[d.getMonth()]} ${d.getFullYear() + 543}`,
   short: (d: Date): string =>
     `${d.getDate()} ${TH_MONTHS_SHORT[d.getMonth()]} ${(d.getFullYear() + 543) % 100}`,
   weekdayShort: (i: number): string => TH_DAYS_SHORT[i] ?? '',

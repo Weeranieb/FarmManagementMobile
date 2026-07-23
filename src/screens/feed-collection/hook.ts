@@ -24,7 +24,10 @@ export type AddFeedFormPayload = {
   kind: FeedKind;
   unit: string;
   price: number;
+  pricePerKg: number | null;
   fcr: number | null;
+  packSizeKg: number | null;
+  supplier: string | null;
   /** ISO date (YYYY-MM-DD). */
   effectiveDate: string;
 };
@@ -32,6 +35,7 @@ export type AddFeedFormPayload = {
 export type UpdatePriceFormPayload = {
   id: number;
   price: number;
+  pricePerKg: number | null;
   /** ISO date (YYYY-MM-DD). */
   effectiveDate: string;
 };
@@ -116,8 +120,14 @@ export function useFeedCollectionScreen(): FeedCollectionState {
         unit: payload.unit,
         feedType: payload.kind,
         fcr: payload.fcr,
+        packSizeKg: payload.packSizeKg,
+        supplier: payload.supplier,
         feedPriceHistories: [
-          { price: payload.price, priceUpdatedDate: toNoonUtcIso(payload.effectiveDate) },
+          {
+            price: payload.price,
+            pricePerKg: payload.pricePerKg,
+            priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
+          },
         ],
       };
       createMutation.mutate(body);
@@ -134,10 +144,25 @@ export function useFeedCollectionScreen(): FeedCollectionState {
         unit: payload.unit,
         feedType: payload.kind,
         fcr: payload.fcr,
+        packSizeKg: payload.packSizeKg,
+        supplier: payload.supplier,
       };
       updateMutation.mutate(body);
+      // The edit sheet now surfaces the buy-in price + effective date (design
+      // parity). Record a new price-history entry only when the tracking price
+      // actually changed, so re-saving details alone never writes a spurious row.
+      const priceChanged =
+        activeFeed.price == null || Math.abs(payload.price - activeFeed.price) > 1e-6;
+      if (priceChanged) {
+        addPriceMutation.mutate({
+          feedCollectionId: activeFeed.id,
+          price: payload.price,
+          pricePerKg: payload.pricePerKg,
+          priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
+        });
+      }
     },
-    [activeFeed, updateMutation],
+    [activeFeed, updateMutation, addPriceMutation],
   );
 
   const handleUpdatePrice = useCallback(
@@ -145,6 +170,7 @@ export function useFeedCollectionScreen(): FeedCollectionState {
       addPriceMutation.mutate({
         feedCollectionId: payload.id,
         price: payload.price,
+        pricePerKg: payload.pricePerKg,
         priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
       });
     },
