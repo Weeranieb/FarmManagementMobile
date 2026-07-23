@@ -186,7 +186,7 @@ function PriceRow({
             numberOfLines={1}
             style={{ fontSize: 14, color: t.ink, fontFamily: type.familySemi }}
           >
-            {thaiDate.long(d)}
+            {thaiDate.medium(d)}
           </Text>
           <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>
             {thaiDate.ago(d)}

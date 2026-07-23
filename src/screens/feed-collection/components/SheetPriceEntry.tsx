@@ -10,7 +10,7 @@ import { thaiDate } from '@/locale/thaiDate';
 import { toIsoDate } from '@/shared/time';
 import { SheetShell } from '@/components/sheet';
 import type { FeedCollectionModel, FeedPriceHistoryEntry } from '@/features/feed-collection';
-import { feedPaletteFor } from '../feedPalette';
+import { FEED_DEFAULT_PACK_KG, deriveFeedPrices, feedPaletteFor } from '../feedPalette';
 import { DateField, type DateFieldHandle } from '@/components/date-selector';
 import { feedGlyphFor } from './FeedIcons';
 import { FInput } from './FInput';
@@ -30,11 +30,25 @@ type Props = {
   entries?: FeedPriceHistoryEntry[];
   onClose: () => void;
   /** Add mode submit — `id` is the feed-collection id. */
-  onSubmit?: (payload: { id: number; price: number; effectiveDate: string }) => void;
+  onSubmit?: (payload: {
+    id: number;
+    price: number;
+    pricePerKg: number | null;
+    effectiveDate: string;
+  }) => void;
   /** Edit mode submit. */
-  onSubmitEdit?: (payload: { entryId: number; price: number; effectiveDate: string }) => void;
+  onSubmitEdit?: (payload: {
+    entryId: number;
+    price: number;
+    pricePerKg: number | null;
+    effectiveDate: string;
+  }) => void;
   /** Add-mode date collision: overwrite the colliding entry's price instead. */
-  onOverwrite?: (payload: { entryId: number; price: number }) => void;
+  onOverwrite?: (payload: {
+    entryId: number;
+    price: number;
+    pricePerKg: number | null;
+  }) => void;
   /** Edit only — renders the demoted "ลบรายการราคา" button. Leave undefined
    *  until the backend ships DELETE /feed-price-history. */
   onDelete?: () => void;
@@ -67,22 +81,37 @@ export function SheetPriceEntry({
   const [effectiveDate, setEffectiveDate] = useState<Date>(new Date());
   const dateRef = useRef<DateFieldHandle>(null);
 
+  // Pack size is a feed-level attribute (kg per ถุง/ลัง) edited in the details
+  // sheet — the price sheet only reads it to convert the buy-in price to ฿/กก.
+  // Fall back to the type default for legacy feeds saved before it existed.
+  const storedPack = feed?.packSizeKg;
+  const packSizeKg =
+    storedPack != null && Number.isFinite(storedPack) && storedPack > 0
+      ? storedPack
+      : feed
+        ? FEED_DEFAULT_PACK_KG[feed.kind]
+        : null;
+  const hasPackSize = packSizeKg != null && packSizeKg > 0;
+
   // Modal keeps this sheet mounted, so useState seeds run only once. Re-seed
   // from the mode/entry on each open — otherwise reopening for a different
   // entry (or switching add↔edit) shows stale values.
   const wasVisible = useRef(false);
   useEffect(() => {
-    if (visible && !wasVisible.current) {
+    if (visible && !wasVisible.current && feed) {
+      // Stored price is already the per-pack (ถุง/ลัง) price. Round the seed —
+      // it can carry float noise — but it's only a starting value the user edits.
+      const seedBuyIn = (v: number) => String(Number(v.toFixed(2)));
       if (isEdit && entry) {
-        setPrice(String(entry.price));
+        setPrice(seedBuyIn(entry.price));
         setEffectiveDate(new Date(entry.effectiveDate));
       } else {
-        setPrice(currentPrice != null ? String(currentPrice + 2) : '');
+        setPrice(currentPrice != null ? seedBuyIn(currentPrice) : '');
         setEffectiveDate(new Date());
       }
     }
     wasVisible.current = visible;
-  }, [visible, isEdit, entry, currentPrice]);
+  }, [visible, isEdit, entry, currentPrice, feed]);
 
   // Newest entry — marks the edited row as "ราคาปัจจุบัน" in the recap tile.
   const newest = entries && entries.length > 0 ? entries[entries.length - 1] : null;
@@ -100,12 +129,17 @@ export function SheetPriceEntry({
 
   const priceNum = Number(price);
   const priceValid = Number.isFinite(priceNum) && priceNum > 0;
+  // `price` is the buy-in input (per ถุง/กก.) when a pack size is known —
+  // convert to the tracking-unit price for validation, diffing, and submit.
+  const derived =
+    feed && priceValid ? deriveFeedPrices(priceNum, hasPackSize ? packSizeKg : null) : null;
+  const trackingPrice = derived?.price ?? null;
 
   const diff = useMemo(() => {
-    if (baseline == null || baseline === 0 || !priceValid) return null;
-    const delta = priceNum - baseline;
+    if (baseline == null || baseline === 0 || trackingPrice == null) return null;
+    const delta = trackingPrice - baseline;
     return { delta, pct: (delta / baseline) * 100 };
-  }, [baseline, priceNum, priceValid]);
+  }, [baseline, trackingPrice]);
 
   // One price per day — a chosen date that collides with another entry blocks
   // the save (backend enforces this on create; edit must self-police).
@@ -130,18 +164,32 @@ export function SheetPriceEntry({
   const Glyph = feedGlyphFor(feed.kind);
 
   const handleSubmit = () => {
-    if (!priceValid || collision) return;
+    if (!priceValid || collision || !derived) return;
     if (isEdit && entry) {
-      onSubmitEdit?.({ entryId: entry.id, price: priceNum, effectiveDate: toIsoDate(effectiveDate) });
+      onSubmitEdit?.({
+        entryId: entry.id,
+        price: derived.price,
+        pricePerKg: derived.pricePerKg,
+        effectiveDate: toIsoDate(effectiveDate),
+      });
     } else {
-      onSubmit?.({ id: feed.id, price: priceNum, effectiveDate: toIsoDate(effectiveDate) });
+      onSubmit?.({
+        id: feed.id,
+        price: derived.price,
+        pricePerKg: derived.pricePerKg,
+        effectiveDate: toIsoDate(effectiveDate),
+      });
     }
     onClose();
   };
 
   const handleOverwrite = () => {
-    if (!priceValid || !collidingEntry) return;
-    onOverwrite?.({ entryId: collidingEntry.id, price: priceNum });
+    if (!priceValid || !collidingEntry || !derived) return;
+    onOverwrite?.({
+      entryId: collidingEntry.id,
+      price: derived.price,
+      pricePerKg: derived.pricePerKg,
+    });
     onClose();
   };
 
@@ -276,7 +324,7 @@ export function SheetPriceEntry({
           </View>
         </View>
 
-        <Field label="ราคา">
+        <Field label={hasPackSize ? `ราคาต่อ${feed.unit}` : 'ราคา'}>
           <FInput
             value={price}
             onChangeText={setPrice}
@@ -287,6 +335,20 @@ export function SheetPriceEntry({
             placeholder="0"
           />
         </Field>
+
+        {hasPackSize && derived?.pricePerKg != null ? (
+          <Text
+            style={{
+              fontSize: 12,
+              color: t.inkSoft,
+              fontFamily: type.familySemi,
+              marginTop: -8,
+              marginBottom: 14,
+            }}
+          >
+            = {fmt.bahtPrecise(derived.pricePerKg)}/กก.
+          </Text>
+        ) : null}
 
         <Field label="วันที่มีผล" hint="เลือกวันย้อนหลังได้">
           <DateField
