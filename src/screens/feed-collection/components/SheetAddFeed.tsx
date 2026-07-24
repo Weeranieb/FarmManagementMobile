@@ -34,6 +34,8 @@ export type AddFeedSubmitPayload = {
 type Props = {
   visible: boolean;
   editing?: FeedCollectionModel | null;
+  /** True while the save is in flight — disables + relabels the submit button. */
+  saving?: boolean;
   onClose: () => void;
   onSubmit?: (payload: AddFeedSubmitPayload) => void;
 };
@@ -45,7 +47,7 @@ function packSeed(editing: FeedCollectionModel | null | undefined): string {
   return String(FEED_DEFAULT_PACK_KG[editing?.kind ?? 'pellet']);
 }
 
-export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
+export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubmit }: Props) {
   const { t } = useTheme();
   const [name, setName] = useState(editing?.name ?? '');
   const [kind, setKind] = useState<FeedKind>(editing?.kind ?? 'pellet');
@@ -128,7 +130,8 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
       supplier: supplier.trim() !== '' ? supplier.trim() : null,
       effectiveDate: toIsoDate(effectiveDate),
     });
-    onClose();
+    // The screen closes this sheet once the save succeeds (see hook), so a
+    // saving state can show until then — don't close optimistically here.
   };
 
   const priceLabel = hasPackSize ? `ราคาเริ่มต้นต่อ${unit}` : 'ราคาเริ่มต้น';
@@ -252,28 +255,34 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
               />
             </Field>
           </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Field label={priceLabel} required error={submitted ? priceError : undefined}>
-              <FInput
-                value={price}
-                onChangeText={setPrice}
-                placeholder="640"
-                numeric
-                keyboardType="decimal-pad"
-                suffix={priceSuffix}
-                invalid={submitted && !!priceError}
-              />
-            </Field>
-          </View>
+          {/* Price is set only on add — an existing feed's price is managed from
+              the price-history screen (อัปเดตราคา), so edit stays details-only. */}
+          {!isEdit ? (
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Field label={priceLabel} required error={submitted ? priceError : undefined}>
+                <FInput
+                  value={price}
+                  onChangeText={setPrice}
+                  placeholder="640"
+                  numeric
+                  keyboardType="decimal-pad"
+                  suffix={priceSuffix}
+                  invalid={submitted && !!priceError}
+                />
+              </Field>
+            </View>
+          ) : null}
         </Row>
 
-        {hasPackSize && derived?.pricePerKg != null ? (
+        {!isEdit && hasPackSize && derived?.pricePerKg != null ? (
           <ComputedPriceHint unit="กก." price={derived.pricePerKg} />
         ) : null}
 
-        <Field label="วันที่มีผล">
-          <DateField value={effectiveDate} onChange={setEffectiveDate} />
-        </Field>
+        {!isEdit ? (
+          <Field label="วันที่มีผล">
+            <DateField value={effectiveDate} onChange={setEffectiveDate} />
+          </Field>
+        ) : null}
 
         <Field label="ผู้ขาย">
           <FInput value={supplier} onChangeText={setSupplier} />
@@ -308,6 +317,7 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
           </Pressable>
           <Pressable
             onPress={handleSubmit}
+            disabled={saving}
             accessibilityRole="button"
             style={{
               flex: 1.6,
@@ -316,10 +326,11 @@ export function SheetAddFeed({ visible, editing, onClose, onSubmit }: Props) {
               backgroundColor: t.brand,
               alignItems: 'center',
               justifyContent: 'center',
+              opacity: saving ? 0.6 : 1,
             }}
           >
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-              {isEdit ? 'บันทึกการแก้ไข' : 'บันทึก'}
+              {saving ? 'กำลังบันทึก…' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึก'}
             </Text>
           </Pressable>
         </Row>

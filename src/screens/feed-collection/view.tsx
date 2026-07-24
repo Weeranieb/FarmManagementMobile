@@ -12,6 +12,7 @@ import { SearchSuggestions } from './components/SearchSuggestions';
 import { SheetAddFeed } from './components/SheetAddFeed';
 import { SheetFeedActions } from './components/SheetFeedActions';
 import { SheetPriceEntry } from './components/SheetPriceEntry';
+import { PriceSavedToast } from './components/PriceSavedToast';
 import type { FeedCollectionState } from './hook';
 
 type Props = FeedCollectionState & { showHeader?: boolean };
@@ -29,15 +30,20 @@ export function FeedCollectionView({
   onChangeQuery,
   sheet,
   activeFeed,
+  activeFeedPriceHistory,
   openActions,
   openAdd,
   openEdit,
   openUpdatePrice,
   closeSheet,
+  saving,
   handleCreate,
   handleEdit,
   handleUpdatePrice,
+  handleOverwritePrice,
   handleOpenHistory,
+  priceToast,
+  dismissPriceToast,
   showHeader = true,
 }: Props) {
   const { t } = useTheme();
@@ -202,6 +208,7 @@ export function FeedCollectionView({
       <SheetAddFeed
         visible={sheet === 'add' || sheet === 'edit'}
         editing={sheet === 'edit' ? activeFeed : null}
+        saving={saving}
         onClose={closeSheet}
         onSubmit={sheet === 'edit' ? handleEdit : handleCreate}
       />
@@ -210,9 +217,21 @@ export function FeedCollectionView({
         visible={sheet === 'update-price'}
         mode="add"
         feed={activeFeed}
+        entries={activeFeedPriceHistory}
+        saving={saving}
         onClose={closeSheet}
         onSubmit={handleUpdatePrice}
+        onOverwrite={handleOverwritePrice}
       />
+
+      {priceToast ? (
+        <PriceSavedToast
+          key={priceToast.key}
+          detail={priceToast.detail}
+          bottom={Math.max(space[6], insets.bottom + space[2]) + 52 + space[3]}
+          onDismiss={dismissPriceToast}
+        />
+      ) : null}
     </View>
   );
 }

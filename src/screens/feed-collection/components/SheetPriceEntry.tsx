@@ -52,6 +52,8 @@ type Props = {
   /** Edit only — renders the demoted "ลบรายการราคา" button. Leave undefined
    *  until the backend ships DELETE /feed-price-history. */
   onDelete?: () => void;
+  /** True while the save is in flight — disables + relabels the submit button. */
+  saving?: boolean;
 };
 
 /**
@@ -72,6 +74,7 @@ export function SheetPriceEntry({
   onSubmitEdit,
   onOverwrite,
   onDelete,
+  saving = false,
 }: Props) {
   const { t } = useTheme();
   const isEdit = mode === 'edit' && entry != null;
@@ -180,7 +183,8 @@ export function SheetPriceEntry({
         effectiveDate: toIsoDate(effectiveDate),
       });
     }
-    onClose();
+    // Screen closes this sheet on save success (see hook), so the button can
+    // show a saving state until then — don't close optimistically here.
   };
 
   const handleOverwrite = () => {
@@ -190,13 +194,12 @@ export function SheetPriceEntry({
       price: derived.price,
       pricePerKg: derived.pricePerKg,
     });
-    onClose();
   };
 
   // Overwrite only makes sense in add mode — in edit, merging two entries
   // would need the (not-yet-existing) DELETE endpoint.
   const showOverwriteFooter = collision && !isEdit && onOverwrite != null;
-  const submitDisabled = !priceValid || collision;
+  const submitDisabled = !priceValid || collision || saving;
 
   const recapPrice = isEdit && entry ? entry.price : currentPrice;
   const recapDate = isEdit && entry ? new Date(entry.effectiveDate) : feed.updatedAt ? new Date(feed.updatedAt) : null;
@@ -412,6 +415,7 @@ export function SheetPriceEntry({
             <Pressable
               onPress={handleOverwrite}
               accessibilityRole="button"
+              disabled={!priceValid || saving}
               style={{
                 flex: 1.2,
                 height: 52,
@@ -419,11 +423,11 @@ export function SheetPriceEntry({
                 backgroundColor: t.danger,
                 alignItems: 'center',
                 justifyContent: 'center',
-                opacity: priceValid ? 1 : 0.45,
+                opacity: !priceValid || saving ? 0.45 : 1,
               }}
             >
               <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-                เขียนทับราคาเดิม
+                {saving ? 'กำลังบันทึก…' : 'เขียนทับราคาเดิม'}
               </Text>
             </Pressable>
           </Row>
@@ -461,7 +465,7 @@ export function SheetPriceEntry({
               }}
             >
               <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-                {isEdit ? 'บันทึกการแก้ไข' : 'บันทึกราคาใหม่'}
+                {saving ? 'กำลังบันทึก…' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึกราคาใหม่'}
               </Text>
             </Pressable>
           </Row>

@@ -1,5 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useIsAuthenticated } from '@/features/auth';
+import { farmKeys } from '@/features/farm';
+import { pondKeys } from '@/features/pond';
 import {
   addFeedPriceHistory,
   createFeedCollection,
@@ -27,6 +29,18 @@ export const feedCollectionKeys = {
   priceHistory: (feedCollectionId: number) =>
     ['feed-collections', 'price-history', feedCollectionId] as const,
 } as const;
+
+/**
+ * A feed's price feeds every pond's *derived* feed cost (and thus cycle P&L +
+ * farm aggregates), so changing price history must refresh those too — not just
+ * the feed screens. `['pond']` is the shared prefix of pond detail/activities/
+ * cycles (distinct from the `['ponds']` list key).
+ */
+function invalidateFeedCostConsumers(qc: QueryClient) {
+  qc.invalidateQueries({ queryKey: pondKeys.all() });
+  qc.invalidateQueries({ queryKey: ['pond'] });
+  qc.invalidateQueries({ queryKey: farmKeys.all() });
+}
 
 export function useFeedCollections() {
   const enabled = useIsAuthenticated();
@@ -85,6 +99,7 @@ export function useAddFeedPriceHistory() {
       qc.invalidateQueries({
         queryKey: feedCollectionKeys.priceHistory(variables.feedCollectionId),
       });
+      invalidateFeedCostConsumers(qc);
     },
   });
 }
@@ -99,6 +114,7 @@ export function useUpdateFeedPriceHistory() {
       qc.invalidateQueries({
         queryKey: feedCollectionKeys.priceHistory(variables.feedCollectionId),
       });
+      invalidateFeedCostConsumers(qc);
     },
   });
 }
@@ -113,6 +129,7 @@ export function useDeleteFeedPriceHistory() {
       qc.invalidateQueries({
         queryKey: feedCollectionKeys.priceHistory(variables.feedCollectionId),
       });
+      invalidateFeedCostConsumers(qc);
     },
   });
 }

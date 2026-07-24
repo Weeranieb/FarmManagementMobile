@@ -10,6 +10,7 @@ import {
   type FeedPriceHistoryEntry,
 } from '@/features/feed-collection';
 import { toNoonUtcIso } from '@/shared/time';
+import { fmt } from '@/utils/fmt';
 import { chronological, priceAroundDaysAgo, sliceByRange, type RangeId } from './historyUtils';
 
 export type AddPricePayload = {
@@ -70,6 +71,8 @@ export type FeedPriceHistoryState = {
   toggleOverflow: () => void;
   closeOverflow: () => void;
 
+  /** True while a price save is in flight — drives the sheet's saving button. */
+  saving: boolean;
   handleAdd: (payload: AddPricePayload) => void;
   handleEdit: (payload: EditPricePayload) => void;
   /** Add-mode date collision: overwrite the colliding entry's price (its date stays). */
@@ -79,6 +82,12 @@ export type FeedPriceHistoryState = {
   requestDelete: () => void;
   cancelDelete: () => void;
   confirmDelete: () => void;
+
+  /** Success confirmation shown after a price save. `null` when hidden; `key`
+   *  bumps on each save so the toast replays its entrance. `detail` is the
+   *  optional "name · ฿price/unit" second line. */
+  priceToast: { key: number; detail?: string } | null;
+  dismissPriceToast: () => void;
 };
 
 /**
@@ -104,6 +113,12 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
   const [sheet, setSheet] = useState<SheetMode>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [overflowOpen, setOverflowOpen] = useState(false);
+  const [priceToast, setPriceToast] =
+    useState<{ key: number; detail?: string } | null>(null);
+  const dismissPriceToast = useCallback(() => setPriceToast(null), []);
+  const showPriceSaved = useCallback((detail?: string) => {
+    setPriceToast((p) => ({ key: (p?.key ?? 0) + 1, detail }));
+  }, []);
 
   // Chronological (oldest → newest) — the source of truth for chart math.
   const sortedAll = useMemo(() => chronological(history), [history]);
@@ -138,6 +153,8 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
   const addPriceMutation = useAddFeedPriceHistory();
   const updatePriceMutation = useUpdateFeedPriceHistory();
   const deletePriceMutation = useDeleteFeedPriceHistory();
+  /** True while a price add/edit save is in flight — drives the sheet's saving button. */
+  const saving = addPriceMutation.isPending || updatePriceMutation.isPending;
 
   const openAdd = useCallback(() => {
     setOverflowOpen(false);
@@ -151,44 +168,77 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
   const toggleOverflow = useCallback(() => setOverflowOpen((v) => !v), []);
   const closeOverflow = useCallback(() => setOverflowOpen(false), []);
 
+  // "โปรฟีด · ฿940/ถุง" — the just-saved price, for the toast's second line.
+  const priceDetail = useCallback(
+    (price: number) => (feed ? `${feed.name} · ${fmt.baht(price)}/${feed.unit}` : undefined),
+    [feed],
+  );
+
   const handleAdd = useCallback(
     (payload: AddPricePayload) => {
-      addPriceMutation.mutate({
-        feedCollectionId: payload.id,
-        price: payload.price,
-        pricePerKg: payload.pricePerKg,
-        priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
-      });
+      const detail = priceDetail(payload.price);
+      addPriceMutation.mutate(
+        {
+          feedCollectionId: payload.id,
+          price: payload.price,
+          pricePerKg: payload.pricePerKg,
+          priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
+        },
+        {
+          onSuccess: () => {
+            closeSheet();
+            showPriceSaved(detail);
+          },
+        },
+      );
     },
-    [addPriceMutation],
+    [addPriceMutation, closeSheet, priceDetail, showPriceSaved],
   );
 
   const handleEdit = useCallback(
     (payload: EditPricePayload) => {
-      updatePriceMutation.mutate({
-        id: payload.entryId,
-        feedCollectionId,
-        price: payload.price,
-        pricePerKg: payload.pricePerKg,
-        priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
-      });
+      const detail = priceDetail(payload.price);
+      updatePriceMutation.mutate(
+        {
+          id: payload.entryId,
+          feedCollectionId,
+          price: payload.price,
+          pricePerKg: payload.pricePerKg,
+          priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
+        },
+        {
+          onSuccess: () => {
+            closeSheet();
+            showPriceSaved(detail);
+          },
+        },
+      );
     },
-    [updatePriceMutation, feedCollectionId],
+    [updatePriceMutation, feedCollectionId, closeSheet, priceDetail, showPriceSaved],
   );
 
   const handleOverwrite = useCallback(
     (payload: { entryId: number; price: number; pricePerKg: number | null }) => {
       const target = sortedAll.find((e) => e.id === payload.entryId);
       if (!target) return;
-      updatePriceMutation.mutate({
-        id: target.id,
-        feedCollectionId,
-        price: payload.price,
-        pricePerKg: payload.pricePerKg,
-        priceUpdatedDate: toNoonUtcIso(target.effectiveDate),
-      });
+      const detail = priceDetail(payload.price);
+      updatePriceMutation.mutate(
+        {
+          id: target.id,
+          feedCollectionId,
+          price: payload.price,
+          pricePerKg: payload.pricePerKg,
+          priceUpdatedDate: toNoonUtcIso(target.effectiveDate),
+        },
+        {
+          onSuccess: () => {
+            closeSheet();
+            showPriceSaved(detail);
+          },
+        },
+      );
     },
-    [updatePriceMutation, feedCollectionId, sortedAll],
+    [updatePriceMutation, feedCollectionId, sortedAll, closeSheet, priceDetail, showPriceSaved],
   );
 
   const requestDelete = useCallback(() => setSheet('confirm-delete'), []);
@@ -229,11 +279,14 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
     overflowOpen,
     toggleOverflow,
     closeOverflow,
+    saving,
     handleAdd,
     handleEdit,
     handleOverwrite,
     requestDelete,
     cancelDelete,
     confirmDelete,
+    priceToast,
+    dismissPriceToast,
   };
 }
