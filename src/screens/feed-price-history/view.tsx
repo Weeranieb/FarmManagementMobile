@@ -1,11 +1,13 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Pill, PillText } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { SheetPriceEntry } from '@/screens/feed-collection/components/SheetPriceEntry';
+import { PriceSavedToast } from '@/screens/feed-collection/components/PriceSavedToast';
 import { FEED_PILL_TONE_BY_KIND, FEED_TYPE_LABEL_TH } from '@/screens/feed-collection/feedPalette';
 import { HeroPriceCard } from './components/HeroPriceCard';
 import { RangeSegmented } from './components/RangeSegmented';
@@ -38,15 +40,19 @@ export function FeedPriceHistoryView({
   overflowOpen,
   toggleOverflow,
   closeOverflow,
+  saving,
   handleAdd,
   handleEdit,
   handleOverwrite,
   requestDelete,
   cancelDelete,
   confirmDelete,
+  priceToast,
+  dismissPriceToast,
 }: FeedPriceHistoryState) {
   const { t } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   // Show skeleton while waiting for either the parent feed or its history.
   const showSkeleton = isLoading && !current;
@@ -119,6 +125,7 @@ export function FeedPriceHistoryView({
         feed={feed}
         entry={sheet === 'edit' ? selectedEntry : null}
         entries={allEntries}
+        saving={saving}
         onClose={closeSheet}
         onSubmit={handleAdd}
         onSubmitEdit={handleEdit}
@@ -133,6 +140,15 @@ export function FeedPriceHistoryView({
         onCancel={cancelDelete}
         onConfirm={confirmDelete}
       />
+
+      {priceToast ? (
+        <PriceSavedToast
+          key={priceToast.key}
+          detail={priceToast.detail}
+          bottom={insets.bottom + 20}
+          onDismiss={dismissPriceToast}
+        />
+      ) : null}
     </View>
   );
 }

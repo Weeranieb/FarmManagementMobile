@@ -7,14 +7,18 @@ import {
   useAddFeedPriceHistory,
   useCreateFeedCollection,
   useFeedCollectionsData,
+  useFeedPriceHistoryData,
   useUpdateFeedCollection,
+  useUpdateFeedPriceHistory,
   type CreateFeedCollectionRequest,
   type FeedCollectionModel,
   type FeedKind,
+  type FeedPriceHistoryEntry,
   type UpdateFeedCollectionRequest,
 } from '@/features/feed-collection';
 import { useSearchQuery } from '@/hooks/useSearchQuery';
 import { toNoonUtcIso } from '@/shared/time';
+import { fmt } from '@/utils/fmt';
 import { FEED_TYPE_LABEL_TH } from './feedPalette';
 
 export type FeedSheetMode = 'actions' | 'add' | 'edit' | 'update-price' | null;
@@ -53,15 +57,31 @@ export type FeedCollectionState = {
   onChangeQuery: (s: string) => void;
   sheet: FeedSheetMode;
   activeFeed: FeedCollectionModel | null;
+  /** Chronological (oldest → newest) price history of `activeFeed` — feeds the
+   *  update-price sheet's date-collision check and overwrite path. */
+  activeFeedPriceHistory: FeedPriceHistoryEntry[];
   openActions: (feed: FeedCollectionModel) => void;
   openAdd: () => void;
   openEdit: () => void;
   openUpdatePrice: () => void;
   closeSheet: () => void;
+  saving: boolean;
   handleCreate: (payload: AddFeedFormPayload) => void;
   handleEdit: (payload: AddFeedFormPayload) => void;
   handleUpdatePrice: (payload: UpdatePriceFormPayload) => void;
+  /** Update-price date collision: overwrite the colliding entry's price (its date stays). */
+  handleOverwritePrice: (payload: {
+    entryId: number;
+    price: number;
+    pricePerKg: number | null;
+  }) => void;
   handleOpenHistory: (feed: FeedCollectionModel) => void;
+
+  /** Success confirmation shown after a price save. `null` when hidden; `key`
+   *  bumps on each save so the toast replays its entrance. `detail` is the
+   *  optional "name · ฿price/unit" second line. */
+  priceToast: { key: number; detail?: string } | null;
+  dismissPriceToast: () => void;
 };
 
 export function useFeedCollectionScreen(): FeedCollectionState {
@@ -77,10 +97,29 @@ export function useFeedCollectionScreen(): FeedCollectionState {
   const { searchOpen, query, onOpenSearch, onCloseSearch, onChangeQuery } = useSearchQuery();
   const [sheet, setSheet] = useState<FeedSheetMode>(null);
   const [activeFeed, setActiveFeed] = useState<FeedCollectionModel | null>(null);
+  const [priceToast, setPriceToast] =
+    useState<{ key: number; detail?: string } | null>(null);
+  const dismissPriceToast = useCallback(() => setPriceToast(null), []);
+  const showPriceSaved = useCallback((detail?: string) => {
+    setPriceToast((p) => ({ key: (p?.key ?? 0) + 1, detail }));
+  }, []);
+
+  // History of the feed whose ⋯ menu is open — the update-price sheet needs it
+  // to warn on a duplicate date and offer an overwrite. Gated to `> 0`, so it
+  // stays idle until a feed is active. Left unsorted: the sheet is add-only
+  // here and reads `entries` only for an order-independent duplicate-date find.
+  const { data: activeFeedPriceHistory } = useFeedPriceHistoryData(activeFeed?.id ?? 0);
 
   const createMutation = useCreateFeedCollection();
   const updateMutation = useUpdateFeedCollection();
   const addPriceMutation = useAddFeedPriceHistory();
+  const updatePriceMutation = useUpdateFeedPriceHistory();
+  /** True while any add/edit/price save is in flight — drives the sheet's saving button. */
+  const saving =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    addPriceMutation.isPending ||
+    updatePriceMutation.isPending;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -130,9 +169,11 @@ export function useFeedCollectionScreen(): FeedCollectionState {
           },
         ],
       };
-      createMutation.mutate(body);
+      // Close only once the save succeeds so the sheet's button can show a
+      // saving state until then (and stays open on error for a retry).
+      createMutation.mutate(body, { onSuccess: closeSheet });
     },
-    [createMutation],
+    [createMutation, closeSheet],
   );
 
   const handleEdit = useCallback(
@@ -147,34 +188,65 @@ export function useFeedCollectionScreen(): FeedCollectionState {
         packSizeKg: payload.packSizeKg,
         supplier: payload.supplier,
       };
-      updateMutation.mutate(body);
-      // The edit sheet now surfaces the buy-in price + effective date (design
-      // parity). Record a new price-history entry only when the tracking price
-      // actually changed, so re-saving details alone never writes a spurious row.
-      const priceChanged =
-        activeFeed.price == null || Math.abs(payload.price - activeFeed.price) > 1e-6;
-      if (priceChanged) {
-        addPriceMutation.mutate({
-          feedCollectionId: activeFeed.id,
-          price: payload.price,
-          pricePerKg: payload.pricePerKg,
-          priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
-        });
-      }
+      // Edit is details-only — price is managed from the price-history screen
+      // (อัปเดตราคา), so this never touches price. Close on save success.
+      updateMutation.mutate(body, { onSuccess: closeSheet });
     },
-    [activeFeed, updateMutation, addPriceMutation],
+    [activeFeed, updateMutation, closeSheet],
+  );
+
+  // "โปรฟีด · ฿940/ถุง" — the just-saved price, for the toast's second line.
+  const priceDetail = useCallback(
+    (price: number) =>
+      activeFeed ? `${activeFeed.name} · ${fmt.baht(price)}/${activeFeed.unit}` : undefined,
+    [activeFeed],
   );
 
   const handleUpdatePrice = useCallback(
     (payload: UpdatePriceFormPayload) => {
-      addPriceMutation.mutate({
-        feedCollectionId: payload.id,
-        price: payload.price,
-        pricePerKg: payload.pricePerKg,
-        priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
-      });
+      const detail = priceDetail(payload.price);
+      addPriceMutation.mutate(
+        {
+          feedCollectionId: payload.id,
+          price: payload.price,
+          pricePerKg: payload.pricePerKg,
+          priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
+        },
+        {
+          onSuccess: () => {
+            closeSheet();
+            showPriceSaved(detail);
+          },
+        },
+      );
     },
-    [addPriceMutation],
+    [addPriceMutation, closeSheet, priceDetail, showPriceSaved],
+  );
+
+  const handleOverwritePrice = useCallback(
+    (payload: { entryId: number; price: number; pricePerKg: number | null }) => {
+      if (!activeFeed) return;
+      // Keep the colliding entry's own date — only its price changes.
+      const target = activeFeedPriceHistory.find((e) => e.id === payload.entryId);
+      if (!target) return;
+      const detail = priceDetail(payload.price);
+      updatePriceMutation.mutate(
+        {
+          id: target.id,
+          feedCollectionId: activeFeed.id,
+          price: payload.price,
+          pricePerKg: payload.pricePerKg,
+          priceUpdatedDate: toNoonUtcIso(target.effectiveDate),
+        },
+        {
+          onSuccess: () => {
+            closeSheet();
+            showPriceSaved(detail);
+          },
+        },
+      );
+    },
+    [activeFeed, activeFeedPriceHistory, updatePriceMutation, closeSheet, priceDetail, showPriceSaved],
   );
 
   const handleOpenHistory = useCallback(
@@ -197,14 +269,19 @@ export function useFeedCollectionScreen(): FeedCollectionState {
     onChangeQuery,
     sheet,
     activeFeed,
+    activeFeedPriceHistory,
     openActions,
     openAdd,
     openEdit,
     openUpdatePrice,
     closeSheet,
+    saving,
     handleCreate,
     handleEdit,
     handleUpdatePrice,
+    handleOverwritePrice,
     handleOpenHistory,
+    priceToast,
+    dismissPriceToast,
   };
 }
