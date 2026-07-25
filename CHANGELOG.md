@@ -9,6 +9,13 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.17](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.16...v0.2.17) (2026-07-25)
+
+
+### Features
+
+* feed collection pricing units ([#45](https://github.com/Weeranieb/FarmManagementMobile/issues/45)) ([7572bff](https://github.com/Weeranieb/FarmManagementMobile/commit/7572bffa7cd0ae822e2a696123c81935875033fd))
+
 ## [0.2.16](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.15...v0.2.16) (2026-07-24)
 
 
