@@ -9,6 +9,13 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.18](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.17...v0.2.18) (2026-07-25)
+
+
+### Features
+
+* move picker and pond activity detail ([#47](https://github.com/Weeranieb/FarmManagementMobile/issues/47)) ([a3ff5d5](https://github.com/Weeranieb/FarmManagementMobile/commit/a3ff5d573167c91c700adadea34c40411df37285))
+
 ## [0.2.17](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.16...v0.2.17) (2026-07-25)
 
 
