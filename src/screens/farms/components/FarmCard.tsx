@@ -1,8 +1,9 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { maintInk } from '@/theme/ink';
+import { Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Col } from '@/components/layout/Row';
 import { displayFarmName } from '@/utils/fmt';
@@ -28,7 +29,7 @@ export function FarmCard({ farm, onPress }: Props) {
   const tileMode = isEmpty ? 'empty' : isMaint ? 'maint' : 'active';
 
   return (
-    <Pressable
+    <Tappable
       onPress={onPress}
       accessibilityRole="button"
       android_ripple={{ color: t.surfaceAlt }}
@@ -114,7 +115,7 @@ export function FarmCard({ farm, onPress }: Props) {
       ) : null}
 
       <Icon.chevR size={18} color={isEmpty ? t.inkMute : t.inkSoft} />
-    </Pressable>
+    </Tappable>
   );
 }
 

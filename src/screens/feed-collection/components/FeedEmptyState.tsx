@@ -1,6 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
+import { Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { feedPaletteFor } from '../feedPalette';
 import { FeedFishIcon, FeedPelletIcon } from './FeedIcons';
@@ -104,7 +105,7 @@ export function FeedEmptyState({ isAdmin, onAdd }: Props) {
         </Text>
       </View>
       {isAdmin ? (
-        <Pressable
+        <Tappable
           onPress={onAdd}
           style={{
             marginTop: 6,
@@ -122,7 +123,7 @@ export function FeedEmptyState({ isAdmin, onAdd }: Props) {
           <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
             เพิ่มอาหารรายการแรก
           </Text>
-        </Pressable>
+        </Tappable>
       ) : null}
     </View>
   );

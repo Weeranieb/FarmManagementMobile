@@ -1,7 +1,8 @@
-import { Pressable, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { CHROME } from '../constants';
 
 type Props = {
@@ -24,7 +25,7 @@ export function FarmChipRow({ farmName, savedCount, total, onPress }: Props) {
         backgroundColor: t.surface,
       }}
     >
-      <Pressable
+      <Tappable
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel="เลือกฟาร์ม"
@@ -60,7 +61,7 @@ export function FarmChipRow({ farmName, savedCount, total, onPress }: Props) {
           {farmName}
         </Text>
         <Icon.arrowDown size={13} color={t.inkSoft} />
-      </Pressable>
+      </Tappable>
 
       <View style={{ flex: 1 }} />
 

@@ -3,6 +3,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { VIBRANT_BRAND } from '../constants';
 
 type Source = 'month' | 'date' | 'back' | 'farm';
@@ -175,7 +176,7 @@ export function UnsavedChangesDialog({
                 gap: 8,
               }}
             >
-              <Pressable
+              <Tappable
                 onPress={onDiscard}
                 style={{
                   height: 48,
@@ -198,9 +199,9 @@ export function UnsavedChangesDialog({
                 >
                   ออกโดยไม่บันทึก
                 </Text>
-              </Pressable>
+              </Tappable>
 
-              <Pressable
+              <Tappable
                 onPress={onSaveAndExit}
                 style={{
                   height: 48,
@@ -224,9 +225,9 @@ export function UnsavedChangesDialog({
                   บันทึก <Text style={{ fontFamily: type.familyNumBold }}>{dirtyCount}</Text> {unit}
                   แล้วออก
                 </Text>
-              </Pressable>
+              </Tappable>
 
-              <Pressable
+              <Tappable
                 onPress={onDismiss}
                 style={{
                   height: 44,
@@ -248,7 +249,7 @@ export function UnsavedChangesDialog({
                 >
                   ยกเลิก
                 </Text>
-              </Pressable>
+              </Tappable>
             </View>
           </Animated.View>
         </Animated.View>

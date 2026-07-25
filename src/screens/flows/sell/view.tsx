@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
-import { Btn, Input, Pill, TopBar } from '@/components/ui';
+import { Btn, Input, Pill, Tappable, TopBar } from '@/components/ui';
 import { DateField } from '@/components/date-selector';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
@@ -25,6 +25,8 @@ import {
 import type { SellRow } from './hook';
 import { MerchantSheet } from './components/MerchantSheet';
 import { SizeGradeSheet } from './components/SizeGradeSheet';
+import { SheetMerchantForm } from '@/screens/merchants/components/SheetMerchantForm';
+import { apiErrorMessage, apiErrorStatus } from '@/shared/http';
 
 type Props = {
   fromFab: boolean;
@@ -48,6 +50,12 @@ type Props = {
   merchantId: number | null;
   setMerchantId: (id: number) => void;
   merchant: MerchantModel | null;
+  createAndSelectMerchant: (payload: {
+    name: string;
+    contactNumber: string;
+    location: string;
+  }) => Promise<MerchantModel>;
+  creatingMerchant: boolean;
   subtotals: number[];
   grossRevenue: number;
   additionalCosts: CostRow[];
@@ -97,6 +105,8 @@ function SellStep1({
   updateRow,
   merchantId,
   setMerchantId,
+  createAndSelectMerchant,
+  creatingMerchant,
   subtotals,
   grossRevenue,
   additionalCosts,
@@ -122,7 +132,8 @@ function SellStep1({
   // Sheet state lives here — the sell rows editor and merchant picker each
   // just emit "open" requests. `gradeRowId` tracks which row we're picking
   // for; clearing both fields effectively closes any open sheet.
-  const [sheet, setSheet] = useState<'grade' | 'merchant' | null>(null);
+  // `merchant-add` swaps the picker for the inline create form.
+  const [sheet, setSheet] = useState<'grade' | 'merchant' | 'merchant-add' | null>(null);
   const [gradeRowId, setGradeRowId] = useState<string | null>(null);
   const closeSheet = () => {
     setSheet(null);
@@ -283,7 +294,30 @@ function SellStep1({
           setMerchantId(id);
           closeSheet();
         }}
+        onAddNew={() => setSheet('merchant-add')}
         onClose={closeSheet}
+      />
+
+      {/* Inline create — swaps in over the picker. Cancel returns to the
+          picker; a successful save auto-selects the new merchant and closes. */}
+      <SheetMerchantForm
+        visible={sheet === 'merchant-add'}
+        editing={null}
+        saving={creatingMerchant}
+        onClose={() => setSheet('merchant')}
+        onSubmit={async (payload) => {
+          try {
+            await createAndSelectMerchant(payload);
+            closeSheet();
+          } catch (err) {
+            Alert.alert(
+              'เพิ่มผู้ซื้อไม่สำเร็จ',
+              apiErrorStatus(err) === 409
+                ? 'เบอร์ติดต่อนี้มีผู้ซื้ออยู่แล้ว — ลองใช้เบอร์อื่น'
+                : apiErrorMessage(err, 'บันทึกไม่สำเร็จ'),
+            );
+          }
+        }}
       />
     </View>
   );
@@ -595,14 +629,14 @@ function SellRowsEditor({
           สายพันธุ์ที่ขาย
           <Text style={{ color: t.danger }}> *</Text>
         </Text>
-        <Pressable
+        <Tappable
           onPress={onAdd}
-          style={({ pressed }) => ({
+          style={{
             paddingHorizontal: 10,
             paddingVertical: 6,
             borderRadius: 9999,
-            backgroundColor: pressed ? t.sellSoft : 'transparent',
-          })}
+            backgroundColor: 'transparent',
+          }}
         >
           <Row gap={4} align="center">
             <Icon.plus size={14} color={t.sellInk} stroke={2.4} />
@@ -610,7 +644,7 @@ function SellRowsEditor({
               เพิ่มแถวขนาด
             </Text>
           </Row>
-        </Pressable>
+        </Tappable>
       </Row>
 
       <Col gap={10}>
@@ -704,7 +738,7 @@ function SellRowEditor({
           between a solid sell-soft chip (picked) and a dashed outlined chip
           (empty) so the empty state is clearly inviting a tap. */}
       <Row justify="space-between" align="center" style={{ marginBottom: 10 }}>
-        <Pressable onPress={onOpenGrade} hitSlop={6}>
+        <Tappable onPress={onOpenGrade} hitSlop={6}>
           <Row gap={6} align="center">
             <View
               style={{
@@ -732,8 +766,8 @@ function SellRowEditor({
               <Icon.chevR size={12} color={t.sellInk} />
             </View>
           </Row>
-        </Pressable>
-        <Pressable
+        </Tappable>
+        <Tappable
           onPress={onRemove}
           disabled={!canRemove}
           hitSlop={8}
@@ -749,7 +783,7 @@ function SellRowEditor({
           }}
         >
           <Icon.trash size={15} color={canRemove ? t.danger : t.inkMute} />
-        </Pressable>
+        </Tappable>
       </Row>
 
       <Row gap={8} align="flex-start" style={{ marginBottom: 8 }}>
@@ -854,7 +888,7 @@ function MerchantField({
 }) {
   const { t } = useTheme();
   return (
-    <Pressable
+    <Tappable
       onPress={onOpen}
       style={{
         width: '100%',
@@ -893,7 +927,7 @@ function MerchantField({
         {merchant ? merchant.name : 'เลือกผู้ซื้อ / ตลาด'}
       </Text>
       <Icon.chevR size={16} color={t.inkSoft} />
-    </Pressable>
+    </Tappable>
   );
 }
 

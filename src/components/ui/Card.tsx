@@ -1,6 +1,7 @@
-import { Pressable, View, type ViewStyle, type StyleProp } from 'react-native';
+import { View, type ViewStyle, type StyleProp } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii } from '@/theme/tokens';
+import { Tappable } from './Tappable';
 
 type Props = {
   children?: React.ReactNode;
@@ -21,13 +22,13 @@ export function Card({ children, style, padded = true, onPress }: Props) {
   };
   if (onPress) {
     return (
-      <Pressable
+      <Tappable
         onPress={onPress}
         style={[baseStyle, style]}
         android_ripple={{ color: t.surfaceAlt }}
       >
         {children}
-      </Pressable>
+      </Tappable>
     );
   }
   return <View style={[baseStyle, style]}>{children}</View>;

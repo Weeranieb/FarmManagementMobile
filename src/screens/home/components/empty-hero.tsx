@@ -1,5 +1,6 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 
@@ -74,7 +75,7 @@ export function EmptyHero({ onCreateFarm }: Props) {
           overflow: 'hidden',
         }}
       >
-        <Pressable
+        <Tappable
           onPress={onCreateFarm}
           accessibilityRole="button"
           android_ripple={{ color: 'rgba(255,255,255,0.18)' }}
@@ -90,7 +91,7 @@ export function EmptyHero({ onCreateFarm }: Props) {
           <Text style={{ color: '#fff', fontSize: type.sizes.base, fontFamily: type.familyBold }}>
             สร้างฟาร์ม
           </Text>
-        </Pressable>
+        </Tappable>
       </View>
     </View>
   );

@@ -1,10 +1,10 @@
-import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
-import { SearchHeader, TopBar } from '@/components/ui';
+import { SearchHeader, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { FeedCard } from './components/FeedCard';
 import { FeedEmptyState } from './components/FeedEmptyState';
@@ -95,7 +95,7 @@ export function FeedCollectionView({
             title="คลังอาหาร"
             subtitle={isEmpty ? 'ยังไม่มีรายการ' : `${feeds.length} รายการ`}
             leading={
-              <Pressable
+              <Tappable
                 onPress={() =>
                   router.canGoBack() ? router.back() : router.replace('/(app)/(tabs)/manage')
                 }
@@ -104,18 +104,18 @@ export function FeedCollectionView({
                 style={iconButtonStyle(t.border)}
               >
                 <Icon.back size={18} color={t.ink} />
-              </Pressable>
+              </Tappable>
             }
             trailing={
               !isEmpty ? (
-                <Pressable
+                <Tappable
                   onPress={onOpenSearch}
                   accessibilityRole="button"
                   accessibilityLabel="ค้นหาอาหาร"
                   style={iconButtonStyle(t.border)}
                 >
                   <Icon.search size={18} color={t.ink} />
-                </Pressable>
+                </Tappable>
               ) : null
             }
           />
@@ -175,7 +175,7 @@ export function FeedCollectionView({
             bottom: Math.max(space[6], insets.bottom + space[2]),
           }}
         >
-          <Pressable
+          <Tappable
             onPress={openAdd}
             accessibilityRole="button"
             accessibilityLabel="เพิ่มอาหาร"
@@ -193,7 +193,7 @@ export function FeedCollectionView({
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: type.sizes.base }}>
               เพิ่มอาหาร
             </Text>
-          </Pressable>
+          </Tappable>
         </View>
       ) : null}
 

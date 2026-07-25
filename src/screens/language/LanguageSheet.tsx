@@ -1,6 +1,6 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Card } from '@/components/ui';
+import { Card, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
@@ -45,8 +45,9 @@ export function LanguageSheet({ visible, selected, onPick, onClose }: Props) {
             const isSel = selected === l.code;
             const last = i === langs.length - 1;
             return (
-              <Pressable
+              <Tappable
                 key={l.code}
+                feedback="opacity"
                 onPress={() => handlePick(l.code)}
                 android_ripple={{ color: t.surfaceAlt }}
                 style={{
@@ -109,7 +110,7 @@ export function LanguageSheet({ visible, selected, onPick, onClose }: Props) {
                 >
                   {isSel ? <Icon.check size={16} color="#fff" stroke={2.4} /> : null}
                 </View>
-              </Pressable>
+              </Tappable>
             );
           })}
         </Card>

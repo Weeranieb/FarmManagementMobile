@@ -1,8 +1,8 @@
 import { useRef } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
-import { Btn, Input, Pill, TopBar } from '@/components/ui';
+import { Btn, Input, Pill, Tappable, TopBar } from '@/components/ui';
 import { DateField } from '@/components/date-selector';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
@@ -453,9 +453,10 @@ export function MoveView({
                   {candidates.map((p) => {
                     const sel = p.id === toId;
                     return (
-                      <Pressable
+                      <Tappable
                         key={p.id}
                         onPress={() => setToId(p.id)}
+                        feedback="opacity"
                         style={{
                           padding: 14,
                           borderRadius: radii.md,
@@ -481,7 +482,7 @@ export function MoveView({
                             {p.fishTypes.map((f) => FISH_TH[f] ?? f).join(', ') || '—'}
                           </Pill>
                         </Row>
-                      </Pressable>
+                      </Tappable>
                     );
                   })}
                 </Col>

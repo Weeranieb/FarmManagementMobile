@@ -1,10 +1,10 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import Constants from 'expo-constants';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type, type ThemeMode } from '@/theme/tokens';
 import { dangerInk } from '@/theme/ink';
-import { Card, Pill, TopBar } from '@/components/ui';
+import { Card, Pill, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { LanguageSheet, type LanguageCode } from '@/screens/language';
 import { ListRow } from './components/ListRow';
@@ -67,8 +67,9 @@ function ModeSwitch() {
       {MODE_ORDER.map((m) => {
         const active = m === mode;
         return (
-          <Pressable
+          <Tappable
             key={m}
+            feedback="opacity"
             onPress={() => setMode(m)}
             android_ripple={{ color: t.surfaceAlt }}
             style={{
@@ -98,7 +99,7 @@ function ModeSwitch() {
             >
               {tx(`profile.modes.${m}`)}
             </Text>
-          </Pressable>
+          </Tappable>
         );
       })}
     </View>
@@ -195,7 +196,7 @@ export function ProfileView({
         </View>
 
         {/* Destructive action — separated and clearly weighted, not a settings row */}
-        <Pressable
+        <Tappable
           onPress={handleLogout}
           android_ripple={{ color: t.dangerSoft }}
           style={{
@@ -214,7 +215,7 @@ export function ProfileView({
           <Text style={{ fontFamily: type.familySemi, fontSize: type.sizes.base, color: dangerInk(mode, t) }}>
             {tx('profile.logout')}
           </Text>
-        </Pressable>
+        </Tappable>
       </ScrollView>
 
       <LanguageSheet

@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
+import { Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
@@ -85,7 +86,7 @@ export function ConfirmDeleteDialog({ visible, entry, unit, onCancel, onConfirm 
             ออกจากประวัติ — การกระทำนี้ย้อนกลับไม่ได้
           </Text>
           <Row gap={10}>
-            <Pressable
+            <Tappable
               onPress={onCancel}
               accessibilityRole="button"
               style={{
@@ -101,8 +102,8 @@ export function ConfirmDeleteDialog({ visible, entry, unit, onCancel, onConfirm 
               <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 14 }}>
                 ยกเลิก
               </Text>
-            </Pressable>
-            <Pressable
+            </Tappable>
+            <Tappable
               onPress={onConfirm}
               accessibilityRole="button"
               style={{
@@ -117,7 +118,7 @@ export function ConfirmDeleteDialog({ visible, entry, unit, onCancel, onConfirm 
               <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 14 }}>
                 ลบรายการ
               </Text>
-            </Pressable>
+            </Tappable>
           </Row>
         </View>
       </View>

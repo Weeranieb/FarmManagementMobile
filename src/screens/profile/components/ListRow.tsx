@@ -1,7 +1,8 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon, type IconName } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { dangerInk } from '@/theme/ink';
 
 export type ListRowTone = 'default' | 'danger';
@@ -51,9 +52,10 @@ export function ListRow({
     ) : null;
 
   return (
-    <Pressable
+    <Tappable
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
+      feedback={onPress && !disabled ? 'scale' : 'none'}
       android_ripple={disabled ? undefined : { color: t.surfaceAlt }}
       style={{
         flexDirection: 'row',
@@ -86,6 +88,6 @@ export function ListRow({
         ) : null}
       </View>
       {trailingNode}
-    </Pressable>
+    </Tappable>
   );
 }

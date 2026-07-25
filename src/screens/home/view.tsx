@@ -1,7 +1,7 @@
-import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space, type } from '@/theme/tokens';
-import { Skeleton, SkeletonShape } from '@/components/ui';
+import { Skeleton, SkeletonShape, Tappable } from '@/components/ui';
 import { today } from '@/shared/time';
 import { ActivityRow, type ActivityItem } from './components/activity-row';
 import { ActivityRowSkeleton } from './components/activity-row-skeleton';
@@ -146,7 +146,7 @@ export function HomeView({
             // Chrome stays on the inner View; the Pressable carries no style so
             // react-native-css-interop can't mangle the circle (see the
             // Pressable note in daily-log-card.tsx).
-            <Pressable
+            <Tappable
               onPress={onPressProfile}
               accessibilityRole="button"
               accessibilityLabel="โปรไฟล์"
@@ -173,7 +173,7 @@ export function HomeView({
                   {displayInitial}
                 </Text>
               </View>
-            </Pressable>
+            </Tappable>
           ) : null}
         </View>
 

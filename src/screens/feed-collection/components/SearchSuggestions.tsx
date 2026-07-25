@@ -1,6 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
+import { Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 
 const RECENT = ['อาหารเม็ด', 'CP', 'สด', 'เบทาโกร'];
@@ -25,9 +26,10 @@ export function SearchSuggestions({ onPick }: Props) {
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {RECENT.map((r) => (
-          <Pressable
+          <Tappable
             key={r}
             onPress={() => onPick(r)}
+            feedback="opacity"
             style={{
               paddingHorizontal: 12,
               paddingVertical: 8,
@@ -42,7 +44,7 @@ export function SearchSuggestions({ onPick }: Props) {
           >
             <Icon.clock size={12} color={t.inkSoft} />
             <Text style={{ fontSize: 13, fontFamily: type.familyMedium, color: t.inkSoft }}>{r}</Text>
-          </Pressable>
+          </Tappable>
         ))}
       </View>
     </View>

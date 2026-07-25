@@ -1,9 +1,10 @@
 import { memo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
 import { thaiDate } from '@/locale/thaiDate';
+import { Tappable } from '@/components/ui';
 import { DAY_W, ROW_H, LEDGER_LEAVES, colWash, fmtCell } from '../ui';
 import type { CellValues } from '../hook';
 import type { ColKey } from '@/screens/daily-log/constants';
@@ -43,7 +44,8 @@ export const LedgerDayRow = memo(function LedgerDayRow({
   return (
     <View style={{ borderBottomWidth: 1, borderBottomColor: t.border, opacity: isFuture ? 0.55 : 1 }}>
       <View style={{ flexDirection: 'row', height: ROW_H }}>
-        <Pressable
+        <Tappable
+          feedback="opacity"
           onPress={isFuture ? undefined : () => onCell(day, 'pm')}
           disabled={isFuture}
           accessibilityRole="button"
@@ -78,7 +80,7 @@ export const LedgerDayRow = memo(function LedgerDayRow({
               style={{ position: 'absolute', top: 5, right: 6, width: 6, height: 6, borderRadius: 3, backgroundColor: t.brand }}
             />
           ) : null}
-        </Pressable>
+        </Tappable>
 
         {LEDGER_LEAVES.map((l) => {
           const active = editingCol === l.key;
@@ -88,8 +90,9 @@ export const LedgerDayRow = memo(function LedgerDayRow({
           const emphasizeDeath = l.key === 'death' && Number(raw) > 0;
           const family = emphasizeDeath ? type.familyNumBold : show ? type.familyNumSemi : type.familyNum;
           return (
-            <Pressable
+            <Tappable
               key={l.key}
+              feedback="opacity"
               onPress={isFuture ? undefined : () => onCell(day, l.key)}
               disabled={isFuture}
               style={{
@@ -123,7 +126,7 @@ export const LedgerDayRow = memo(function LedgerDayRow({
                   style={[StyleSheet.absoluteFillObject, { borderWidth: 2, borderColor: t.brand }]}
                 />
               ) : null}
-            </Pressable>
+            </Tappable>
           );
         })}
       </View>

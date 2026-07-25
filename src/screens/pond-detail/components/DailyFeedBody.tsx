@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Pressable, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
-import { Card } from '@/components/ui';
+import { Card, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { thaiDate } from '@/locale/thaiDate';
@@ -101,7 +101,7 @@ function UnloggedNudge({ onPress }: { onPress: () => void }) {
           อาหาร · ปลาตาย · จับปลา
         </Text>
       </Col>
-      <Pressable
+      <Tappable
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel="ไปบันทึก"
@@ -117,7 +117,7 @@ function UnloggedNudge({ onPress }: { onPress: () => void }) {
       >
         <Text style={{ fontFamily: type.familyBold, fontSize: 13, color: '#fff' }}>ไปบันทึก</Text>
         <Icon.chevR size={14} color="#fff" />
-      </Pressable>
+      </Tappable>
     </View>
   );
 }

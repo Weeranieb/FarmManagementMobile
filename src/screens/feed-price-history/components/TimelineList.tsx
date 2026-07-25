@@ -1,8 +1,8 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { dangerInk } from '@/theme/ink';
-import { Card } from '@/components/ui';
+import { Card, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
@@ -111,12 +111,11 @@ function PriceRow({
   }
 
   return (
-    <Pressable
+    <Tappable
       onPress={onEdit}
       disabled={!isAdmin}
       accessibilityRole={isAdmin ? 'button' : undefined}
       accessibilityLabel={isAdmin ? `แก้ไขราคา ${thaiDate.long(d)}` : undefined}
-      style={({ pressed }) => ({ opacity: pressed && isAdmin ? 0.6 : 1 })}
     >
       {/* Layout goes on this inner View, not the Pressable. A flex row set
           directly on a Pressable's function-style renders as a column under
@@ -219,6 +218,6 @@ function PriceRow({
         </View>
         {isAdmin ? <Icon.chevR size={16} color={t.inkMute} /> : null}
       </View>
-    </Pressable>
+    </Tappable>
   );
 }

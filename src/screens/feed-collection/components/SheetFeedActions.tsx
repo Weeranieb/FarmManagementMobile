@@ -1,10 +1,10 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { dangerInk, warnInk } from '@/theme/ink';
 import { Row } from '@/components/layout/Row';
-import { Pill } from '@/components/ui';
+import { Pill, Tappable } from '@/components/ui';
 import { fmt } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import { SheetShell } from '@/components/sheet';
@@ -77,11 +77,10 @@ export function SheetFeedActions({
         </Row>
 
         {/* Primary — the daily action, given hero weight + live decision context. */}
-        <Pressable
+        <Tappable
           onPress={onUpdatePrice}
           accessibilityRole="button"
           android_ripple={{ color: toneEdge }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.92 : 1 })}
         >
           <View
             style={{
@@ -144,7 +143,7 @@ export function SheetFeedActions({
             </View>
             <Icon.chevR size={18} color={toneInk} />
           </View>
-        </Pressable>
+        </Tappable>
 
         {/* Secondary — quieter, no card fill. */}
         <ActionRow
@@ -189,7 +188,7 @@ function ActionRow({
 }) {
   const { t } = useTheme();
   return (
-    <Pressable
+    <Tappable
       onPress={onPress}
       android_ripple={{ color: t.surfaceAlt }}
       style={{
@@ -235,6 +234,6 @@ function ActionRow({
         </Text>
       </View>
       {showChevron ? <Icon.chevR size={16} color={t.inkSoft} /> : null}
-    </Pressable>
+    </Tappable>
   );
 }

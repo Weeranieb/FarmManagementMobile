@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from './Tappable';
 
 type Props = {
   value: string;
@@ -77,7 +78,7 @@ export function SearchHeader({
           }}
         />
         {value.length > 0 ? (
-          <Pressable
+          <Tappable
             onPress={() => onChangeText('')}
             hitSlop={12}
             accessibilityRole="button"
@@ -92,14 +93,14 @@ export function SearchHeader({
             }}
           >
             <Icon.x size={10} color={t.bg} stroke={2.5} />
-          </Pressable>
+          </Tappable>
         ) : null}
       </View>
-      <Pressable onPress={onCancel} hitSlop={10} accessibilityRole="button">
+      <Tappable onPress={onCancel} hitSlop={10} accessibilityRole="button">
         <Text style={{ color: t.brand, fontSize: 14, fontFamily: type.familyMedium }}>
           {cancelLabel}
         </Text>
-      </Pressable>
+      </Tappable>
     </View>
   );
 }

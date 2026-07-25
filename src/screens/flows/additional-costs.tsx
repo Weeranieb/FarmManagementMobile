@@ -8,10 +8,11 @@
 // is just the chip menu, so there are no phantom blank rows.
 
 import type { AdditionalCostItem } from '@/features/pond';
-import { Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Platform, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type, type ThemePalette } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { Col } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
 
@@ -72,17 +73,17 @@ function AddChip({
 }) {
   const { t } = useTheme();
   return (
-    <Pressable
+    <Tappable
       onPress={used ? undefined : onPress}
       disabled={used}
       hitSlop={8}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!used }}
       accessibilityLabel={used ? `${label} — เพิ่มแล้ว` : `เพิ่ม${label}`}
-      style={({ pressed }) => ({
-        opacity: used ? 0.5 : pressed ? 0.85 : 1,
+      style={{
+        opacity: used ? 0.5 : 1,
         alignSelf: 'flex-start',
-      })}
+      }}
     >
       <View
         style={{
@@ -112,7 +113,7 @@ function AddChip({
           {label}
         </Text>
       </View>
-    </Pressable>
+    </Tappable>
   );
 }
 
@@ -211,23 +212,22 @@ function CostRowItem({
         </Text>
       </View>
 
-      <Pressable
+      <Tappable
         onPress={onRemove}
         hitSlop={6}
         accessibilityRole="button"
         accessibilityLabel="ลบรายการนี้"
-        style={({ pressed }) => ({
-          opacity: pressed ? 0.6 : 1,
+        style={{
           width: 42,
           height: 48,
           alignItems: 'center',
           justifyContent: 'center',
           borderLeftWidth: 1,
           borderLeftColor: t.border,
-        })}
+        }}
       >
         <Icon.trash size={15} color={t.inkMute} />
-      </Pressable>
+      </Tappable>
     </View>
   );
 }

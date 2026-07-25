@@ -1,6 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
+import { Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 
 const RECENT: string[] = ['A2', 'ปลานิล', 'ปลากะพง'];
@@ -25,8 +26,9 @@ export function SearchSuggestions({ onPick }: Props) {
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {RECENT.map((r) => (
-          <Pressable
+          <Tappable
             key={r}
+            feedback="opacity"
             onPress={() => onPick(r)}
             accessibilityRole="button"
             accessibilityLabel={`ค้นหา ${r}`}
@@ -46,7 +48,7 @@ export function SearchSuggestions({ onPick }: Props) {
             <Text style={{ fontFamily: type.familyMedium, fontSize: 13, color: t.inkSoft }}>
               {r}
             </Text>
-          </Pressable>
+          </Tappable>
         ))}
       </View>
     </View>

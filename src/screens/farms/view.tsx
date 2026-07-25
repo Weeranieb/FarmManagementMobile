@@ -1,7 +1,7 @@
-import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
-import { SearchHeader, TopBar } from '@/components/ui';
+import { SearchHeader, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Col } from '@/components/layout/Row';
 import type { FarmModel } from '@/features/farm';
@@ -53,7 +53,7 @@ export function FarmsView({
             title="ฟาร์มของฉัน"
             subtitle={`${farms.length} ฟาร์ม`}
             trailing={
-              <Pressable
+              <Tappable
                 onPress={onOpenSearch}
                 accessibilityRole="button"
                 accessibilityLabel="ค้นหาฟาร์ม"
@@ -68,7 +68,7 @@ export function FarmsView({
                 }}
               >
                 <Icon.search size={18} color={t.ink} />
-              </Pressable>
+              </Tappable>
             }
           />
         )

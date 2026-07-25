@@ -1,59 +1,50 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
-import { Btn } from '@/components/ui';
+import { Tappable } from '@/components/ui';
 import { SheetShell } from '@/components/sheet';
 import type { MerchantModel } from '@/features/merchant';
 
 /**
- * Bottom-sheet picker for merchants. Empty state surfaces the web app as the
- * source of truth — merchants are created there and synced back. The sheet
- * scrolls when the list is long; backdrop tap + X button both close.
- *
- * `onWebAppPress` is optional so callers can wire it to whatever web entry
- * point makes sense (env-driven URL via Linking.openURL, etc.). When omitted
- * the empty state still shows the headline + body but hides the CTA — better
- * to drop a non-functional button than to ship a dead Linking call.
+ * Bottom-sheet picker for merchants. Traders are now created in-app, so the
+ * sheet leads with an inline "เพิ่มผู้ซื้อใหม่" action (both in the list and as
+ * the empty-state CTA) — no more web-app hand-off. Picking a row selects it;
+ * `onAddNew` hands control to the sell flow to open the create form.
  */
 export function MerchantSheet({
   visible,
   merchants,
   selectedId,
   onPick,
+  onAddNew,
   onClose,
-  onWebAppPress,
 }: {
   visible: boolean;
   merchants: MerchantModel[];
   selectedId: number | null;
   onPick: (merchantId: number) => void;
+  onAddNew: () => void;
   onClose: () => void;
-  onWebAppPress?: () => void;
 }) {
   const { t } = useTheme();
+  const isEmpty = merchants.length === 0;
+
   return (
     <SheetShell visible={visible} onClose={onClose} title="เลือกผู้ซื้อ / ตลาด" heightPct={0.72}>
-      {merchants.length === 0 ? (
-        <View
-          style={{
-            paddingVertical: 24,
-            paddingHorizontal: 8,
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
+      {isEmpty ? (
+        <View style={{ paddingVertical: 24, paddingHorizontal: 8, alignItems: 'center', gap: 12 }}>
           <View
             style={{
               width: 56,
               height: 56,
               borderRadius: 28,
-              backgroundColor: t.surfaceAlt ?? t.surface,
+              backgroundColor: t.sellSoft,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Icon.user size={26} color={t.inkMute} stroke={1.4} />
+            <Icon.merchant size={26} color={t.sellInk} stroke={1.6} />
           </View>
           <View style={{ alignItems: 'center', gap: 4 }}>
             <Text style={{ fontSize: 15, fontFamily: type.familyBold, color: t.ink }}>
@@ -69,21 +60,28 @@ export function MerchantSheet({
                 lineHeight: 19,
               }}
             >
-              เพิ่มรายชื่อผู้ซื้อ / ตลาดได้จากเว็บแอปก่อน แล้วซิงค์กลับมาในมือถือ
+              เพิ่มรายชื่อผู้ซื้อ / ตลาดได้เลย แล้วเลือกใช้ในการขายครั้งนี้ได้ทันที
             </Text>
           </View>
-          {onWebAppPress ? (
-            <View style={{ marginTop: 4 }}>
-              <Btn
-                tone="sell"
-                variant="ghost"
-                onPress={onWebAppPress}
-                leading={<Icon.globe size={14} color={t.sellInk} />}
-              >
-                เปิดเว็บแอป
-              </Btn>
-            </View>
-          ) : null}
+          <Tappable
+            onPress={onAddNew}
+            accessibilityRole="button"
+            style={{
+              marginTop: 4,
+              height: 48,
+              paddingHorizontal: 20,
+              borderRadius: radii.md,
+              backgroundColor: t.sell,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <Icon.plus size={18} color="#fff" stroke={2.2} />
+            <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
+              เพิ่มผู้ซื้อใหม่
+            </Text>
+          </Tappable>
         </View>
       ) : (
         <ScrollView
@@ -92,10 +90,44 @@ export function MerchantSheet({
           contentContainerStyle={{ gap: 6, paddingBottom: 4 }}
           showsVerticalScrollIndicator={false}
         >
+          {/* Add-new — dashed sell-tinted row, kept at the top so it's always reachable */}
+          <Tappable
+            onPress={onAddNew}
+            accessibilityRole="button"
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              borderRadius: radii.md,
+              backgroundColor: 'transparent',
+              borderWidth: 1.5,
+              borderColor: t.sell + '66',
+              borderStyle: 'dashed',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                backgroundColor: t.sellSoft,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Icon.plus size={18} color={t.sellInk} stroke={2.2} />
+            </View>
+            <Text style={{ flex: 1, fontFamily: type.familySemi, fontSize: 14, color: t.sellInk }}>
+              เพิ่มผู้ซื้อใหม่
+            </Text>
+          </Tappable>
+
           {merchants.map((m) => {
             const sel = m.id === selectedId;
             return (
-              <Pressable
+              <Tappable
                 key={m.id}
                 onPress={() => onPick(m.id)}
                 style={{
@@ -132,22 +164,14 @@ export function MerchantSheet({
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text
-                    style={{
-                      fontFamily: type.familySemi,
-                      fontSize: 14,
-                      color: t.ink,
-                    }}
+                    style={{ fontFamily: type.familySemi, fontSize: 14, color: t.ink }}
                     numberOfLines={1}
                   >
                     {m.name}
                   </Text>
                   {m.location || m.contactNumber ? (
                     <Text
-                      style={{
-                        fontSize: 12,
-                        color: t.inkMute,
-                        fontFamily: type.family,
-                      }}
+                      style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}
                       numberOfLines={1}
                     >
                       {[m.location, m.contactNumber].filter(Boolean).join(' · ')}
@@ -155,7 +179,7 @@ export function MerchantSheet({
                   ) : null}
                 </View>
                 {sel ? <Icon.check size={18} color={t.sellInk} stroke={2.4} /> : null}
-              </Pressable>
+              </Tappable>
             );
           })}
         </ScrollView>

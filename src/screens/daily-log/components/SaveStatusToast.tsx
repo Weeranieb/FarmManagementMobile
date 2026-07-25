@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { ActivityIndicator, Animated, Easing, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 
@@ -158,7 +159,7 @@ export function SaveStatusToast({
         {/* Error actions — retry + dismiss */}
         {isError ? (
           <>
-            <Pressable
+            <Tappable
               onPress={onRetry}
               accessibilityRole="button"
               accessibilityLabel="ลองใหม่"
@@ -173,8 +174,8 @@ export function SaveStatusToast({
               <Text style={{ color: '#fff', fontSize: type.sizes.sm, fontFamily: type.familySemi }}>
                 ลองใหม่
               </Text>
-            </Pressable>
-            <Pressable
+            </Tappable>
+            <Tappable
               onPress={onDismiss}
               hitSlop={8}
               accessibilityRole="button"
@@ -182,7 +183,7 @@ export function SaveStatusToast({
               style={{ flexShrink: 0, padding: 2 }}
             >
               <Icon.x size={16} color="rgba(255,255,255,0.7)" />
-            </Pressable>
+            </Tappable>
           </>
         ) : null}
       </View>

@@ -1,9 +1,9 @@
 import { useId } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
-import { Card, Pill } from '@/components/ui';
+import { Card, Pill, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
@@ -146,12 +146,12 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
             </Row>
 
             {onChart ? (
-              <Pressable
+              <Tappable
                 onPress={onChart}
                 hitSlop={8}
                 accessibilityRole="button"
                 accessibilityLabel="ดูราคาย้อนหลัง"
-                style={({ pressed }) => ({ flexShrink: 0, opacity: pressed ? 0.6 : 1 })}
+                style={{ flexShrink: 0 }}
               >
                 {/* Layout lives on this inner View: the Pressable style-function
                     form can drop layout props (flexDirection) across RN versions,
@@ -165,14 +165,14 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
                   </Text>
                   <Icon.chevR size={13} color={t.brand} />
                 </View>
-              </Pressable>
+              </Tappable>
             ) : null}
           </Row>
         </View>
 
         {/* Kebab */}
         {isAdmin ? (
-          <Pressable
+          <Tappable
             onPress={onMore}
             hitSlop={8}
             accessibilityRole="button"
@@ -188,7 +188,7 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
             }}
           >
             <Icon.more size={19} color={t.inkSoft} />
-          </Pressable>
+          </Tappable>
         ) : null}
       </Row>
     </Card>

@@ -1,7 +1,7 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
-import { SearchHeader, TopBar } from '@/components/ui';
+import { SearchHeader, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Col, Row } from '@/components/layout/Row';
 import type { PondModel } from '@/features/pond';
@@ -65,7 +65,7 @@ export function FarmPondsView({
             subtitle={countLabel}
             leading={
               onBack ? (
-                <Pressable
+                <Tappable
                   onPress={onBack}
                   accessibilityRole="button"
                   accessibilityLabel="ย้อนกลับ"
@@ -80,11 +80,11 @@ export function FarmPondsView({
                   }}
                 >
                   <Icon.back size={18} color={t.ink} />
-                </Pressable>
+                </Tappable>
               ) : null
             }
             trailing={
-              <Pressable
+              <Tappable
                 onPress={onOpenSearch}
                 accessibilityRole="button"
                 accessibilityLabel="ค้นหาบ่อ"
@@ -99,7 +99,7 @@ export function FarmPondsView({
                 }}
               >
                 <Icon.search size={18} color={t.ink} />
-              </Pressable>
+              </Tappable>
             }
           />
         )

@@ -1,6 +1,7 @@
-import { Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import type { ActivityItem } from '@/screens/home/components/activity-row';
@@ -60,7 +61,7 @@ export function ActivityHistoryView({
           borderBottomColor: t.border,
         }}
       >
-        <Pressable
+        <Tappable
           onPress={onBack}
           accessibilityRole="button"
           accessibilityLabel="ย้อนกลับ"
@@ -76,7 +77,7 @@ export function ActivityHistoryView({
           }}
         >
           <Icon.back size={22} color={t.ink} />
-        </Pressable>
+        </Tappable>
         <View style={{ flex: 1, minWidth: 0, gap: 1 }}>
           <Text
             style={{

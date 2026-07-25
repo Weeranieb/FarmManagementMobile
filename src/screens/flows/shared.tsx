@@ -4,7 +4,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type, type ThemePalette } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
 import { Icon } from '@/components/icons';
-import { Pill } from '@/components/ui';
+import { Pill, Tappable } from '@/components/ui';
 import { Row, Col } from '@/components/layout/Row';
 import { FISH_TH } from '@/utils/fmt';
 
@@ -79,9 +79,10 @@ export function FishPicker({
       {types.map((ft) => {
         const sel = ft === selected;
         return (
-          <Pressable
+          <Tappable
             key={ft}
             onPress={() => onChange?.(ft)}
+            feedback="opacity"
             accessibilityRole="button"
             accessibilityState={{ selected: sel }}
             style={{
@@ -104,7 +105,7 @@ export function FishPicker({
             >
               {FISH_TH[ft] ?? ft}
             </Text>
-          </Pressable>
+          </Tappable>
         );
       })}
     </Row>
@@ -278,8 +279,9 @@ export function CloseAfterActionToggle({
           backgroundColor: value ? t.warnSoft : t.surface,
         }}
       >
-        <Pressable
+        <Tappable
           onPress={() => onChange(!value)}
+          feedback="opacity"
           accessibilityRole="checkbox"
           accessibilityState={{ checked: value }}
           style={{ flex: 1, minWidth: 0 }}
@@ -320,8 +322,8 @@ export function CloseAfterActionToggle({
               </Text>
             </Col>
           </Row>
-        </Pressable>
-        <Pressable
+        </Tappable>
+        <Tappable
           onPress={() => setDetailOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="ดูผลของการปิดบ่อ"
@@ -329,7 +331,7 @@ export function CloseAfterActionToggle({
           style={{ padding: 2, alignSelf: 'flex-start' }}
         >
           <Icon.info size={20} color={infoInk} />
-        </Pressable>
+        </Tappable>
       </View>
 
       <Modal
@@ -390,7 +392,7 @@ export function CloseAfterActionToggle({
                 >
                   ปิดบ่อแล้วมีผลอย่างไร
                 </Text>
-                <Pressable
+                <Tappable
                   onPress={() => setDetailOpen(false)}
                   hitSlop={10}
                   accessibilityRole="button"
@@ -398,7 +400,7 @@ export function CloseAfterActionToggle({
                   style={{ padding: 4 }}
                 >
                   <Icon.x size={20} color={t.inkMute} />
-                </Pressable>
+                </Tappable>
               </Row>
               <Text
                 style={{
@@ -478,7 +480,7 @@ function CloseEffectRow({
 export function FlowBackBtn({ onPress, step }: { onPress: () => void; step: 1 | 2 }) {
   const { t } = useTheme();
   return (
-    <Pressable
+    <Tappable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={step === 1 ? 'ปิด' : 'ย้อนกลับ'}
@@ -493,6 +495,6 @@ export function FlowBackBtn({ onPress, step }: { onPress: () => void; step: 1 | 
       }}
     >
       {step === 1 ? <Icon.x size={18} color={t.ink} /> : <Icon.back size={18} color={t.ink} />}
-    </Pressable>
+    </Tappable>
   );
 }

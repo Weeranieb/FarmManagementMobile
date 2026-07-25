@@ -1,5 +1,6 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space, type } from '@/theme/tokens';
 
@@ -41,7 +42,7 @@ export function SectionHeading({ title, count, rightLabel, onRightPress }: Props
         // Static style only — a function style here gets mangled by
         // react-native-css-interop and the row collapses to a column
         // (chevron wraps under the label).
-        <Pressable
+        <Tappable
           onPress={onRightPress}
           accessibilityRole="link"
           hitSlop={8}
@@ -59,7 +60,7 @@ export function SectionHeading({ title, count, rightLabel, onRightPress }: Props
             {rightLabel}
           </Text>
           <Icon.chevR size={12} color={t.brand} />
-        </Pressable>
+        </Tappable>
       ) : count != null ? (
         <Text style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.familyNum }}>
           {count}

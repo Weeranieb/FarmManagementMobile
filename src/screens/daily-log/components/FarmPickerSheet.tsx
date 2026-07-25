@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { VIBRANT_BRAND } from '../constants';
 
 export type FarmOption = {
@@ -128,8 +129,9 @@ export function FarmPickerSheet({
             {farms.map((f) => {
               const letter = avatarLetter(f.name);
               return (
-                <Pressable
+                <Tappable
                   key={f.id}
+                  feedback="opacity"
                   onPress={() => onSelect(f.id)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: f.selected }}
@@ -253,7 +255,7 @@ export function FarmPickerSheet({
                       <Icon.check size={13} color="#fff" />
                     </View>
                   ) : null}
-                </Pressable>
+                </Tappable>
               );
             })}
           </ScrollView>

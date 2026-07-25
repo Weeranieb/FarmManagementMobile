@@ -1,7 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Icon } from '@/components/icons';
-import { Pill } from '@/components/ui';
+import { Pill, Tappable } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { thaiDate } from '@/locale/thaiDate';
@@ -199,7 +199,7 @@ export function DailyLogCard({
               },
         ]}
       >
-        <Pressable
+        <Tappable
           onPress={onPressCTA}
           accessibilityRole="button"
           android_ripple={{ color: 'rgba(255,255,255,0.18)' }}
@@ -221,7 +221,7 @@ export function DailyLogCard({
             {allDone ? 'เปิดดูรายเดือน' : 'เปิดบันทึกประจำวัน'}
           </Text>
           <Icon.arrow size={18} color={allDone ? t.brandInk : '#fff'} stroke={2} />
-        </Pressable>
+        </Tappable>
       </View>
     </View>
   );
@@ -372,7 +372,7 @@ function PendingList({
                       overflow: 'hidden',
                     }}
                   >
-                    <Pressable
+                    <Tappable
                       onPress={onPressPending ? () => onPressPending(p) : undefined}
                       android_ripple={{ color: t.border }}
                       style={{ paddingHorizontal: 10, paddingVertical: 6 }}
@@ -387,7 +387,7 @@ function PendingList({
                       >
                         {displayPondName(p.name)}
                       </Text>
-                    </Pressable>
+                    </Tappable>
                   </View>
                 ))}
                 {rest > 0 ? (
