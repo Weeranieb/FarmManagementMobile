@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
-import { Btn, Input, Pill, Tappable, TopBar } from '@/components/ui';
+import { Btn, Input, Pill, TopBar } from '@/components/ui';
 import { DateField } from '@/components/date-selector';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
@@ -34,7 +34,6 @@ type Props = {
   setToId: (id: number) => void;
   fromPond: PondModel | null;
   toPond: PondModel | undefined;
-  candidates: PondModel[];
   validationMsg: string | null;
   amount: string;
   setAmount: (v: string) => void;
@@ -86,7 +85,6 @@ export function MoveView({
   setToId,
   fromPond,
   toPond,
-  candidates,
   validationMsg,
   amount,
   setAmount,
@@ -365,7 +363,12 @@ export function MoveView({
         ref={scrollRef}
         contentContainerStyle={{ paddingBottom: 32 }}
       >
-        {fromFab ? (
+        {/* Both entries run the same stepped picker — from pond detail the
+            source is pinned as an already-completed step, so the destination
+            is still an explicit choice instead of a silent default. That entry
+            waits for the source pond to load rather than flashing the FAB
+            variant's farm + source steps for a frame. */}
+        {fromFab || fromPond ? (
           <View style={{ paddingHorizontal: 20, paddingTop: 14 }}>
             <InlineMovePicker
               farms={farms}
@@ -374,6 +377,7 @@ export function MoveView({
               farmId={farmId}
               fromId={fromId}
               toId={toId}
+              lockedFrom={fromFab ? null : fromPond}
               onFarmChange={handleFarmPick}
               onFromChange={handleSourcePick}
               onToChange={handleDestPick}
@@ -387,7 +391,11 @@ export function MoveView({
         <View style={{ padding: 20 }}>
           <DimWrap
             ready={fieldsReady}
-            hint={fromFab ? 'เลือกฟาร์มและบ่อ แล้วกรอกจำนวนที่ย้าย' : undefined}
+            hint={
+              fromFab
+                ? 'เลือกฟาร์มและบ่อ แล้วกรอกจำนวนที่ย้าย'
+                : 'เลือกบ่อปลายทาง แล้วกรอกจำนวนที่ย้าย'
+            }
           >
             <FieldRow label="พันธุ์ปลา">
               <FishPicker types={fishTypeOptions} selected={fishType} onChange={setFishType} tone="move" />
@@ -446,48 +454,6 @@ export function MoveView({
                 placeholder="0"
               />
             </FieldRow>
-
-            {!fromFab ? (
-              <FieldRow label="ปลายทาง">
-                <Col gap={8}>
-                  {candidates.map((p) => {
-                    const sel = p.id === toId;
-                    return (
-                      <Tappable
-                        key={p.id}
-                        onPress={() => setToId(p.id)}
-                        feedback="opacity"
-                        style={{
-                          padding: 14,
-                          borderRadius: radii.md,
-                          borderWidth: 1.5,
-                          borderColor: sel ? t.move : t.border,
-                          backgroundColor: sel ? t.moveSoft : t.surface,
-                        }}
-                      >
-                        <Row justify="space-between">
-                          <Col gap={2}>
-                            <Text
-                              style={{ fontFamily: type.familyBold, fontSize: 14, color: t.ink }}
-                            >
-                              {p.name}
-                            </Text>
-                            <Text
-                              style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}
-                            >
-                              {p.farmName} · {fmt.num(p.totalFish)} ตัว
-                            </Text>
-                          </Col>
-                          <Pill tone="ghost">
-                            {p.fishTypes.map((f) => FISH_TH[f] ?? f).join(', ') || '—'}
-                          </Pill>
-                        </Row>
-                      </Tappable>
-                    );
-                  })}
-                </Col>
-              </FieldRow>
-            ) : null}
 
             <FieldRow label="วันที่">
               <DateField value={date} onChange={setDate} />
