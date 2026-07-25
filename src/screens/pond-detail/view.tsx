@@ -1,7 +1,7 @@
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type, radii } from '@/theme/tokens';
-import { TopBar } from '@/components/ui';
+import { TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { StatusBadge } from '@/components/domain/StatusPip';
@@ -111,7 +111,7 @@ export function PondDetailView({
           subtitle={farmSubtitle ? `ฟาร์ม ${farmSubtitle}` : ''}
           leading={onBack ? <BackBtn onBack={onBack} /> : null}
           trailing={
-            <Pressable
+            <Tappable
               onPress={onPondOverflow}
               accessibilityRole="button"
               accessibilityLabel="เมนูเพิ่มเติม"
@@ -126,7 +126,7 @@ export function PondDetailView({
               }}
             >
               <Icon.more size={18} color={t.ink} />
-            </Pressable>
+            </Tappable>
           }
         />
       ) : null}
@@ -188,8 +188,9 @@ export function PondDetailView({
           ).map((opt) => {
             const sel = tab === opt.id;
             return (
-              <Pressable
+              <Tappable
                 key={opt.id}
+                feedback="opacity"
                 onPress={() => setTab(opt.id)}
                 style={{
                   flex: 1,
@@ -210,7 +211,7 @@ export function PondDetailView({
                 >
                   {opt.label}
                 </Text>
-              </Pressable>
+              </Tappable>
             );
           })}
         </View>
@@ -234,7 +235,7 @@ export function PondDetailView({
 function BackBtn({ onBack }: { onBack: () => void }) {
   const { t } = useTheme();
   return (
-    <Pressable
+    <Tappable
       onPress={onBack}
       style={{
         width: 40,
@@ -247,7 +248,7 @@ function BackBtn({ onBack }: { onBack: () => void }) {
       }}
     >
       <Icon.back size={18} color={t.ink} />
-    </Pressable>
+    </Tappable>
   );
 }
 

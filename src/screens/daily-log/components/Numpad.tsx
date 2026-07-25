@@ -11,6 +11,7 @@ import { useFeedCollectionsData } from '@/features/feed-collection';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import {
   CELL_HIGHLIGHT,
   CELL_MAX_VALUE,
@@ -370,7 +371,7 @@ export function Numpad({
 
           {/* feed-type selector */}
           {supportsFeedType && cur ? (
-            <Pressable
+            <Tappable
               onPress={() => setPickerOpen(true)}
               style={{
                 justifyContent: 'center',
@@ -437,7 +438,7 @@ export function Numpad({
                 </Text>
               </View>
               <Icon.arrowDown size={12} color={t.inkMute} />
-            </Pressable>
+            </Tappable>
           ) : null}
         </View>
 
@@ -537,7 +538,7 @@ export function Numpad({
             gap: 8,
           }}
         >
-          <Pressable
+          <Tappable
             onPress={handleCancel}
             style={{
               height: 44,
@@ -553,8 +554,8 @@ export function Numpad({
             <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.inkSoft }}>
               ยกเลิก
             </Text>
-          </Pressable>
-          <Pressable
+          </Tappable>
+          <Tappable
             onPress={isLastCell ? handleCommit : handleNext}
             disabled={isInvalid}
             style={{
@@ -577,7 +578,7 @@ export function Numpad({
             ) : (
               <Icon.chevR size={16} color="#fff" />
             )}
-          </Pressable>
+          </Tappable>
         </View>
 
         <FeedTypePicker

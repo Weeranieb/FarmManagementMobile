@@ -1,7 +1,6 @@
 import { forwardRef, useState } from 'react';
 import {
   Platform,
-  Pressable,
   TextInput,
   View,
   type ViewStyle,
@@ -13,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from './Tappable';
 
 type Props = TextInputProps & {
   suffix?: string;
@@ -85,7 +85,7 @@ export const Input = forwardRef<TextInput, Props>(function Input(
         ]}
       />
       {passwordToggle ? (
-        <Pressable
+        <Tappable
           onPress={() => setPasswordVisible((v) => !v)}
           hitSlop={12}
           accessibilityRole="button"
@@ -97,7 +97,7 @@ export const Input = forwardRef<TextInput, Props>(function Input(
           ) : (
             <Icon.eye size={22} color={t.inkSoft} stroke={1.8} />
           )}
-        </Pressable>
+        </Tappable>
       ) : null}
       {suffix ? (
         <Text

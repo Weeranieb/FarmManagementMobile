@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 
 type Props = {
   visible: boolean;
@@ -77,7 +78,7 @@ export function DiscardDialog({ visible, onCancel, onConfirm }: Props) {
               borderTopColor: t.border,
             }}
           >
-            <Pressable
+            <Tappable
               onPress={onCancel}
               style={{
                 flex: 1,
@@ -90,15 +91,15 @@ export function DiscardDialog({ visible, onCancel, onConfirm }: Props) {
               <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>
                 {tx('profile.account.discard.cancel')}
               </Text>
-            </Pressable>
-            <Pressable
+            </Tappable>
+            <Tappable
               onPress={onConfirm}
               style={{ flex: 1, paddingVertical: 14, alignItems: 'center' }}
             >
               <Text style={{ color: t.danger, fontFamily: type.familyBold, fontSize: 15 }}>
                 {tx('profile.account.discard.confirm')}
               </Text>
-            </Pressable>
+            </Tappable>
           </View>
         </Pressable>
       </Pressable>

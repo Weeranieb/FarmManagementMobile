@@ -5,6 +5,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 
 type Props = {
+  /** Headline. Defaults to the feed price-save text so existing callers are unchanged. */
+  title?: string;
   /** Optional second line — e.g. "โปรฟีด · ฿940/ถุง". */
   detail?: string;
   /** ms before auto-dismiss. Default 2800. */
@@ -28,7 +30,13 @@ type Props = {
  * drops function styles on Pressable, which has mounted this kind of toast
  * invisible before (see SavedToast).
  */
-export function PriceSavedToast({ detail, duration = 2800, bottom = 24, onDismiss }: Props) {
+export function PriceSavedToast({
+  title = 'บันทึกราคาแล้ว',
+  detail,
+  duration = 2800,
+  bottom = 24,
+  onDismiss,
+}: Props) {
   const { t } = useTheme();
   const enter = useRef(new Animated.Value(0)).current;
 
@@ -95,7 +103,7 @@ export function PriceSavedToast({ detail, duration = 2800, bottom = 24, onDismis
               lineHeight: 16,
             }}
           >
-            บันทึกราคาแล้ว
+            {title}
           </Text>
           {detail ? (
             <Text

@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsAuthenticated } from '@/features/auth';
-import { listMerchants } from './service';
+import { createMerchant, deleteMerchant, listMerchants, updateMerchant } from './service';
 import { adaptMerchant } from './adapters';
-import type { MerchantModel } from './types';
+import type { CreateMerchantRequest, MerchantModel, UpdateMerchantRequest } from './types';
 
 export const merchantKeys = {
   all: () => ['merchants'] as const,
@@ -38,4 +38,34 @@ export function useMerchantsData(): {
     isLoading: q.isLoading,
     isError: q.isError,
   };
+}
+
+/**
+ * Create/update/delete all invalidate the single `['merchants']` list so every
+ * consumer — the management screen and the sell-flow picker — refreshes at
+ * once. `createMerchant` resolves to the adapted new merchant so the sell flow
+ * can auto-select it after an inline add.
+ */
+export function useCreateMerchant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateMerchantRequest) => createMerchant(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: merchantKeys.all() }),
+  });
+}
+
+export function useUpdateMerchant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateMerchantRequest) => updateMerchant(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: merchantKeys.all() }),
+  });
+}
+
+export function useDeleteMerchant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteMerchant(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: merchantKeys.all() }),
+  });
 }

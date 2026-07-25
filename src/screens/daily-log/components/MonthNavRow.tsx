@@ -1,7 +1,8 @@
-import { Pressable, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { CHROME, thMonth } from '../constants';
 
 type Props = {
@@ -37,7 +38,7 @@ export function MonthNavRow({
         backgroundColor: t.surface,
       }}
     >
-      <Pressable
+      <Tappable
         onPress={onPrev}
         style={{
           width: 34,
@@ -53,9 +54,9 @@ export function MonthNavRow({
         accessibilityLabel="เดือนก่อนหน้า"
       >
         <Icon.chevL size={14} color={t.inkSoft} />
-      </Pressable>
+      </Tappable>
 
-      <Pressable
+      <Tappable
         onPress={onLabelPress}
         disabled={!onLabelPress}
         accessibilityRole="button"
@@ -72,9 +73,9 @@ export function MonthNavRow({
       >
         <Text style={{ fontSize: 13.5, fontFamily: type.familyBold, color: t.ink }}>{label}</Text>
         <Icon.arrowDown size={13} color={t.inkSoft} />
-      </Pressable>
+      </Tappable>
 
-      <Pressable
+      <Tappable
         onPress={onNext}
         disabled={nextDisabled}
         style={{
@@ -93,7 +94,7 @@ export function MonthNavRow({
         accessibilityState={{ disabled: nextDisabled }}
       >
         <Icon.chevR size={14} color={nextDisabled ? t.borderStrong : t.inkSoft} />
-      </Pressable>
+      </Tappable>
     </View>
   );
 }

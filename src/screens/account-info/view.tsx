@@ -1,6 +1,6 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { Card, Pill, TopBar } from '@/components/ui';
+import { Card, Pill, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
@@ -40,7 +40,7 @@ export function AccountInfoView({
       <TopBar
         title={tx('profile.account.title')}
         leading={
-          <Pressable
+          <Tappable
             onPress={handleBack}
             hitSlop={8}
             style={{
@@ -52,10 +52,10 @@ export function AccountInfoView({
             }}
           >
             <Icon.back size={22} color={t.ink} />
-          </Pressable>
+          </Tappable>
         }
         trailing={
-          <Pressable
+          <Tappable
             onPress={handleSave}
             disabled={!canSave}
             hitSlop={8}
@@ -76,7 +76,7 @@ export function AccountInfoView({
             >
               {saving ? tx('profile.account.saving') : tx('profile.account.save')}
             </Text>
-          </Pressable>
+          </Tappable>
         }
       />
 
@@ -144,7 +144,7 @@ export function AccountInfoView({
         <SectionLabel>{tx('profile.account.section.security')}</SectionLabel>
         <View style={{ paddingHorizontal: 20, paddingBottom: 14 }}>
           <Card padded={false}>
-            <Pressable
+            <Tappable
               onPress={openPasswordSheet}
               android_ripple={{ color: t.surfaceAlt }}
               style={{
@@ -178,7 +178,7 @@ export function AccountInfoView({
                 </Text>
               </View>
               <Icon.chevR size={16} color={t.inkSoft} />
-            </Pressable>
+            </Tappable>
           </Card>
         </View>
       </ScrollView>

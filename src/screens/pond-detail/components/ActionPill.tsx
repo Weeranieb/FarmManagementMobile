@@ -1,7 +1,8 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon, type IconName } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 
 type Props = {
   tone: 'fill' | 'move' | 'sell';
@@ -22,7 +23,7 @@ export function ActionPill({ tone, icon, label, onPress, disabled }: Props) {
   const { ink, accent } = map[tone];
   return (
     <View style={{ flex: 1 }}>
-      <Pressable
+      <Tappable
         onPress={onPress}
         disabled={disabled}
         accessibilityRole="button"
@@ -56,7 +57,7 @@ export function ActionPill({ tone, icon, label, onPress, disabled }: Props) {
             {label}
           </Text>
         </View>
-      </Pressable>
+      </Tappable>
     </View>
   );
 }

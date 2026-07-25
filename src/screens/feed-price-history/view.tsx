@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
-import { Pill, PillText } from '@/components/ui';
+import { Pill, PillText, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { SheetPriceEntry } from '@/screens/feed-collection/components/SheetPriceEntry';
@@ -186,14 +186,14 @@ function PriceHistoryTopBar({
         gap: 10,
       }}
     >
-      <Pressable
+      <Tappable
         onPress={onBack}
         accessibilityRole="button"
         accessibilityLabel="ย้อนกลับ"
         style={iconButtonStyle(t.border)}
       >
         <Icon.back size={18} color={t.ink} />
-      </Pressable>
+      </Tappable>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text
           numberOfLines={1}
@@ -218,14 +218,14 @@ function PriceHistoryTopBar({
         ) : null}
       </View>
       {showOverflow ? (
-        <Pressable
+        <Tappable
           onPress={onOverflow}
           accessibilityRole="button"
           accessibilityLabel="ตัวเลือก"
           style={iconButtonStyle(t.border)}
         >
           <Icon.more size={20} color={t.ink} />
-        </Pressable>
+        </Tappable>
       ) : null}
     </View>
   );
@@ -283,7 +283,7 @@ function OverflowMenu({
           shadowLg,
         ]}
       >
-        <Pressable
+        <Tappable
           onPress={onAddPrice}
           accessibilityRole="button"
           style={{
@@ -299,7 +299,7 @@ function OverflowMenu({
           <Text style={{ fontSize: 14, fontFamily: type.familySemi, color: t.ink }}>
             เพิ่มราคา
           </Text>
-        </Pressable>
+        </Tappable>
       </View>
     </>
   );
@@ -363,7 +363,7 @@ function NotFoundOrEmpty({
           : 'ลองกลับไปยังหน้าคลังอาหารแล้วเปิดรายการที่ต้องการดู'}
       </Text>
       {isEmptyForKnownFeed && isAdmin ? (
-        <Pressable
+        <Tappable
           onPress={onLogPrice}
           accessibilityRole="button"
           style={{
@@ -381,7 +381,7 @@ function NotFoundOrEmpty({
           <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 14 }}>
             บันทึกราคาใหม่
           </Text>
-        </Pressable>
+        </Tappable>
       ) : null}
     </View>
   );

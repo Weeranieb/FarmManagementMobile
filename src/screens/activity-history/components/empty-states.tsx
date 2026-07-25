@@ -1,7 +1,8 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
+import { Tappable } from '@/components/ui';
 import { KIND_LABEL, type FilterId } from '../constants';
 
 /** No events at all — brand-new farm. The whole filter row is hidden in this
@@ -101,7 +102,7 @@ export function EmptyFiltered({ kind, onClear }: EmptyFilteredProps) {
           overflow: 'hidden',
         }}
       >
-        <Pressable
+        <Tappable
           onPress={onClear}
           accessibilityRole="button"
           android_ripple={{ color: t.surfaceAlt }}
@@ -117,7 +118,7 @@ export function EmptyFiltered({ kind, onClear }: EmptyFilteredProps) {
           >
             ล้างตัวกรอง
           </Text>
-        </Pressable>
+        </Tappable>
       </View>
     </View>
   );

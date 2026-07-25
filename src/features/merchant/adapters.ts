@@ -6,5 +6,6 @@ export function adaptMerchant(m: MerchantResponse): MerchantModel {
     name: m.name,
     contactNumber: m.contactNumber ?? '',
     location: m.location ?? '',
+    updatedAt: m.updatedAt ?? m.createdAt ?? '',
   };
 }

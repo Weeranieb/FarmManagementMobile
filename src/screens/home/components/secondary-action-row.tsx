@@ -1,6 +1,6 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
-import { Skeleton } from '@/components/ui';
+import { Skeleton, Tappable } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import type { ThemePalette } from '@/theme/tokens';
@@ -49,7 +49,7 @@ export function SecondaryActionRow({ onPress }: Props) {
         const tone = tonePair(it.id, t);
         return (
           <View key={it.id} style={{ flex: 1, borderRadius: radii.md, overflow: 'hidden' }}>
-            <Pressable
+            <Tappable
               onPress={onPress ? () => onPress(it.id) : undefined}
               accessibilityRole="button"
               accessibilityLabel={it.label}
@@ -78,7 +78,7 @@ export function SecondaryActionRow({ onPress }: Props) {
               >
                 {it.label}
               </Text>
-            </Pressable>
+            </Tappable>
           </View>
         );
       })}

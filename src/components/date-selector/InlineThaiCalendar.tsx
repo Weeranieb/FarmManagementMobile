@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
+import { Tappable } from '@/components/ui';
 import { TH_MONTH_NAMES_SHORT, thaiDate, TH_WEEKDAYS_SHORT } from '@/locale/thaiDate';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
@@ -160,7 +161,7 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
     return (
       <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
         <Row justify="space-between" style={{ alignItems: 'center', marginBottom: 16 }}>
-          <Pressable
+          <Tappable
             onPress={() => setPanel('days')}
             hitSlop={8}
             accessibilityRole="button"
@@ -171,9 +172,9 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
             <Text style={{ fontFamily: type.familySemi, fontSize: 16, color: t.ink }}>
               เลือกเดือนและปี
             </Text>
-          </Pressable>
+          </Tappable>
           <Row gap={4}>
-            <Pressable
+            <Tappable
               onPress={() => shiftYear(-1)}
               disabled={!canShiftYear(viewYear, -1, minimumDate, maximumDate)}
               hitSlop={8}
@@ -182,7 +183,7 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
               style={navBtn(canShiftYear(viewYear, -1, minimumDate, maximumDate))}
             >
               <Icon.chevL size={20} color={t.brand} />
-            </Pressable>
+            </Tappable>
             <Text
               style={{
                 fontFamily: type.familyBold,
@@ -194,7 +195,7 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
             >
               {viewYear + 543}
             </Text>
-            <Pressable
+            <Tappable
               onPress={() => shiftYear(1)}
               disabled={!canShiftYear(viewYear, 1, minimumDate, maximumDate)}
               hitSlop={8}
@@ -203,7 +204,7 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
               style={navBtn(canShiftYear(viewYear, 1, minimumDate, maximumDate))}
             >
               <Icon.chevR size={20} color={t.brand} />
-            </Pressable>
+            </Tappable>
           </Row>
         </Row>
 
@@ -212,8 +213,9 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
             const selected = value.getFullYear() === viewYear && value.getMonth() === month;
             const disabled = isMonthDisabled(viewYear, month, minimumDate, maximumDate);
             return (
-              <Pressable
+              <Tappable
                 key={label}
+                feedback="opacity"
                 onPress={() => selectMonth(month)}
                 disabled={disabled}
                 accessibilityRole="button"
@@ -244,7 +246,7 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
                     {label}
                   </Text>
                 </View>
-              </Pressable>
+              </Tappable>
             );
           })}
         </View>
@@ -255,7 +257,7 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 }}>
       <Row justify="space-between" style={{ alignItems: 'center', marginBottom: 12 }}>
-        <Pressable
+        <Tappable
           onPress={openMonthYear}
           hitSlop={8}
           accessibilityRole="button"
@@ -266,9 +268,9 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
             {thaiDate.monthYear(viewMonth)}
           </Text>
           <Icon.chevR size={16} color={t.brand} />
-        </Pressable>
+        </Tappable>
         <Row gap={4}>
-          <Pressable
+          <Tappable
             onPress={() => shiftMonth(-1)}
             disabled={!canShiftMonth(viewMonth, -1, minimumDate, maximumDate)}
             hitSlop={8}
@@ -277,8 +279,8 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
             style={navBtn(canShiftMonth(viewMonth, -1, minimumDate, maximumDate))}
           >
             <Icon.chevL size={20} color={t.brand} />
-          </Pressable>
-          <Pressable
+          </Tappable>
+          <Tappable
             onPress={() => shiftMonth(1)}
             disabled={!canShiftMonth(viewMonth, 1, minimumDate, maximumDate)}
             hitSlop={8}
@@ -287,7 +289,7 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
             style={navBtn(canShiftMonth(viewMonth, 1, minimumDate, maximumDate))}
           >
             <Icon.chevR size={20} color={t.brand} />
-          </Pressable>
+          </Tappable>
         </Row>
       </Row>
 
@@ -312,8 +314,9 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
           const isToday = isSameDay(day, today);
 
           return (
-            <Pressable
+            <Tappable
               key={day.toISOString()}
+              feedback="opacity"
               onPress={() => !disabled && onChange(day)}
               disabled={disabled}
               accessibilityRole="button"
@@ -349,7 +352,7 @@ export function InlineThaiCalendar({ value, onChange, minimumDate, maximumDate }
                   {day.getDate()}
                 </Text>
               </View>
-            </Pressable>
+            </Tappable>
           );
         })}
       </View>

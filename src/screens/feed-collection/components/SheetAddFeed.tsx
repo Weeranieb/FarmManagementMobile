@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
+import { Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { toIsoDate } from '@/shared/time';
@@ -160,7 +161,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
               {isEdit ? editing.name : 'กรอกข้อมูลพื้นฐาน + ราคาเริ่มต้น'}
             </Text>
           </View>
-          <Pressable
+          <Tappable
             onPress={onClose}
             hitSlop={8}
             accessibilityRole="button"
@@ -176,7 +177,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
             }}
           >
             <Icon.x size={18} color={t.ink} />
-          </Pressable>
+          </Tappable>
         </Row>
       </View>
 
@@ -300,7 +301,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
         }}
       >
         <Row gap={10}>
-          <Pressable
+          <Tappable
             onPress={onClose}
             accessibilityRole="button"
             style={{
@@ -314,8 +315,8 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
             }}
           >
             <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>ยกเลิก</Text>
-          </Pressable>
-          <Pressable
+          </Tappable>
+          <Tappable
             onPress={handleSubmit}
             disabled={saving}
             accessibilityRole="button"
@@ -332,7 +333,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
               {saving ? 'กำลังบันทึก…' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึก'}
             </Text>
-          </Pressable>
+          </Tappable>
         </Row>
       </View>
     </SheetShell>
@@ -450,9 +451,10 @@ function Segmented<T extends string>({
       {options.map((opt) => {
         const sel = value === opt.value;
         return (
-          <Pressable
+          <Tappable
             key={opt.value}
             onPress={() => onChange(opt.value)}
+            feedback="opacity"
             accessibilityRole="button"
             accessibilityState={{ selected: sel }}
             style={{
@@ -488,7 +490,7 @@ function Segmented<T extends string>({
             >
               {opt.label}
             </Text>
-          </Pressable>
+          </Tappable>
         );
       })}
     </View>

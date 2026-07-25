@@ -15,3 +15,12 @@ export function apiErrorMessage(err: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+/** HTTP status of a thrown API error, or null when it isn't an ApiError. */
+export function apiErrorStatus(err: unknown): number | null {
+  if (err && typeof err === 'object' && 'status' in err) {
+    const s = (err as { status?: unknown }).status;
+    return typeof s === 'number' ? s : null;
+  }
+  return null;
+}

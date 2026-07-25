@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Pressable, ScrollView, View, Text } from 'react-native';
+import { ScrollView, View, Text } from 'react-native';
+import { Tappable } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { toIsoDate } from '@/shared/time';
@@ -83,8 +84,9 @@ export function DayStripRow({ selectedDate, onSelectDate, daysWithDrafts }: Prop
           const isFuture = d.date.getTime() > today.getTime();
           const hasDraft = daysWithDrafts?.has(toIsoDate(d.date)) ?? false;
           return (
-            <Pressable
+            <Tappable
               key={i}
+              feedback="opacity"
               onPress={() => onSelectDate(d.date)}
               disabled={isFuture}
               style={{
@@ -153,7 +155,7 @@ export function DayStripRow({ selectedDate, onSelectDate, daysWithDrafts }: Prop
                   }}
                 />
               ) : null}
-            </Pressable>
+            </Tappable>
           );
         })}
       </ScrollView>

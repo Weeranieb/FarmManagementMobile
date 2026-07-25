@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Pressable,
   Text,
   TextInput,
   View,
@@ -11,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 
 type Props = TextInputProps & {
   label?: string;
@@ -93,7 +93,7 @@ export function FormInput({
           ]}
         />
         {passwordToggle ? (
-          <Pressable
+          <Tappable
             onPress={() => setShown((s) => !s)}
             hitSlop={12}
             accessibilityRole="button"
@@ -105,7 +105,7 @@ export function FormInput({
             ) : (
               <Icon.eye size={20} color={t.inkSoft} stroke={1.7} />
             )}
-          </Pressable>
+          </Tappable>
         ) : null}
       </View>
 

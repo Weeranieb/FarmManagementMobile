@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text } from 'react-native';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 
@@ -78,7 +79,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
           gap: 6,
         }}
       >
-        <Pressable
+        <Tappable
           onPress={onBack}
           style={{
             width: 36,
@@ -92,7 +93,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
           accessibilityLabel="ย้อนกลับ"
         >
           <Icon.back size={20} color={t.inkSoft} />
-        </Pressable>
+        </Tappable>
 
         <View
           style={{
@@ -149,7 +150,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
         </View>
 
         {dirtyCount > 0 ? (
-          <Pressable
+          <Tappable
             onPress={onPillPress}
             style={{
               flexShrink: 0,
@@ -192,7 +193,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
             >
               {dirtyCount}
             </Text>
-          </Pressable>
+          </Tappable>
         ) : null}
       </View>
     </View>

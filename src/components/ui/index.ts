@@ -1,5 +1,6 @@
 export { Pill, PillText, type PillTone } from './Pill';
 export { Card } from './Card';
+export { Tappable, type TappableFeedback } from './Tappable';
 export { Btn, type BtnTone, type BtnVariant, type BtnSize } from './Btn';
 export { Input } from './Input';
 export { TopBar } from './TopBar';

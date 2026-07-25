@@ -3,7 +3,7 @@ import { LayoutChangeEvent, Pressable, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
-import { Card } from '@/components/ui';
+import { Card, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { TH_MONTH_NAMES_SHORT, thaiDate } from '@/locale/thaiDate';
 import { feedPaletteFor, type FeedPalette } from '@/screens/feed-collection/feedPalette';
@@ -135,7 +135,7 @@ function SingleEntryChartCard({
           </Text>
         </View>
         {isAdmin ? (
-          <Pressable
+          <Tappable
             onPress={onAdd}
             accessibilityRole="button"
             style={{
@@ -153,7 +153,7 @@ function SingleEntryChartCard({
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 14 }}>
               เพิ่มราคา
             </Text>
-          </Pressable>
+          </Tappable>
         ) : null}
       </View>
     </Card>
@@ -214,7 +214,7 @@ function EmptyChartCard({
           </Text>
         </View>
         {isAdmin ? (
-          <Pressable
+          <Tappable
             onPress={onLogPrice}
             accessibilityRole="button"
             style={{
@@ -232,7 +232,7 @@ function EmptyChartCard({
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 14 }}>
               บันทึกราคาใหม่
             </Text>
-          </Pressable>
+          </Tappable>
         ) : null}
       </View>
     </Card>

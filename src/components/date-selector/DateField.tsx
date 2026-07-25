@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { thaiDate } from '@/locale/thaiDate';
 import { clampDate, InlineThaiCalendar } from './InlineThaiCalendar';
 
@@ -67,7 +68,7 @@ export const DateField = forwardRef<DateFieldHandle, Props>(function DateField(
 
   return (
     <>
-      <Pressable
+      <Tappable
         onPress={openPicker}
         accessibilityRole="button"
         accessibilityLabel="เลือกวันที่"
@@ -88,7 +89,7 @@ export const DateField = forwardRef<DateFieldHandle, Props>(function DateField(
           {thaiDate.long(value)}
         </Text>
         <Icon.chevR size={16} color={t.inkSoft} />
-      </Pressable>
+      </Tappable>
 
       <Modal
         visible={open}
@@ -127,11 +128,11 @@ export const DateField = forwardRef<DateFieldHandle, Props>(function DateField(
                 }}
               >
                 <View style={{ flex: 1, alignItems: 'flex-start' }}>
-                  <Pressable onPress={() => setOpen(false)} hitSlop={10}>
+                  <Tappable onPress={() => setOpen(false)} hitSlop={10}>
                     <Text style={{ color: t.inkSoft, fontFamily: type.familyMedium, fontSize: 15 }}>
                       ยกเลิก
                     </Text>
-                  </Pressable>
+                  </Tappable>
                 </View>
                 <View style={{ flex: 1, alignItems: 'center' }}>
                   <Text style={{ fontFamily: type.familyBold, fontSize: 15, color: t.ink }}>
@@ -139,11 +140,11 @@ export const DateField = forwardRef<DateFieldHandle, Props>(function DateField(
                   </Text>
                 </View>
                 <View style={{ flex: 1, alignItems: 'flex-end' }}>
-                  <Pressable onPress={confirmPick} hitSlop={10}>
+                  <Tappable onPress={confirmPick} hitSlop={10}>
                     <Text style={{ color: t.brand, fontFamily: type.familyBold, fontSize: 15 }}>
                       เสร็จ
                     </Text>
-                  </Pressable>
+                  </Tappable>
                 </View>
               </View>
               <View style={{ flex: 1, justifyContent: 'flex-start' }}>

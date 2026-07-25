@@ -14,11 +14,11 @@
 // solid check), not a stack of four faint signals.
 
 import { useCallback, useRef, type RefObject } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type, type ThemePalette } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
-import { Pill } from '@/components/ui';
+import { Pill, Tappable } from '@/components/ui';
 import { Col, Row } from '@/components/layout/Row';
 import { displayFarmName, displayPondName, fmt } from '@/utils/fmt';
 import type { FarmModel } from '@/features/farm';
@@ -156,12 +156,13 @@ function FarmChip({
   const { t } = useTheme();
   const c = toneColors(t, tone);
   return (
-    <Pressable
+    <Tappable
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
+      feedback="opacity"
       accessibilityRole="button"
       accessibilityState={{ selected, disabled: !!disabled }}
-      style={({ pressed }) => ({ opacity: disabled ? 0.45 : pressed ? 0.9 : 1 })}
+      style={{ opacity: disabled ? 0.45 : 1 }}
     >
       <View
         style={{
@@ -193,7 +194,7 @@ function FarmChip({
           </Text>
         ) : null}
       </View>
-    </Pressable>
+    </Tappable>
   );
 }
 
@@ -252,12 +253,13 @@ function PondRow({
   const { t } = useTheme();
   const c = toneColors(t, tone);
   return (
-    <Pressable
+    <Tappable
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
+      feedback="opacity"
       accessibilityRole="button"
       accessibilityState={{ selected, disabled: !!disabled }}
-      style={({ pressed }) => ({ opacity: disabled ? 0.5 : pressed ? 0.94 : 1 })}
+      style={{ opacity: disabled ? 0.5 : 1 }}
     >
       <View
         style={{
@@ -299,7 +301,7 @@ function PondRow({
         </Col>
         <SelectDot selected={selected} tone={tone} />
       </View>
-    </Pressable>
+    </Tappable>
   );
 }
 

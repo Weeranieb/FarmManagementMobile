@@ -1,7 +1,8 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { SheetShell } from '@/components/sheet';
 import type { SizeGradeModel } from '@/features/size-grade';
 
@@ -42,9 +43,10 @@ export function SizeGradeSheet({
           {grades.map((g) => {
             const sel = g.id === selectedId;
             return (
-              <Pressable
+              <Tappable
                 key={g.id}
                 onPress={() => onPick(g.id)}
+                feedback="opacity"
                 style={{
                   paddingHorizontal: 14,
                   paddingVertical: 14,
@@ -67,7 +69,7 @@ export function SizeGradeSheet({
                   {g.name}
                 </Text>
                 {sel ? <Icon.check size={18} color={t.sellInk} stroke={2.4} /> : null}
-              </Pressable>
+              </Tappable>
             );
           })}
         </ScrollView>

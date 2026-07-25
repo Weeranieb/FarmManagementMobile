@@ -1,5 +1,6 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import type { ActivityEventModel } from '@/features/activity';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
@@ -175,14 +176,13 @@ export function ActivityRow({ e, divider = false, onPress }: Props) {
 
   if (onPress) {
     return (
-      <Pressable
+      <Tappable
         onPress={onPress}
         accessibilityRole="button"
         android_ripple={{ color: t.surfaceAlt }}
-        style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
       >
         {body}
-      </Pressable>
+      </Tappable>
     );
   }
   return body;

@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, ScrollView, Dimensions } from 'react-native';
+import { View, Text, ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { thaiDate } from '@/locale/thaiDate';
 import { fmt, FISH_TH } from '@/utils/fmt';
 import { Numpad } from '@/screens/daily-log/components/Numpad';
@@ -264,7 +265,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
               size={34}
               disabled={!canGoPrev}
             />
-            <Pressable
+            <Tappable
               onPress={() => setPickerOpen(true)}
               accessibilityRole="button"
               accessibilityLabel={`เลือกเดือน · ปี · ${thaiDate.monthYear(monthDate)}`}
@@ -283,7 +284,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
                 {thaiDate.monthYear(monthDate)}
               </Text>
               <Icon.arrowDown size={13} color={t.inkSoft} />
-            </Pressable>
+            </Tappable>
             <IconBtn
               onPress={() => requestLeave({ kind: 'next' })}
               icon="chevR"
@@ -466,7 +467,7 @@ function IconBtn({
   const { t } = useTheme();
   const IconCmp = Icon[icon];
   return (
-    <Pressable
+    <Tappable
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
       accessibilityRole="button"
@@ -485,7 +486,7 @@ function IconBtn({
       }}
     >
       <IconCmp size={size >= 38 ? 20 : 16} color={t.inkSoft} />
-    </Pressable>
+    </Tappable>
   );
 }
 

@@ -1,8 +1,9 @@
 import { memo, useEffect, useRef } from 'react';
-import { Pressable, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import {
   CELL_HIGHLIGHT,
   COLS,
@@ -229,7 +230,7 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
         const accentRing = isError ? CELL_HIGHLIGHT.errorRing : CELL_HIGHLIGHT.ring;
 
         return (
-          <Pressable
+          <Tappable
             key={c.key}
             disabled={cellDisabled}
             onPress={() => !cellDisabled && onCellTap(pond.key, c.key)}
@@ -365,7 +366,7 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
                 {filled ? fmtTh(value as number) : '–'}
               </Text>
             )}
-          </Pressable>
+          </Tappable>
         );
       })}
     </View>

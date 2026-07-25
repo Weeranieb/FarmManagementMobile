@@ -1,6 +1,7 @@
-import { Pressable, ScrollView, Text } from 'react-native';
+import { ScrollView, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
+import { Tappable } from '@/components/ui';
 import type { PondCounts, PondFilter } from '../hook';
 
 type Item = { id: PondFilter; label: string };
@@ -29,8 +30,9 @@ export function FilterTabs({ filter, counts, onChange }: Props) {
       {ITEMS.map((it) => {
         const selected = it.id === filter;
         return (
-          <Pressable
+          <Tappable
             key={it.id}
+            feedback="opacity"
             onPress={() => onChange(it.id)}
             accessibilityRole="button"
             accessibilityState={{ selected }}
@@ -65,7 +67,7 @@ export function FilterTabs({ filter, counts, onChange }: Props) {
             >
               {counts[it.id]}
             </Text>
-          </Pressable>
+          </Tappable>
         );
       })}
     </ScrollView>

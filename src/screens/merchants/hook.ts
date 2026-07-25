@@ -1,0 +1,198 @@
+import { useCallback, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { isClientAdmin, useAuthStore } from '@/features/auth';
+import {
+  merchantKeys,
+  useCreateMerchant,
+  useDeleteMerchant,
+  useMerchantsData,
+  useUpdateMerchant,
+  type MerchantModel,
+} from '@/features/merchant';
+import { apiErrorMessage, apiErrorStatus } from '@/shared/http';
+import { useSearchQuery } from '@/hooks/useSearchQuery';
+import type { MerchantFormPayload } from './components/SheetMerchantForm';
+
+/** Backend returns 409 when the contact number already exists for this client. */
+const DUPLICATE_CONTACT_MSG = 'เบอร์ติดต่อนี้มีผู้ขายอยู่แล้ว — ลองใช้เบอร์อื่น หรือแก้ไขรายชื่อเดิม';
+function saveErrorMessage(err: unknown, fallback: string): string {
+  return apiErrorStatus(err) === 409 ? DUPLICATE_CONTACT_MSG : apiErrorMessage(err, fallback);
+}
+
+export type MerchantSheetMode = 'actions' | 'add' | 'edit' | null;
+
+export type MerchantsScreenState = {
+  merchants: MerchantModel[];
+  filtered: MerchantModel[];
+  isAdmin: boolean;
+  refreshing: boolean;
+  onRefresh: () => Promise<void>;
+  searchOpen: boolean;
+  query: string;
+  onOpenSearch: () => void;
+  onCloseSearch: () => void;
+  onChangeQuery: (s: string) => void;
+  sheet: MerchantSheetMode;
+  activeMerchant: MerchantModel | null;
+  openActions: (m: MerchantModel) => void;
+  openAdd: () => void;
+  openEdit: () => void;
+  closeSheet: () => void;
+  saving: boolean;
+  handleCreate: (payload: MerchantFormPayload) => void;
+  handleEdit: (payload: MerchantFormPayload) => void;
+  /** Confirms via a native dialog, then soft-deletes on the backend. */
+  requestDelete: () => void;
+  /** Success confirmation after add/edit/delete. `key` bumps per save so the
+   *  toast replays its entrance; null when hidden. */
+  savedToast: { key: number; title: string; detail?: string } | null;
+  dismissSavedToast: () => void;
+};
+
+export function useMerchantsScreen(): MerchantsScreenState {
+  const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  /** Managing merchants requires `userLevel >= ClientAdmin` — same gate as คลังอาหาร. */
+  const isAdmin = isClientAdmin(user);
+
+  const { data: merchants } = useMerchantsData();
+
+  const [refreshing, setRefreshing] = useState(false);
+  const { searchOpen, query, onOpenSearch, onCloseSearch, onChangeQuery } = useSearchQuery();
+  const [sheet, setSheet] = useState<MerchantSheetMode>(null);
+  const [activeMerchant, setActiveMerchant] = useState<MerchantModel | null>(null);
+  const [savedToast, setSavedToast] =
+    useState<{ key: number; title: string; detail?: string } | null>(null);
+  const dismissSavedToast = useCallback(() => setSavedToast(null), []);
+  const showSaved = useCallback((title: string, detail?: string) => {
+    setSavedToast((p) => ({ key: (p?.key ?? 0) + 1, title, detail }));
+  }, []);
+
+  const createMutation = useCreateMerchant();
+  const updateMutation = useUpdateMerchant();
+  const deleteMutation = useDeleteMerchant();
+  const saving =
+    createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return merchants;
+    return merchants.filter((m) => {
+      return (
+        m.name.toLowerCase().includes(q) ||
+        m.contactNumber.toLowerCase().includes(q) ||
+        m.location.toLowerCase().includes(q)
+      );
+    });
+  }, [merchants, query]);
+
+  const openActions = useCallback((m: MerchantModel) => {
+    setActiveMerchant(m);
+    setSheet('actions');
+  }, []);
+  const openAdd = useCallback(() => {
+    setActiveMerchant(null);
+    setSheet('add');
+  }, []);
+  const openEdit = useCallback(() => setSheet('edit'), []);
+  const closeSheet = useCallback(() => setSheet(null), []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.refetchQueries({ queryKey: merchantKeys.all() });
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
+
+  const handleCreate = useCallback(
+    (payload: MerchantFormPayload) => {
+      createMutation.mutate(
+        { name: payload.name, contactNumber: payload.contactNumber, location: payload.location },
+        {
+          onSuccess: () => {
+            closeSheet();
+            showSaved('เพิ่มผู้ขายแล้ว', payload.name);
+          },
+          onError: (err) =>
+            Alert.alert('เพิ่มผู้ขายไม่สำเร็จ', saveErrorMessage(err, 'บันทึกไม่สำเร็จ')),
+        },
+      );
+    },
+    [createMutation, closeSheet, showSaved],
+  );
+
+  const handleEdit = useCallback(
+    (payload: MerchantFormPayload) => {
+      if (!activeMerchant) return;
+      updateMutation.mutate(
+        {
+          id: activeMerchant.id,
+          name: payload.name,
+          contactNumber: payload.contactNumber,
+          location: payload.location,
+        },
+        {
+          onSuccess: () => {
+            closeSheet();
+            showSaved('บันทึกการแก้ไขแล้ว', payload.name);
+          },
+          onError: (err) =>
+            Alert.alert('บันทึกการแก้ไขไม่สำเร็จ', saveErrorMessage(err, 'บันทึกไม่สำเร็จ')),
+        },
+      );
+    },
+    [activeMerchant, updateMutation, closeSheet, showSaved],
+  );
+
+  const requestDelete = useCallback(() => {
+    const target = activeMerchant;
+    if (!target) return;
+    Alert.alert(
+      'ลบผู้ขาย',
+      `ต้องการลบ "${target.name}" ออกจากรายชื่อหรือไม่? การขายที่บันทึกไว้แล้วจะไม่ถูกลบ`,
+      [
+        { text: 'ยกเลิก', style: 'cancel' },
+        {
+          text: 'ลบ',
+          style: 'destructive',
+          onPress: () =>
+            deleteMutation.mutate(target.id, {
+              onSuccess: () => {
+                closeSheet();
+                showSaved('ลบผู้ขายแล้ว', target.name);
+              },
+              onError: (err) => Alert.alert('ลบไม่สำเร็จ', apiErrorMessage(err, 'ลบไม่สำเร็จ')),
+            }),
+        },
+      ],
+    );
+  }, [activeMerchant, deleteMutation, closeSheet, showSaved]);
+
+  return {
+    merchants,
+    filtered,
+    isAdmin,
+    refreshing,
+    onRefresh,
+    searchOpen,
+    query,
+    onOpenSearch,
+    onCloseSearch,
+    onChangeQuery,
+    sheet,
+    activeMerchant,
+    openActions,
+    openAdd,
+    openEdit,
+    closeSheet,
+    saving,
+    handleCreate,
+    handleEdit,
+    requestDelete,
+    savedToast,
+    dismissSavedToast,
+  };
+}

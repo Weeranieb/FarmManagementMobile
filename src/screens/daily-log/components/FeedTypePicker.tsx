@@ -5,6 +5,7 @@ import type { FeedCollectionModel } from '@/features/feed-collection';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { VIBRANT_BRAND, type GroupKey } from '../constants';
 
 type Props = {
@@ -174,7 +175,7 @@ export function FeedTypePicker({
                 returnKeyType="search"
               />
               {q ? (
-                <Pressable
+                <Tappable
                   onPress={() => setSearch('')}
                   hitSlop={6}
                   style={{
@@ -188,7 +189,7 @@ export function FeedTypePicker({
                   accessibilityLabel="ล้างคำค้นหา"
                 >
                   <Icon.x size={10} color="#fff" />
-                </Pressable>
+                </Tappable>
               ) : null}
             </View>
           </View>
@@ -219,8 +220,9 @@ export function FeedTypePicker({
             visibleFeeds.map((f) => {
               const sel = f.id === selectedId;
               return (
-                <Pressable
+                <Tappable
                   key={f.id}
+                  feedback="opacity"
                   onPress={() => {
                     onSelect(f.id);
                     setSearch('');
@@ -275,7 +277,7 @@ export function FeedTypePicker({
                   {sel ? (
                     <Icon.check size={16} color={t.ink} />
                   ) : null}
-                </Pressable>
+                </Tappable>
               );
             })
           )}

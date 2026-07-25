@@ -1,6 +1,7 @@
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
+import { Tappable } from '@/components/ui';
 import { RANGES, type RangeId } from '../historyUtils';
 
 type Props = {
@@ -25,8 +26,9 @@ export function RangeSegmented({ value, onChange }: Props) {
       {RANGES.map((r) => {
         const sel = r.id === value;
         return (
-          <Pressable
+          <Tappable
             key={r.id}
+            feedback="opacity"
             accessibilityRole="tab"
             accessibilityState={{ selected: sel }}
             onPress={() => onChange(r.id)}
@@ -48,7 +50,7 @@ export function RangeSegmented({ value, onChange }: Props) {
             >
               {r.label}
             </Text>
-          </Pressable>
+          </Tappable>
         );
       })}
     </View>

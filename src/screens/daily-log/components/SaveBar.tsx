@@ -1,7 +1,8 @@
-import { Pressable, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { CELL_HIGHLIGHT, VIBRANT_BRAND } from '../constants';
 
 type Props = {
@@ -113,7 +114,7 @@ export function SaveBar({
             )}
           </View>
         </View>
-        <Pressable
+        <Tappable
           disabled={!enabled}
           onPress={onSavePress}
           style={{
@@ -163,7 +164,7 @@ export function SaveBar({
               {editsCount}
             </Text>
           </View>
-        </Pressable>
+        </Tappable>
       </View>
     </View>
   );

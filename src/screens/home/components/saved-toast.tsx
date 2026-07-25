@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, Text, View } from 'react-native';
+import { Animated, Easing, Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 
@@ -73,7 +74,7 @@ export function SavedToast({ count, duration = 5000, bottom = 76, onPress, onDis
           overflow: 'hidden',
         }}
       >
-        <Pressable
+        <Tappable
           onPress={onPress}
           accessibilityRole="button"
           android_ripple={{ color: 'rgba(255,255,255,0.12)' }}
@@ -121,7 +122,7 @@ export function SavedToast({ count, duration = 5000, bottom = 76, onPress, onDis
             </Text>
           </View>
           <Icon.chevR size={16} color="#fff" stroke={2} />
-        </Pressable>
+        </Tappable>
       </View>
     </Animated.View>
   );

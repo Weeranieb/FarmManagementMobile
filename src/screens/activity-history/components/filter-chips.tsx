@@ -1,6 +1,7 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
+import { Tappable } from '@/components/ui';
 import { FILTERS, type FilterId } from '../constants';
 
 type Props = {
@@ -49,7 +50,8 @@ export function FilterChips({ filter, counts, disabled = false, onChange }: Prop
                 overflow: 'hidden',
               }}
             >
-              <Pressable
+              <Tappable
+                feedback="opacity"
                 onPress={() => !off && onChange(f.id)}
                 disabled={off}
                 accessibilityRole="button"
@@ -82,7 +84,7 @@ export function FilterChips({ filter, counts, disabled = false, onChange }: Prop
                 >
                   {n}
                 </Text>
-              </Pressable>
+              </Tappable>
             </View>
           );
         })}

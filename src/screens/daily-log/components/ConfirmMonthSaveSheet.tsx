@@ -3,6 +3,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { GROUP_LIGHT, VIBRANT_BRAND, fmtTh, thMonth } from '../constants';
 import type { MonthSummary } from '../hook';
 import { useSheetSlideIn } from './useSheetSlideIn';
@@ -141,7 +142,7 @@ export function ConfirmMonthSaveSheet({
                 ) : null}
               </Text>
             </View>
-            <Pressable
+            <Tappable
               onPress={onClose}
               style={{
                 width: 30,
@@ -156,7 +157,7 @@ export function ConfirmMonthSaveSheet({
               accessibilityLabel="ปิด"
             >
               <Icon.x size={14} color={t.inkSoft} />
-            </Pressable>
+            </Tappable>
           </View>
 
           {/* Summary card — totals by feed type */}
@@ -236,7 +237,7 @@ export function ConfirmMonthSaveSheet({
 
           {/* Actions */}
           <View style={{ paddingHorizontal: 14, flexDirection: 'row', gap: 10 }}>
-            <Pressable
+            <Tappable
               onPress={onClose}
               style={{
                 height: 48,
@@ -251,8 +252,8 @@ export function ConfirmMonthSaveSheet({
               <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.inkSoft }}>
                 ยกเลิก
               </Text>
-            </Pressable>
-            <Pressable
+            </Tappable>
+            <Tappable
               onPress={onConfirm}
               style={{
                 flex: 1,
@@ -270,7 +271,7 @@ export function ConfirmMonthSaveSheet({
               <Text style={{ color: '#fff', fontSize: 15, fontFamily: type.familyBold }}>
                 บันทึก {fmtTh(summary.daysEdited)} วัน
               </Text>
-            </Pressable>
+            </Tappable>
           </View>
         </Animated.View>
       </View>

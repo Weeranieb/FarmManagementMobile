@@ -8,12 +8,17 @@ import { Row, Col } from '@/components/layout/Row';
 import { ListRow } from '@/screens/profile/components/ListRow';
 import { thaiDate } from '@/locale/thaiDate';
 
+type GlyphComponent = React.ComponentType<{ size?: number; color?: string; stroke?: number }>;
+
 type Props = {
   showHeader?: boolean;
   isAdmin: boolean;
   feedCount: number;
   feedLatestUpdate: Date | null;
   openFeedCollection: () => void;
+  merchantCount: number;
+  merchantLatestUpdate: Date | null;
+  openMerchants: () => void;
 };
 
 function SectionLabel({ children }: { children: string }) {
@@ -34,9 +39,19 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
-/** The one live tool — elevated to a hero card so the actionable item has
- *  real weight against the muted "coming soon" list below. */
-function FeedToolCard({ label, sub, onPress }: { label: string; sub: string; onPress: () => void }) {
+/** A live management tool — elevated to a card with real weight so the
+ *  actionable items stand apart from the muted "coming soon" list below. */
+function ToolCard({
+  Glyph,
+  label,
+  sub,
+  onPress,
+}: {
+  Glyph: GlyphComponent;
+  label: string;
+  sub: string;
+  onPress: () => void;
+}) {
   const { t } = useTheme();
   return (
     <Card onPress={onPress}>
@@ -51,7 +66,7 @@ function FeedToolCard({ label, sub, onPress }: { label: string; sub: string; onP
             justifyContent: 'center',
           }}
         >
-          <Icon.feed size={22} color={t.brandInk} />
+          <Glyph size={22} color={t.brandInk} />
         </View>
         <Col gap={2} style={{ flex: 1, minWidth: 0 }}>
           <Text style={{ fontSize: type.sizes.md, fontFamily: type.familyBold, color: t.ink }}>
@@ -67,12 +82,26 @@ function FeedToolCard({ label, sub, onPress }: { label: string; sub: string; onP
   );
 }
 
+function countUpdatedSub(
+  tx: ReturnType<typeof useTranslation>['t'],
+  count: number,
+  latest: Date | null,
+  keys: { withDate: string; noDate: string; empty: string },
+): string {
+  if (count <= 0) return tx(keys.empty);
+  if (latest) return tx(keys.withDate, { count, date: thaiDate.short(latest) });
+  return tx(keys.noDate, { count });
+}
+
 export function ManageView({
   showHeader = true,
   isAdmin,
   feedCount,
   feedLatestUpdate,
   openFeedCollection,
+  merchantCount,
+  merchantLatestUpdate,
+  openMerchants,
 }: Props) {
   const { t: tx } = useTranslation();
   const { t } = useTheme();
@@ -105,15 +134,16 @@ export function ManageView({
     );
   }
 
-  const feedSub =
-    feedCount > 0
-      ? feedLatestUpdate
-        ? tx('manage.feedSub', {
-            count: feedCount,
-            date: thaiDate.short(feedLatestUpdate),
-          })
-        : tx('manage.feedSubNoDate', { count: feedCount })
-      : tx('manage.feedSubEmpty');
+  const feedSub = countUpdatedSub(tx, feedCount, feedLatestUpdate, {
+    withDate: 'manage.feedSub',
+    noDate: 'manage.feedSubNoDate',
+    empty: 'manage.feedSubEmpty',
+  });
+  const merchantSub = countUpdatedSub(tx, merchantCount, merchantLatestUpdate, {
+    withDate: 'manage.merchantSub',
+    noDate: 'manage.merchantSubNoDate',
+    empty: 'manage.merchantSubEmpty',
+  });
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -122,26 +152,26 @@ export function ManageView({
       ) : null}
       <ScrollView delaysContentTouches={false} contentContainerStyle={{ paddingBottom: space[10] }}>
         <SectionLabel>{tx('manage.toolsLabel')}</SectionLabel>
-        <View style={{ paddingHorizontal: space[5] }}>
-          <FeedToolCard
+        <View style={{ paddingHorizontal: space[5], gap: space[3] }}>
+          <ToolCard
+            Glyph={Icon.feed}
             label={tx('manage.rowFeedCollection')}
             sub={feedSub}
             onPress={openFeedCollection}
           />
+          <ToolCard
+            Glyph={Icon.merchant}
+            label={tx('manage.rowMerchants')}
+            sub={merchantSub}
+            onPress={openMerchants}
+          />
         </View>
 
         {/* Coming-soon tools — grouped under their own header so the "เร็วๆ นี้"
-            state is stated once (was previously duplicated as both the row
-            subtitle and a trailing pill). */}
+            state is stated once. */}
         <SectionLabel>{tx('manage.comingSoonLabel')}</SectionLabel>
         <View style={{ paddingHorizontal: space[5] }}>
           <Card padded={false}>
-            <ListRow
-              icon="merchant"
-              label={tx('manage.rowMerchants')}
-              sub={tx('manage.rowMerchantsSub')}
-              disabled
-            />
             <ListRow
               icon="worker"
               label={tx('manage.rowWorkers')}

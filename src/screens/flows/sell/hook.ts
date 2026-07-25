@@ -8,7 +8,7 @@ import {
   type PondModel,
   type SellPondDetailItem,
 } from '@/features/pond';
-import { useMerchantsData } from '@/features/merchant';
+import { adaptMerchant, useCreateMerchant, useMerchantsData, type MerchantModel } from '@/features/merchant';
 import { useFishSizeGradesData } from '@/features/size-grade';
 import { useAuthStore } from '@/features/auth';
 import { apiErrorMessage } from '@/shared/http';
@@ -156,6 +156,26 @@ export function useSellFlow(initialPondId: number | undefined, onClose?: () => v
 
   const merchant = merchants.find((m) => m.id === merchantId) ?? null;
 
+  // Inline "เพิ่มผู้ซื้อใหม่" from the merchant picker — create then auto-select
+  // the new merchant so the user never leaves the sell flow. The mutation
+  // invalidates ['merchants'], so the picker + field refresh to include it.
+  const createMerchantMutation = useCreateMerchant();
+  const creatingMerchant = createMerchantMutation.isPending;
+  const createAndSelectMerchant = async (payload: {
+    name: string;
+    contactNumber: string;
+    location: string;
+  }): Promise<MerchantModel> => {
+    const created = await createMerchantMutation.mutateAsync({
+      name: payload.name,
+      contactNumber: payload.contactNumber,
+      location: payload.location,
+    });
+    const model = adaptMerchant(created);
+    setMerchantId(model.id);
+    return model;
+  };
+
   const sellMutation = useSellPond(selectedPondId ?? 0);
   const isAuthed = useAuthStore((s) => s.token != null);
 
@@ -222,6 +242,8 @@ export function useSellFlow(initialPondId: number | undefined, onClose?: () => v
     merchantId,
     setMerchantId,
     merchant,
+    createAndSelectMerchant,
+    creatingMerchant,
     subtotals,
     grossRevenue,
     additionalCosts,

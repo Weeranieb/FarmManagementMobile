@@ -4,6 +4,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
+import { Tappable } from '@/components/ui';
 import { VIBRANT_BRAND, thMonthAbbr } from '../constants';
 import { useSheetSlideIn } from './useSheetSlideIn';
 
@@ -190,7 +191,7 @@ export function MonthYearPickerSheet({
                   ด้านบน
                 </Text>
               </View>
-              <Pressable
+              <Tappable
                 onPress={handleToday}
                 style={{
                   flexDirection: 'row',
@@ -216,7 +217,7 @@ export function MonthYearPickerSheet({
                 >
                   เดือนนี้
                 </Text>
-              </Pressable>
+              </Tappable>
             </View>
 
             {/* year nav */}
@@ -280,7 +281,7 @@ export function MonthYearPickerSheet({
                 backgroundColor: t.surface,
               }}
             >
-              <Pressable
+              <Tappable
                 onPress={onClose}
                 style={{
                   height: 46,
@@ -303,9 +304,9 @@ export function MonthYearPickerSheet({
                 >
                   ยกเลิก
                 </Text>
-              </Pressable>
+              </Tappable>
 
-              <Pressable
+              <Tappable
                 onPress={handleConfirm}
                 disabled={selectedDisabled}
                 style={{
@@ -340,7 +341,7 @@ export function MonthYearPickerSheet({
                     {thMonthAbbr(selected.m)} {selected.y + 543}
                   </Text>
                 </Text>
-              </Pressable>
+              </Tappable>
             </View>
           </Animated.View>
         </Animated.View>
@@ -371,7 +372,7 @@ function YearNavRow({
         gap: 6,
       }}
     >
-      <Pressable
+      <Tappable
         onPress={onPrev}
         style={{
           width: 42,
@@ -387,7 +388,7 @@ function YearNavRow({
         accessibilityLabel="ปีก่อนหน้า"
       >
         <Icon.chevL size={14} color={t.inkSoft} />
-      </Pressable>
+      </Tappable>
       <View
         style={{
           flex: 1,
@@ -416,7 +417,7 @@ function YearNavRow({
           <Text style={{ fontFamily: type.familyNumBold, letterSpacing: 0.5 }}>{beYear}</Text>
         </Text>
       </View>
-      <Pressable
+      <Tappable
         onPress={onNext}
         disabled={nextDisabled}
         style={{
@@ -435,7 +436,7 @@ function YearNavRow({
         accessibilityState={{ disabled: nextDisabled }}
       >
         <Icon.chevR size={14} color={nextDisabled ? t.borderStrong : t.inkSoft} />
-      </Pressable>
+      </Tappable>
     </View>
   );
 }
@@ -478,7 +479,8 @@ function MonthCell({
   const background = isSelected ? VIBRANT_BRAND[600] : closedMark ? CLOSED_TINT : t.surface;
 
   return (
-    <Pressable
+    <Tappable
+      feedback="opacity"
       onPress={onPress}
       disabled={disabled}
       style={{
@@ -520,7 +522,7 @@ function MonthCell({
           <MarkGlyph mark={mark} isSelected={isSelected} outOfRange={outOfRange} />
         </View>
       ) : null}
-    </Pressable>
+    </Tappable>
   );
 }
 

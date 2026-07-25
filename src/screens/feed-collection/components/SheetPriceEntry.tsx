@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { dangerInk } from '@/theme/ink';
+import { Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { fmt } from '@/utils/fmt';
@@ -219,7 +220,7 @@ export function SheetPriceEntry({
               {feed.name}
             </Text>
           </View>
-          <Pressable
+          <Tappable
             onPress={onClose}
             hitSlop={8}
             accessibilityRole="button"
@@ -235,7 +236,7 @@ export function SheetPriceEntry({
             }}
           >
             <Icon.x size={18} color={t.ink} />
-          </Pressable>
+          </Tappable>
         </Row>
       </View>
 
@@ -369,7 +370,7 @@ export function SheetPriceEntry({
         ) : null}
 
         {isEdit && onDelete ? (
-          <Pressable
+          <Tappable
             onPress={onDelete}
             accessibilityRole="button"
             style={{
@@ -388,14 +389,14 @@ export function SheetPriceEntry({
             <Text style={{ color: t.danger, fontFamily: type.familySemi, fontSize: 14 }}>
               ลบรายการราคา
             </Text>
-          </Pressable>
+          </Tappable>
         ) : null}
       </View>
 
       <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 }}>
         {showOverwriteFooter ? (
           <Row gap={10}>
-            <Pressable
+            <Tappable
               onPress={() => dateRef.current?.open()}
               accessibilityRole="button"
               style={{
@@ -411,8 +412,8 @@ export function SheetPriceEntry({
               <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>
                 เลือกวันอื่น
               </Text>
-            </Pressable>
-            <Pressable
+            </Tappable>
+            <Tappable
               onPress={handleOverwrite}
               accessibilityRole="button"
               disabled={!priceValid || saving}
@@ -429,11 +430,11 @@ export function SheetPriceEntry({
               <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
                 {saving ? 'กำลังบันทึก…' : 'เขียนทับราคาเดิม'}
               </Text>
-            </Pressable>
+            </Tappable>
           </Row>
         ) : (
           <Row gap={10}>
-            <Pressable
+            <Tappable
               onPress={onClose}
               accessibilityRole="button"
               style={{
@@ -449,8 +450,8 @@ export function SheetPriceEntry({
               <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>
                 ยกเลิก
               </Text>
-            </Pressable>
-            <Pressable
+            </Tappable>
+            <Tappable
               onPress={handleSubmit}
               accessibilityRole="button"
               disabled={submitDisabled}
@@ -467,7 +468,7 @@ export function SheetPriceEntry({
               <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
                 {saving ? 'กำลังบันทึก…' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึกราคาใหม่'}
               </Text>
-            </Pressable>
+            </Tappable>
           </Row>
         )}
       </View>

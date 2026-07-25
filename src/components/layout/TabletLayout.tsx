@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { ThemedSafeAreaView } from '@/components/layout/ThemedSafeAreaView';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
-import { Pill } from '@/components/ui';
+import { Pill, Tappable } from '@/components/ui';
 import { Icon, type IconName } from '@/components/icons';
 import { HomeScreen } from '@/screens/home';
 import { FarmsScreen } from '@/screens/farms';
@@ -144,8 +144,9 @@ function NavRail({ active, onChange }: { active: Pane; onChange: (p: Pane) => vo
           const Ico = Icon[item.icon];
           const sel = active === item.id;
           return (
-            <Pressable
+            <Tappable
               key={item.id}
+              feedback="opacity"
               onPress={() => onChange(item.id)}
               style={{
                 width: 44,
@@ -157,7 +158,7 @@ function NavRail({ active, onChange }: { active: Pane; onChange: (p: Pane) => vo
               }}
             >
               <Ico size={22} stroke={sel ? 2 : 1.6} color={sel ? t.brand : t.inkMute} />
-            </Pressable>
+            </Tappable>
           );
         })}
       </View>
@@ -197,8 +198,9 @@ function PondMaster({
             {list.map((p) => {
               const sel = p.id === selectedId;
               return (
-                <Pressable
+                <Tappable
                   key={p.id}
+                  feedback="opacity"
                   onPress={() => onSelect(p.id)}
                   style={{
                     flexDirection: 'row',
@@ -245,7 +247,7 @@ function PondMaster({
                   ) : (
                     <Icon.chevR size={14} color={t.inkMute} />
                   )}
-                </Pressable>
+                </Tappable>
               );
             })}
           </View>
