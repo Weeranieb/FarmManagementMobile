@@ -84,10 +84,17 @@ export type PondActivityModel = {
   /** Whether the row is from the perspective of the destination ('in') or source ('out'). */
   direction: 'in' | 'out';
   date: string;
+  /** Head count. For a sell this is the summed sell_details.fish_count. */
   amount: number;
   fishType: string;
+  /** ฿/kg — the average (total ÷ weight) for a sell, the recorded price otherwise. */
   pricePerUnit?: number;
+  /** Gross value. A sell's additional costs are NOT deducted (see `additionalCost`). */
   total: number;
+  /** Sells only: summed weight of the sale in kg. */
+  totalWeightKg?: number;
+  /** Extra costs booked on the activity. Already inside `total` for fill/move. */
+  additionalCost?: number;
   remark?: string;
   merchant?: string;
   /** Set for outgoing moves — where the fish went. */
@@ -143,6 +150,10 @@ export type ActivityResponse = {
   amount: number;
   pricePerUnit: number;
   total: number;
+  /** Sells only — summed sell_details.weight (kg). */
+  totalWeight?: number;
+  /** Summed additional_costs; omitted when zero. Part of `total` for fill/move. */
+  additionalCost?: number;
   merchant?: string;
   toPondName?: string;
   fromPondName?: string;

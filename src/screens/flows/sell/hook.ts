@@ -57,7 +57,18 @@ function rowSubtotal(r: SellRow): number {
   return Math.round(w * p);
 }
 
-export function useSellFlow(initialPondId: number | undefined, onClose?: () => void) {
+/** Passed to `onClose` when — and only when — a sale was actually saved. */
+export type SellResult = {
+  /** The pond the sale was booked against (the picked one on FAB entry). */
+  pondId: number;
+  /** True when "ปิดบ่อหลังขาย" was on — the cycle just ended. */
+  pondClosed: boolean;
+};
+
+export function useSellFlow(
+  initialPondId: number | undefined,
+  onClose?: (result?: SellResult) => void,
+) {
   const fromFab = initialPondId == null;
 
   const { data: farms } = useFarmsData();
@@ -209,7 +220,9 @@ export function useSellFlow(initialPondId: number | undefined, onClose?: () => v
         ...(wireCosts.length > 0 ? { additionalCosts: wireCosts } : {}),
         ...(markToClose ? { markToClose: true } : {}),
       });
-      onClose?.();
+      // Only this exit carries a result, so the caller can tell a saved sale
+      // from a cancel and land the user where the outcome now lives.
+      onClose?.({ pondId: selectedPondId, pondClosed: markToClose });
     } catch (err) {
       Alert.alert('ขายปลาไม่สำเร็จ', apiErrorMessage(err, 'บันทึกไม่สำเร็จ'));
     }

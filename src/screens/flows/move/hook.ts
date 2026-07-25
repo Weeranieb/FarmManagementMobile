@@ -47,21 +47,10 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
     if (toId != null && !pondsInFarm.some((p) => p.id === toId)) setToId(null);
   }, [farmId, pondsInFarm, fromId, toId]);
 
-  // Destination candidates — used both for the form's destination list (pond-detail
-  // entry) and for clamping `toId` when source changes.
-  const candidates = useMemo(
-    () => pondsInFarm.filter((p) => p.id !== fromId && p.status === 'active'),
-    [pondsInFarm, fromId],
-  );
-
-  // When entered from pond-detail (no toId state initially), pick the first candidate.
-  useEffect(() => {
-    if (fromFab) return;
-    if (candidates.length === 0) return;
-    if (toId == null || !candidates.some((p) => p.id === toId)) {
-      setToId(candidates[0]!.id);
-    }
-  }, [fromFab, candidates, toId]);
+  // The destination is never auto-picked — both entries choose it explicitly in
+  // the stepped picker (see InlineMovePicker), so a mis-targeted move can't be
+  // submitted just because the form arrived with a default already filled in.
+  // Selecting the source can only invalidate it, which the effect above clears.
 
   const toPond = pondsInFarm.find((p) => p.id === toId);
 
@@ -129,6 +118,8 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
   const moveMutation = useMovePond(fromId ?? 0);
   const isAuthed = useAuthStore((s) => s.token != null);
 
+  // Same gate for both entries — pond-detail entry only skips the farm/source
+  // steps, so its picker can still be incomplete (no destination yet).
   const validationMsg = fromFab
     ? farmId == null
       ? 'เลือกฟาร์มก่อน'
@@ -139,7 +130,9 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
           : fromId === toId
             ? 'บ่อต้นทางและปลายทางต้องต่างกัน'
             : null
-    : null;
+    : toId == null
+      ? 'เลือกบ่อปลายทาง'
+      : null;
 
   const handleConfirm = async () => {
     if (!isAuthed || !toPond || !fromPond || fromId == null) {
@@ -207,7 +200,6 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
     setToId,
     fromPond,
     toPond,
-    candidates,
     validationMsg,
     amount,
     setAmount,

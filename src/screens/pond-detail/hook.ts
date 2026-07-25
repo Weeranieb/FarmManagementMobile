@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFarmsData } from '@/features/farm';
@@ -6,8 +6,18 @@ import { usePondData, type PondModel } from '@/features/pond';
 
 export type PondDetailTab = 'feed' | 'history' | 'cycles';
 
-export function usePondDetailScreen(pondId: number) {
+/**
+ * @param focusTab Tab to jump to, set by a flow that just wrote something the
+ *   user should land on (see the sell route). The caller clears it right after,
+ *   so it never fights a manual tab change.
+ */
+export function usePondDetailScreen(pondId: number, focusTab?: PondDetailTab | null) {
   const [tab, setTab] = useState<PondDetailTab>('feed');
+
+  useEffect(() => {
+    if (focusTab) setTab(focusTab);
+  }, [focusTab]);
+
   const qc = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const {

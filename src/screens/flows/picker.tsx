@@ -1,7 +1,9 @@
 // Inline farm + pond pickers — embedded at the TOP of Fill/Sell/Move forms
 // when the user enters via the home-screen FAB (no pond context yet).
-// When the user arrives from a pond-detail page, the form already knows the
-// pond and skips these pickers entirely.
+// When the user arrives from a pond-detail page, Fill/Sell already know the
+// pond and skip these pickers entirely. Move still needs a destination, so it
+// keeps the picker with the source pinned as an already-completed step
+// (`lockedFrom`) — same stepped process the FAB entry gets, one step shorter.
 //
 // Controlled components — the form owns selection state so it can validate
 // the CTA + persist state across review→back navigation.
@@ -248,7 +250,8 @@ function PondRow({
   primary: string;
   secondary?: string;
   badge?: React.ReactNode;
-  onPress: () => void;
+  /** Omit for a row that is already decided and can't be re-picked. */
+  onPress?: () => void;
 }) {
   const { t } = useTheme();
   const c = toneColors(t, tone);
@@ -256,8 +259,10 @@ function PondRow({
     <Tappable
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
-      feedback="opacity"
-      accessibilityRole="button"
+      // No onPress = an already-decided row: drop the press cue and the button
+      // role so it doesn't advertise a tap that does nothing.
+      feedback={onPress ? 'opacity' : 'none'}
+      accessibilityRole={onPress ? 'button' : undefined}
       accessibilityState={{ selected, disabled: !!disabled }}
       style={{ opacity: disabled ? 0.5 : 1 }}
     >
@@ -605,6 +610,12 @@ type MovePickerProps = {
   onFromChange: (id: number) => void;
   onToChange: (id: number) => void;
   allowCrossFarm?: boolean;
+  /**
+   * Pond-detail entry: the source is already decided, so the farm + source
+   * steps collapse into one fixed row and the destination becomes step 2.
+   * The picker still runs as a visible process instead of vanishing.
+   */
+  lockedFrom?: PondModel | null;
   /** Anchor placed at the start of the source-pond section. */
   sourceSectionRef?: RefObject<View | null>;
   /** Anchor placed at the start of the destination-pond section. */
@@ -622,12 +633,16 @@ export function InlineMovePicker({
   onFromChange,
   onToChange,
   allowCrossFarm = false,
+  lockedFrom,
   sourceSectionRef,
   destSectionRef,
 }: MovePickerProps) {
   const tone: PickerTone = 'move';
   const { t } = useTheme();
   const c = toneColors(t, tone);
+  const locked = lockedFrom != null;
+  // With a locked source there is no farm step, so the destination is step 2.
+  const destStepNum = locked ? 2 : 3;
 
   const sourcePonds =
     farmId != null
@@ -674,70 +689,89 @@ export function InlineMovePicker({
         </View>
       ) : null}
 
-      <StepLabel
-        num={1}
-        label={allowCrossFarm ? 'ฟาร์มอ้างอิง' : 'เลือกฟาร์ม'}
-        isCurrent={farmId == null}
-        isComplete={farmId != null}
-        tone={tone}
-      />
-      {farms.length === 0 ? (
-        <EmptyInline icon="farm" title="ยังไม่มีฟาร์ม" body="ติดต่อผู้ดูแลระบบเพื่อขอเข้าถึง" />
+      {locked ? (
+        <>
+          <StepLabel num={1} label="จากบ่อ (ต้นทาง)" isCurrent={false} isComplete tone={tone} />
+          {/* No onPress — the source came from the pond the user opened this
+              from, so the row states it rather than offering a choice. The
+              neutral badge stays legible on the selected row's tone fill. */}
+          <PondRow
+            tone={tone}
+            pond={lockedFrom}
+            selected
+            primary={displayPondName(lockedFrom.name)}
+            secondary={pondMeta(lockedFrom)}
+            badge={<Pill tone="neutral">ต้นทาง</Pill>}
+          />
+        </>
       ) : (
-        <Row wrap gap={space[2]}>
-          {orderedFarms.map((f) => (
-            <FarmChip
-              key={f.id}
-              tone={tone}
-              selected={farmId === f.id}
-              label={displayFarmName(f.name)}
-              meta={`${f.activePonds} บ่อ`}
-              onPress={() => onFarmChange(f.id)}
-            />
-          ))}
-        </Row>
-      )}
+        <>
+          <StepLabel
+            num={1}
+            label={allowCrossFarm ? 'ฟาร์มอ้างอิง' : 'เลือกฟาร์ม'}
+            isCurrent={farmId == null}
+            isComplete={farmId != null}
+            tone={tone}
+          />
+          {farms.length === 0 ? (
+            <EmptyInline icon="farm" title="ยังไม่มีฟาร์ม" body="ติดต่อผู้ดูแลระบบเพื่อขอเข้าถึง" />
+          ) : (
+            <Row wrap gap={space[2]}>
+              {orderedFarms.map((f) => (
+                <FarmChip
+                  key={f.id}
+                  tone={tone}
+                  selected={farmId === f.id}
+                  label={displayFarmName(f.name)}
+                  meta={`${f.activePonds} บ่อ`}
+                  onPress={() => onFarmChange(f.id)}
+                />
+              ))}
+            </Row>
+          )}
 
-      <View style={{ height: space[3] }} />
-      <View ref={sourceSectionRef} />
+          <View style={{ height: space[3] }} />
+          <View ref={sourceSectionRef} />
 
-      <StepLabel
-        num={2}
-        label="จากบ่อ (ต้นทาง)"
-        isCurrent={farmId != null && fromId == null}
-        isComplete={fromId != null}
-        tone={tone}
-      />
-      {farmId == null ? (
-        <DisabledSlot msg="เลือกฟาร์มก่อน" />
-      ) : sourcePonds.length === 0 ? (
-        <EmptyInline
-          icon="fish"
-          title="ไม่มีบ่อที่มีปลาให้ย้าย"
-          body="ฟาร์มนี้ยังไม่มีบ่อที่มีปลาอยู่"
-        />
-      ) : (
-        <Col gap={space[2]}>
-          {sourcePonds.map((p) => (
-            <PondRow
-              key={p.id}
-              tone={tone}
-              pond={p}
-              selected={fromId === p.id}
-              primary={displayPondName(p.name)}
-              secondary={pondMeta(p)}
-              badge={crossFarmBadge(p)}
-              onPress={() => onFromChange(p.id)}
+          <StepLabel
+            num={2}
+            label="จากบ่อ (ต้นทาง)"
+            isCurrent={farmId != null && fromId == null}
+            isComplete={fromId != null}
+            tone={tone}
+          />
+          {farmId == null ? (
+            <DisabledSlot msg="เลือกฟาร์มก่อน" />
+          ) : sourcePonds.length === 0 ? (
+            <EmptyInline
+              icon="fish"
+              title="ไม่มีบ่อที่มีปลาให้ย้าย"
+              body="ฟาร์มนี้ยังไม่มีบ่อที่มีปลาอยู่"
             />
-          ))}
-        </Col>
+          ) : (
+            <Col gap={space[2]}>
+              {sourcePonds.map((p) => (
+                <PondRow
+                  key={p.id}
+                  tone={tone}
+                  pond={p}
+                  selected={fromId === p.id}
+                  primary={displayPondName(p.name)}
+                  secondary={pondMeta(p)}
+                  badge={crossFarmBadge(p)}
+                  onPress={() => onFromChange(p.id)}
+                />
+              ))}
+            </Col>
+          )}
+        </>
       )}
 
       <View style={{ height: space[3] }} />
       <View ref={destSectionRef} />
 
       <StepLabel
-        num={3}
+        num={destStepNum}
         label="ไปยังบ่อ (ปลายทาง)"
         isCurrent={fromId != null && toId == null}
         isComplete={toId != null && fromId !== toId}

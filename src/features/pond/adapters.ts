@@ -102,6 +102,8 @@ export function adaptActivity(a: ActivityResponse): PondActivityModel {
     fishType: a.fishType,
     pricePerUnit: a.pricePerUnit || undefined,
     total: a.total,
+    totalWeightKg: a.totalWeight || undefined,
+    additionalCost: a.additionalCost || undefined,
     merchant: a.merchant,
     toPondName: a.toPondName,
     fromPondName: a.fromPondName,
