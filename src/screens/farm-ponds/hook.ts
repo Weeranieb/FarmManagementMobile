@@ -1,14 +1,17 @@
 import { useCallback, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 import { useFarmsData } from '@/features/farm';
+import { isClientAdmin, useAuthStore } from '@/features/auth';
 import { FISH_TH } from '@/utils/fmt';
-import { usePondsData, type PondModel } from '@/features/pond';
+import { useCreatePonds, usePondsData, type CreatePondItem, type PondModel } from '@/features/pond';
+import { createMasterDataErrorMessage } from '@/components/domain/createErrors';
 import { useSearchQuery } from '@/hooks/useSearchQuery';
 
 export type PondFilter = 'all' | 'active' | 'maintenance';
 
 export type PondCounts = Record<PondFilter, number>;
 
-export function useFarmPondsScreen(farmId: number): {
+export type FarmPondsScreenState = {
   farmTitle: string;
   ponds: PondModel[];
   filteredPonds: PondModel[];
@@ -20,7 +23,17 @@ export function useFarmPondsScreen(farmId: number): {
   onOpenSearch: () => void;
   onCloseSearch: () => void;
   onChangeQuery: (s: string) => void;
-} {
+  /** Only a client admin may add ponds — the server enforces it, so hide the
+   *  affordance instead of surfacing a 403. */
+  canCreate: boolean;
+  addPondsOpen: boolean;
+  openAddPonds: () => void;
+  closeAddPonds: () => void;
+  submitAddPonds: (ponds: CreatePondItem[]) => void;
+  creatingPonds: boolean;
+};
+
+export function useFarmPondsScreen(farmId: number): FarmPondsScreenState {
   const { data: farmsRaw } = useFarmsData();
   const farms = Array.isArray(farmsRaw) ? farmsRaw : [];
   const farm = farms.find((f) => f.id === farmId);
@@ -30,6 +43,38 @@ export function useFarmPondsScreen(farmId: number): {
 
   const [filter, setFilter] = useState<PondFilter>('all');
   const { searchOpen, query, onOpenSearch, onCloseSearch, onChangeQuery } = useSearchQuery();
+
+  const user = useAuthStore((s) => s.user);
+  const canCreate = isClientAdmin(user);
+  const [addPondsOpen, setAddPondsOpen] = useState(false);
+  const createPonds = useCreatePonds();
+
+  // Gated at the open/submit paths too, not only on the button — `POST /pond`
+  // is client-admin-only server-side, so the rule shouldn't live in the view.
+  const openAddPonds = useCallback(() => {
+    if (!canCreate) return;
+    setAddPondsOpen(true);
+  }, [canCreate]);
+  const closeAddPonds = useCallback(() => setAddPondsOpen(false), []);
+
+  const submitAddPonds = useCallback(
+    (items: CreatePondItem[]) => {
+      if (!canCreate || !Number.isFinite(farmId)) return;
+      createPonds.mutate(
+        { farmId, ponds: items },
+        {
+          onSuccess: () => setAddPondsOpen(false),
+          onError: (err) => {
+            Alert.alert(
+              'เพิ่มบ่อไม่สำเร็จ',
+              createMasterDataErrorMessage(err, 'เพิ่มบ่อไม่สำเร็จ'),
+            );
+          },
+        },
+      );
+    },
+    [canCreate, farmId, createPonds],
+  );
 
   const counts = useMemo<PondCounts>(
     () => ({
@@ -76,5 +121,11 @@ export function useFarmPondsScreen(farmId: number): {
     onOpenSearch,
     onCloseSearch,
     onChangeQuery,
+    canCreate,
+    addPondsOpen,
+    openAddPonds,
+    closeAddPonds,
+    submitAddPonds,
+    creatingPonds: createPonds.isPending,
   };
 }

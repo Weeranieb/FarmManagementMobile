@@ -1,5 +1,5 @@
 import { http } from '@/shared/http';
-import type { FarmListResponse, FarmResponse } from './types';
+import type { CreateFarmRequest, FarmListResponse, FarmResponse } from './types';
 
 function normalizeFarmListPayload(body: unknown): FarmResponse[] {
   if (Array.isArray(body)) {
@@ -18,4 +18,8 @@ function normalizeFarmListPayload(body: unknown): FarmResponse[] {
 export async function listFarms(): Promise<FarmResponse[]> {
   const payload = await http.get<unknown>('/farm');
   return normalizeFarmListPayload(payload);
+}
+
+export function createFarm(body: CreateFarmRequest): Promise<FarmResponse> {
+  return http.post('/farm', body);
 }

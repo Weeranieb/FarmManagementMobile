@@ -87,7 +87,10 @@ export default function HomeRoute() {
 
   const onCreateFarm = useCallback(() => {
     log('create farm tapped');
-    router.push('/(app)/farm' as never);
+    // `/(app)/farm` has no index route — only `farm/[farmId]` — so this used to
+    // dead-end on the unmatched-route screen. Farm creation lives on the Farms
+    // tab; `newFarm=1` opens its create sheet on arrival.
+    router.navigate('/(app)/(tabs)/farms?newFarm=1' as never);
   }, [router]);
 
   const onSeeHistory = useCallback(() => {

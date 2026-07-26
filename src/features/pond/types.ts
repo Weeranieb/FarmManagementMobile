@@ -158,3 +158,21 @@ export type ActivityResponse = {
   toPondName?: string;
   fromPondName?: string;
 };
+
+/** One pond in a create request. Mirrors `dto.CreatePondItem`.
+ *  `area` (ไร่) is optional and must be >= 0 when present. */
+export type CreatePondItem = {
+  name: string;
+  area?: number;
+};
+
+/** Body for POST /pond. Mirrors `dto.CreatePondsRequest`.
+ *
+ *  One call creates every pond in `ponds` inside a single transaction, so a
+ *  duplicate name (code 500071) rejects the whole batch — nothing is partially
+ *  created. New ponds start in `maintenance` status and only become `active`
+ *  once fish are filled in. */
+export type CreatePondsRequest = {
+  farmId: number;
+  ponds: CreatePondItem[];
+};

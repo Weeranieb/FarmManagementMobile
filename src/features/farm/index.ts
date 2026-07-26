@@ -1,4 +1,4 @@
-export { listFarms } from './service';
-export { farmKeys, useFarms, useFarmsData } from './queries';
+export { listFarms, createFarm } from './service';
+export { farmKeys, useFarms, useFarmsData, useCreateFarm } from './queries';
 export { adaptFarm, type FarmModel } from './adapters';
-export type { FarmResponse, FarmListResponse } from './types';
+export type { FarmResponse, FarmListResponse, CreateFarmRequest } from './types';
