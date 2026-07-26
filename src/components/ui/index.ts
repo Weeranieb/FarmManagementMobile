@@ -6,3 +6,4 @@ export { Input } from './Input';
 export { TopBar } from './TopBar';
 export { SearchHeader } from './SearchHeader';
 export { Skeleton, SkeletonShape } from './Skeleton';
+export { OfflineBanner } from './OfflineBanner';
