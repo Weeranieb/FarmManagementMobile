@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useRouter, type Href } from 'expo-router';
-import { useAuthStore } from '@/features/auth';
+import { isClientAdmin, useAuthStore } from '@/features/auth';
 import { useFeedCollectionsData } from '@/features/feed-collection';
 import { useMerchantsData } from '@/features/merchant';
 
@@ -30,8 +30,10 @@ export type ManageScreenState = {
 export function useManageScreen(): ManageScreenState {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  /** Anyone signed in is the farm owner/admin in the current data model. */
-  const isAdmin = user != null;
+  /** Client-admin and above — the same level the master-data endpoints behind
+   *  these tools require, and the same predicate the tools themselves use
+   *  (feed-collection / merchants / feed-price-history screens). */
+  const isAdmin = isClientAdmin(user);
 
   const { data: feeds } = useFeedCollectionsData();
   const { data: merchants } = useMerchantsData();
