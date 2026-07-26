@@ -35,7 +35,15 @@ import {
 } from './constants';
 import type { SaveResult, UseDailyLogV6 } from './hook';
 
+/** Offline copy — the entry is on disk (features/daily-log/drafts.ts), so say so
+ *  instead of the bare "บันทึกไม่สำเร็จ" that made users retype the day. */
+const OFFLINE_SAVE_MESSAGE = 'ไม่มีสัญญาณ — ข้อมูลถูกเก็บไว้ในเครื่องแล้ว ส่งอีกครั้งเมื่อมีสัญญาณ';
+
 function formatSaveError(result: SaveResult): string {
+  // Nothing reached the server: this isn't a rejected save, it's an unsent one.
+  if (result.offline) {
+    return OFFLINE_SAVE_MESSAGE;
+  }
   // Prefer the backend's wrapped detail when present — it names the actual
   // missing field. Fall back to a code-specific hint, then to the generic
   // network copy.
@@ -176,6 +184,9 @@ export function DailyLogView({
     status: SaveToastStatus;
     days: number;
     failedCount: number;
+    /** Error subtitle — set when the failure has something specific to say
+     *  (offline, backend detail) instead of the generic "n บ่อยังไม่ถูกบันทึก". */
+    message?: string;
   } | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -449,7 +460,12 @@ export function DailyLogView({
     setSaveToast(
       result.ok
         ? { status: 'success', days, failedCount: 0 }
-        : { status: 'error', days, failedCount: result.failedCount },
+        : {
+            status: 'error',
+            days,
+            failedCount: result.failedCount,
+            message: result.offline ? OFFLINE_SAVE_MESSAGE : undefined,
+          },
     );
   }, [saveToast, monthDaysCount, saveAll]);
 
@@ -639,6 +655,7 @@ export function DailyLogView({
             status={saveToast.status}
             days={saveToast.days}
             failedCount={saveToast.failedCount}
+            message={saveToast.message}
             bottom={bottomInset}
             onRetry={runSave}
             onDismiss={dismissToast}

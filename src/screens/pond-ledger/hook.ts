@@ -1,13 +1,17 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useDailyLogData,
   useUpsertDailyLog,
+  loadLedgerDrafts,
+  saveLedgerDrafts,
   monthStrFromDate,
   addMonthsStr,
   daysInMonthFromStr,
   type DailyLogEntry,
   type DailyLogUpsertRequest,
 } from '@/features/daily-log';
+import { useAuthStore } from '@/features/auth';
+import { apiErrorStatus } from '@/shared/http';
 import { usePondData, usePondActivitiesData, type PondActivityModel } from '@/features/pond';
 import { COLS, isCellValueInvalid, type ColKey } from '@/screens/daily-log/constants';
 import type { MonthSummary } from '@/screens/daily-log/hook';
@@ -62,15 +66,27 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
 
   const [ym, setYm] = useState(ymProp ?? currentMonthStr);
   // Drafts are keyed by month (YYYY-MM) so unsaved edits in one month never
-  // bleed into another when the user navigates the month arrows.
+  // bleed into another when the user navigates the month arrows. Restored from
+  // MMKV so a force-quit / OS eviction doesn't discard unsaved entry — see
+  // features/daily-log/drafts.ts.
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const [restored] = useState(() => ({ userId, ...loadLedgerDrafts(userId, pondId) }));
   const [draftsByMonth, setDraftsByMonth] = useState<Record<string, Record<number, CellValues>>>(
-    {},
+    restored.draftsByMonth,
   );
   const drafts = draftsByMonth[ym] ?? EMPTY_DRAFTS;
   // Feed-collection picks made in the keypad (per group) win over the ids the
   // month GET returned — mirrors the daily-log editor's save contract.
-  const [feedPick, setFeedPick] = useState<{ pellet?: number; fresh?: number }>({});
+  const [feedPick, setFeedPick] = useState<{ pellet?: number; fresh?: number }>(restored.feedPick);
   const [editing, setEditing] = useState<Editing>(null);
+
+  // Mirror drafts to disk on every change (synchronous MMKV write of a small
+  // blob). Skipped unless the session still belongs to the user we restored
+  // for, so an identity change can't persist this hook's state over theirs.
+  useEffect(() => {
+    if (userId == null || userId !== restored.userId) return;
+    saveLedgerDrafts(userId, pondId, { draftsByMonth, feedPick });
+  }, [userId, restored.userId, pondId, draftsByMonth, feedPick]);
 
   const { data: pond } = usePondData(Number.isFinite(pondId) ? pondId : undefined);
   const { data: log, isLoading, isError } = useDailyLogData(pondId, ym);
@@ -348,6 +364,15 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
       setEditing(null);
       return { ok: true };
     } catch (err) {
+      // Nothing reached the server (fetch threw — no HTTP status): the entry is
+      // still on disk, so say that rather than "save failed", which reads as
+      // "retype it".
+      if (apiErrorStatus(err) == null) {
+        return {
+          ok: false,
+          error: 'ไม่มีสัญญาณ — ข้อมูลถูกเก็บไว้ในเครื่องแล้ว ส่งอีกครั้งเมื่อมีสัญญาณ',
+        };
+      }
       const message =
         (err as { message?: string; details?: string })?.details ??
         (err as { message?: string })?.message ??
