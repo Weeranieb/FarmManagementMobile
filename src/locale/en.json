@@ -6,7 +6,12 @@
   },
   "auth": {
     "username": "Username",
-    "password": "Password",
+    "password": {
+      "required": "Enter a password",
+      "tooShort": "Password must be at least 8 characters",
+      "charset": "Only a-z A-Z 0-9 are allowed",
+      "mixedCase": "Needs both an upper and a lower case letter"
+    },
     "login": "Sign in",
     "forgot": "Forgot password?",
     "showPassword": "Show password",
@@ -36,9 +41,7 @@
     "rowMerchants": "Merchants",
     "rowMerchantsSub": "Manage buyers and sales channels",
     "rowWorkers": "Workers & users",
-    "rowWorkersSub": "Manage workers and access",
     "comingSoon": "Coming soon",
-    "comingSoonLabel": "Coming soon",
     "feedSub": "{{count}} items · Updated {{date}}",
     "feedSubNoDate": "{{count}} items",
     "feedSubEmpty": "No items yet",
@@ -46,7 +49,9 @@
     "merchantSubNoDate": "{{count}} traders",
     "merchantSubEmpty": "No traders yet — tap to add",
     "footnote": "You see this tab because you're a farm owner or admin · regular users won't see it",
-    "adminOnly": "This page is for farm owners and admins only"
+    "adminOnly": "This page is for farm owners and admins only",
+    "workerSub": "{{count}} people",
+    "workerSubEmpty": "No staff yet"
   },
   "home": {
     "greeting": "Hello, {{name}}",
@@ -932,5 +937,76 @@
     "notFoundTitle": "Page not found",
     "notFoundHelp": "The link may be outdated or moved",
     "goHome": "Go to Home"
+  },
+  "workers": {
+    "title": "Staff",
+    "count": "{{count}} people",
+    "countEmpty": "No staff yet",
+    "you": "(you)",
+    "add": "Add staff",
+    "searchPlaceholder": "Search name / username / phone",
+    "searchA11y": "Search staff",
+    "emptyTitle": "No staff accounts yet",
+    "emptyBody": "Give your workers an account and they can record feeding and sales in your ponds themselves.",
+    "searchEmptyTitle": "No staff found",
+    "searchEmptyBody": "Nobody matches “{{query}}”",
+    "role": {
+      "worker": "Worker",
+      "owner": "Owner"
+    },
+    "actions": {
+      "edit": "Edit details",
+      "editSub": "Name · username · phone · role",
+      "resetPassword": "Set a new password",
+      "resetPasswordSub": "For when a worker forgets theirs",
+      "remove": "Remove from the farm",
+      "removeSub": "This account can no longer sign in",
+      "selfNote": "This is your own account, so you cannot remove it or change your own role."
+    },
+    "form": {
+      "addTitle": "Add staff",
+      "editTitle": "Edit staff details",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "username": "Username (for signing in)",
+      "usernameHint": "a-z 0-9 . _ - only, no spaces",
+      "contact": "Phone number",
+      "email": "Email",
+      "password": "Initial password",
+      "passwordHint": "At least 8 characters, mixing upper and lower case (a-z A-Z 0-9)",
+      "role": "Role",
+      "roleHint": "Worker = records pond work · Owner = manages farms, feed, buyers and staff",
+      "roleSelfLocked": "You cannot change your own role"
+    },
+    "created": {
+      "title": "Staff added",
+      "body": "Pass the username and password to {{name}} — this password is not shown again.\nUsername: {{username}}"
+    },
+    "reset": {
+      "title": "Set a new password",
+      "body": "Set a new password for {{name}} without needing the old one",
+      "newPassword": "New password",
+      "hint": "At least 8 characters, mixing upper and lower case · remember to tell them",
+      "confirm": "Set password",
+      "doneTitle": "Password changed",
+      "doneBody": "Pass the new password to {{name}}"
+    },
+    "remove": {
+      "confirmTitle": "Remove {{name}} from the farm?",
+      "confirmBody": "This account can no longer sign in · everything they recorded stays",
+      "confirm": "Remove"
+    },
+    "err": {
+      "usernameRequired": "Enter a username",
+      "usernameCharset": "Use a-z 0-9 . _ - only",
+      "usernameTaken": "That username is taken — try another",
+      "firstNameRequired": "Enter a first name",
+      "email": "That email doesn't look right",
+      "contactRequired": "Enter a phone number",
+      "contactDigits": "Phone number must be 10 digits",
+      "saveTitle": "Could not save",
+      "resetTitle": "Could not set the password",
+      "removeTitle": "Could not remove"
+    }
   }
 }
