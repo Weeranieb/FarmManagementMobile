@@ -9,6 +9,10 @@ export type UserResponse = {
   lastName: string | null;
   userLevel: number;
   contactNumber: string;
+  /** When the current password was set. Null for accounts whose password
+   *  predates the backend's tracking column — render that as unknown, never as
+   *  a date. Not the same as `updatedAt`, which moves on any profile edit. */
+  passwordUpdatedAt: string | null;
   createdAt: string;
   createdBy: string;
   updatedAt: string;

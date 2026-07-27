@@ -4,6 +4,7 @@ import { Card, Pill, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
+import { fmt } from '@/utils/fmt';
 import { Avatar } from './components/Avatar';
 import { ChangePasswordSheet } from './components/ChangePasswordSheet';
 import { DiscardDialog } from './components/DiscardDialog';
@@ -18,6 +19,7 @@ export function AccountInfoView({
   errors,
   saving,
   canSave,
+  passwordUpdatedAt,
   setField,
   handleSave,
   handleBack,
@@ -34,6 +36,7 @@ export function AccountInfoView({
 
   const initial = (form.firstName?.[0] || form.username?.[0] || '–').toUpperCase();
   const displayName = `${form.firstName || '—'} ${form.lastName || ''}`.trim();
+  const passwordChangedOn = fmt.day(passwordUpdatedAt);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -174,7 +177,13 @@ export function AccountInfoView({
                 <Text
                   style={{ fontFamily: type.family, fontSize: 12, color: t.inkMute, marginTop: 2 }}
                 >
-                  {tx('profile.account.changePasswordSub', { date: '12 ก.พ. 2569' })}
+                  {/* Only claim a date when the server actually knows one —
+                      `passwordUpdatedAt` is null for accounts whose password
+                      predates the column, and `updatedAt` is not a substitute
+                      (it moves on any profile edit). */}
+                  {passwordChangedOn
+                    ? tx('profile.account.changePasswordSub', { date: passwordChangedOn })
+                    : tx('profile.account.changePasswordSubUnknown')}
                 </Text>
               </View>
               <Icon.chevR size={16} color={t.inkSoft} />

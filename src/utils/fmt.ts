@@ -8,6 +8,22 @@
 // one key through `useTranslation`.
 
 import i18n from '@/locale/i18n';
+import { TH_MONTH_NAMES_SHORT } from '@/locale/thaiDate';
+
+const EN_MONTHS_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 export const fmt = {
   num: (n: number | null | undefined): string => (n ?? 0).toLocaleString('en-US'),
@@ -25,6 +41,24 @@ export const fmt = {
     const rounded = Math.round(n);
     const sign = rounded < 0 ? '−' : '+';
     return `${sign}฿${Math.abs(rounded).toLocaleString('en-US')}`;
+  },
+  /**
+   * A day, in the current UI language — "27 ก.ค. 2569" / "27 Jul 2025".
+   *
+   * The rest of the app formats dates through `thaiDate`, which is Thai-only by
+   * design; that gap is still open. This exists for dates rendered inside
+   * already-translated copy, where a Thai month in an English sentence reads as
+   * a bug. Returns null for a missing or unparseable value so callers can fall
+   * back to language that doesn't claim a date.
+   */
+  day: (iso: string | null | undefined): string | null => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    if (i18n.language?.startsWith('th')) {
+      return `${d.getDate()} ${TH_MONTH_NAMES_SHORT[d.getMonth()]} ${d.getFullYear() + 543}`;
+    }
+    return `${d.getDate()} ${EN_MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
   },
 };
 

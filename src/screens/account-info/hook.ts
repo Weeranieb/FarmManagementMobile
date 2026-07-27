@@ -176,6 +176,9 @@ export function useAccountInfoForm() {
     saving,
     dirty,
     canSave,
+    // Raw ISO — the view formats it in the active language. Null on accounts
+    // created before the backend tracked this.
+    passwordUpdatedAt: user?.passwordUpdatedAt ?? null,
     setField,
     handleSave,
     handleBack,

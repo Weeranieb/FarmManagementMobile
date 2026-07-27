@@ -273,6 +273,7 @@
       },
       "changePassword": "Change password",
       "changePasswordSub": "Last updated {{date}}",
+      "changePasswordSubUnknown": "Set a new sign-in password",
       "discard": {
         "title": "Discard changes?",
         "body": "Unsaved changes will be lost.\nAre you sure?",
