@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { login, useAuthStore } from '@/features/auth';
 import { apiErrorMessage } from '@/shared/http';
 
 export function useLoginScreen() {
   const router = useRouter();
+  const { t: tx } = useTranslation();
   const setSession = useAuthStore((s) => s.setSession);
+  const signedOutReason = useAuthStore((s) => s.signedOutReason);
+  const acknowledgeSignedOut = useAuthStore((s) => s.acknowledgeSignedOut);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -14,16 +18,18 @@ export function useLoginScreen() {
 
   const handleLogin = async () => {
     if (!username || !password) {
-      Alert.alert('กรุณากรอกข้อมูล', 'ใส่ชื่อผู้ใช้และรหัสผ่าน');
+      Alert.alert(tx('auth.missing.title'), tx('auth.missing.body'));
       return;
     }
     setSubmitting(true);
     try {
       const res = await login({ username, password, rememberMe: true });
-      await setSession(res.accessToken, res.user);
+      // Keep the server's expiry so the next cold start can fail at the door
+      // instead of restoring a token it already knows is dead.
+      await setSession(res.accessToken, res.user, res.expiredAt);
       router.replace('/(app)/(tabs)/home');
     } catch (err) {
-      Alert.alert('เข้าสู่ระบบล้มเหลว', apiErrorMessage(err, 'เข้าสู่ระบบล้มเหลว'));
+      Alert.alert(tx('auth.failed'), apiErrorMessage(err, tx('auth.failed')));
     } finally {
       setSubmitting(false);
     }
@@ -36,5 +42,9 @@ export function useLoginScreen() {
     setPassword,
     submitting,
     handleLogin,
+    /** Set when the previous session ended by itself — shown as a notice, and
+     *  dismissible so it can't sit there forever once it's been read. */
+    signedOutReason,
+    dismissSignedOut: useCallback(() => acknowledgeSignedOut(), [acknowledgeSignedOut]),
   };
 }

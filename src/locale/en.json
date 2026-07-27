@@ -10,7 +10,17 @@
     "login": "Sign in",
     "forgot": "Forgot password?",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "loggingIn": "Signing in…",
+    "failed": "Sign-in failed",
+    "missing": {
+      "title": "Missing details",
+      "body": "Enter your username and password"
+    },
+    "expired": {
+      "title": "Session expired",
+      "body": "Please sign in again — anything you entered but hadn't submitted is still saved."
+    }
   },
   "tabs": {
     "home": "Home",
