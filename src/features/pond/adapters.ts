@@ -12,6 +12,8 @@ export type PondModel = {
   farmName: string;
   name: string;
   status: 'active' | 'maintenance';
+  /** Pond area in rai; null when never recorded. Only the edit form reads it. */
+  area: number | null;
   totalFish: number;
   fishTypes: string[];
   ageDays: number | null;
@@ -43,6 +45,7 @@ export function adaptPond(p: PondResponse): PondModel {
     farmName: '',
     name: p.name,
     status: (p.status === 'maintenance' ? 'maintenance' : 'active') as 'active' | 'maintenance',
+    area: p.area ?? null,
     totalFish: p.totalFish ?? 0,
     fishTypes: p.fishTypes ?? [],
     ageDays: p.ageDays,

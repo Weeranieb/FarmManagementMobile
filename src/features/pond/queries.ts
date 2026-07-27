@@ -3,6 +3,7 @@ import { useIsAuthenticated } from '@/features/auth';
 import { farmKeys } from '@/features/farm';
 import {
   createPonds,
+  deletePond,
   fillPond,
   getPond,
   listPondActivities,
@@ -10,9 +11,11 @@ import {
   listPonds,
   movePond,
   sellPond,
+  updatePond,
 } from './service';
 import type {
   CreatePondsRequest,
+  UpdatePondRequest,
   FillPondRequest,
   MovePondRequest,
   PondActivityModel,
@@ -158,6 +161,31 @@ export function useCreatePonds() {
       void qc.invalidateQueries({ queryKey: pondKeys.all() });
       // New ponds change the farm's `pondCount`, which the farms list renders
       // straight from the farm DTO.
+      void qc.invalidateQueries({ queryKey: farmKeys.all() });
+    },
+  });
+}
+
+export function useUpdatePond(pondId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdatePondRequest) => updatePond(pondId, body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: pondKeys.detail(pondId) });
+      void qc.invalidateQueries({ queryKey: pondKeys.all() });
+      // A status change re-derives the farm's own status server-side, and a
+      // rename shows up in the farm's pond list.
+      void qc.invalidateQueries({ queryKey: farmKeys.all() });
+    },
+  });
+}
+
+export function useDeletePond() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pondId: number) => deletePond(pondId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: pondKeys.all() });
       void qc.invalidateQueries({ queryKey: farmKeys.all() });
     },
   });

@@ -5,6 +5,8 @@ export type PondResponse = {
   farmId: number;
   name: string;
   status: 'active' | 'maintenance' | string;
+  /** Pond area in rai — `decimal` server-side, serialized as a number. */
+  area?: number | null;
   totalFish?: number | null;
   fishTypes: string[];
   ageDays: number | null;
@@ -175,4 +177,20 @@ export type CreatePondItem = {
 export type CreatePondsRequest = {
   farmId: number;
   ponds: CreatePondItem[];
+};
+
+/** Body for PUT /pond/:id. Mirrors `dto.UpdatePondBody`.
+ *
+ *  The server applies only non-zero / non-empty fields, so this is a partial
+ *  update — omit what shouldn't change. Renaming to a name another pond in the
+ *  same farm already uses is rejected with code 500071.
+ *
+ *  Note `status` is written straight to the row: it does NOT close an open
+ *  cycle the way sell/move `markToClose` does. Callers must not offer it as a
+ *  "finish this cycle" action. */
+export type UpdatePondRequest = {
+  farmId?: number;
+  name?: string;
+  status?: 'active' | 'maintenance';
+  area?: number;
 };

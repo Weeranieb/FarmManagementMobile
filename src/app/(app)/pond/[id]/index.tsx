@@ -23,6 +23,7 @@ export default function PondDetailRoute() {
         pondId={pondId}
         focusTab={focusTab}
         onBack={() => router.back()}
+        onDeleted={() => router.back()}
         onAction={(kind) => router.push(`/(app)/flows/${kind}?pondId=${pondId}`)}
         onOpenDailyLog={(target) =>
           router.push({

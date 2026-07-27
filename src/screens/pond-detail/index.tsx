@@ -12,10 +12,13 @@ type Props = {
   onAction?: (kind: 'fill' | 'move' | 'sell') => void;
   onOpenDailyLog?: (target: DailyLogTarget) => void;
   onOpenLedger?: () => void;
+  /** The pond was deleted — this screen is showing something that no longer
+   *  exists, so the route navigates away. */
+  onDeleted?: () => void;
   showHeader?: boolean;
 };
 
-export function PondDetailScreen({ pondId, focusTab, ...rest }: Props) {
-  const state = usePondDetailScreen(pondId, focusTab);
+export function PondDetailScreen({ pondId, focusTab, onDeleted, ...rest }: Props) {
+  const state = usePondDetailScreen(pondId, focusTab, onDeleted);
   return <PondDetailView pondId={pondId} {...state} {...rest} />;
 }

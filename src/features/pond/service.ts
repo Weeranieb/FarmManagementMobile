@@ -2,6 +2,7 @@ import { http } from '@/shared/http';
 import type {
   ActivityResponse,
   CreatePondsRequest,
+  UpdatePondRequest,
   FillPondRequest,
   MovePondRequest,
   PondCycleResponse,
@@ -15,6 +16,14 @@ export function listPonds(farmId?: number): Promise<PondResponse[]> {
 
 export function createPonds(body: CreatePondsRequest): Promise<unknown> {
   return http.post('/pond', body);
+}
+
+export function updatePond(id: number, body: UpdatePondRequest): Promise<unknown> {
+  return http.put(`/pond/${id}`, body);
+}
+
+export function deletePond(id: number): Promise<unknown> {
+  return http.delete(`/pond/${id}`);
 }
 
 export function getPond(id: number): Promise<PondResponse> {

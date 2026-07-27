@@ -601,6 +601,33 @@
       "loadFailed": "Could not load cycles",
       "loadFailedHelp": "Check your connection and try again",
       "retry": "Try again"
+    },
+    "actions": {
+      "title": "Manage pond",
+      "edit": "Edit pond",
+      "editSub": "Pond name · area",
+      "close": "Close the pond",
+      "closeSub": "Rest the pond — it drops out of the daily log",
+      "reopen": "Reopen the pond",
+      "reopenSub": "Back in the daily log",
+      "delete": "Delete the pond",
+      "deleteSub": "Remove it from the farm",
+      "hasFishNote": "This pond has fish — close its cycle by selling or moving them out first",
+      "hasHistoryNote": "This pond has recorded activity, so it cannot be deleted",
+      "deleteConfirmTitle": "Delete {{pond}}?",
+      "deleteConfirmBody": "The pond disappears from the farm · this cannot be undone from the app",
+      "closeConfirmTitle": "Close {{pond}}?",
+      "closeConfirmBody": "It leaves the daily log until you reopen it or fill fish in",
+      "updateFailed": "Could not save the changes",
+      "deleteFailed": "Could not delete the pond"
+    },
+    "edit": {
+      "title": "Edit pond",
+      "nameLabel": "Pond name",
+      "areaLabel": "Area (rai)",
+      "areaHint": "Optional",
+      "nameRequired": "Enter a pond name",
+      "areaNotNumber": "Area must be a number"
     }
   },
   "feed": {

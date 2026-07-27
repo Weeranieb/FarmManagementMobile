@@ -16,6 +16,8 @@ import { ActionPill } from './components/ActionPill';
 import { DailyFeedBody } from './components/DailyFeedBody';
 import { HistoryBody } from './components/HistoryBody';
 import { CycleBody } from './components/CycleBody';
+import { SheetPondActions } from './components/SheetPondActions';
+import { SheetPondEdit } from './components/SheetPondEdit';
 import type { PondDetailTab } from './hook';
 
 type Props = {
@@ -27,6 +29,17 @@ type Props = {
   tab: PondDetailTab;
   setTab: (t: PondDetailTab) => void;
   onPondOverflow: () => void;
+  canManage: boolean;
+  actionsOpen: boolean;
+  closeActions: () => void;
+  editOpen: boolean;
+  openEdit: () => void;
+  closeEdit: () => void;
+  submitEdit: (payload: { name: string; area?: number }) => void;
+  toggleStatus: () => void;
+  requestDelete: () => void;
+  hasHistory: boolean;
+  saving: boolean;
   refresh: () => Promise<void>;
   refreshing: boolean;
   onBack?: () => void;
@@ -45,6 +58,17 @@ export function PondDetailView({
   tab,
   setTab,
   onPondOverflow,
+  canManage,
+  actionsOpen,
+  closeActions,
+  editOpen,
+  openEdit,
+  closeEdit,
+  submitEdit,
+  toggleStatus,
+  requestDelete,
+  hasHistory,
+  saving,
   refresh,
   refreshing,
   onBack,
@@ -109,22 +133,26 @@ export function PondDetailView({
           subtitle={farmSubtitle ? displayFarmName(farmSubtitle) : ''}
           leading={onBack ? <BackBtn onBack={onBack} /> : null}
           trailing={
-            <Tappable
-              onPress={onPondOverflow}
-              accessibilityRole="button"
-              accessibilityLabel={tx('common.more')}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: radii.md,
-                borderWidth: 1,
-                borderColor: t.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon.more size={18} color={t.ink} />
-            </Tappable>
+            // Every action behind the menu is client-admin-only, so a worker
+            // gets no button rather than an empty sheet.
+            canManage ? (
+              <Tappable
+                onPress={onPondOverflow}
+                accessibilityRole="button"
+                accessibilityLabel={tx('common.more')}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: radii.md,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon.more size={18} color={t.ink} />
+              </Tappable>
+            ) : null
           }
         />
       ) : null}
@@ -226,6 +254,23 @@ export function PondDetailView({
           <CycleBody pondId={pond.id} />
         )}
       </ScrollView>
+
+      <SheetPondActions
+        visible={actionsOpen}
+        pond={pond}
+        hasHistory={hasHistory}
+        onClose={closeActions}
+        onEdit={openEdit}
+        onToggleStatus={toggleStatus}
+        onDelete={requestDelete}
+      />
+      <SheetPondEdit
+        visible={editOpen}
+        pond={pond}
+        saving={saving}
+        onClose={closeEdit}
+        onSubmit={submitEdit}
+      />
     </View>
   );
 }
