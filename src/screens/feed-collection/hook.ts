@@ -50,6 +50,9 @@ export type FeedCollectionState = {
   isAdmin: boolean;
   refreshing: boolean;
   onRefresh: () => Promise<void>;
+  /** The list failed to load — the view shows an error + retry rather than the
+   *  "no feed yet" empty state. */
+  isError: boolean;
   searchOpen: boolean;
   query: string;
   onOpenSearch: () => void;
@@ -91,7 +94,7 @@ export function useFeedCollectionScreen(): FeedCollectionState {
   /** Admin actions (add/edit/update-price) require `userLevel >= ClientAdmin` — matches web's gate in `useFeedCollectionsPage`. */
   const isAdmin = isClientAdmin(user);
 
-  const { data: feeds } = useFeedCollectionsData();
+  const { data: feeds, isError } = useFeedCollectionsData();
 
   const [refreshing, setRefreshing] = useState(false);
   const { searchOpen, query, onOpenSearch, onCloseSearch, onChangeQuery } = useSearchQuery();
@@ -262,6 +265,7 @@ export function useFeedCollectionScreen(): FeedCollectionState {
     isAdmin,
     refreshing,
     onRefresh,
+    isError,
     searchOpen,
     query,
     onOpenSearch,

@@ -882,5 +882,17 @@
     "kgPerFishN": "{{value}} kg/fish",
     "perKgValue": "{{value}}/kg",
     "extraCostsCount": "Additional costs ({{count}} items)"
+  },
+  "error": {
+    "loadTitle": "Couldn't load",
+    "loadHelp": "Check your connection and try again",
+    "offlineHelp": "You're offline — this reloads once you're back online",
+    "retry": "Try again",
+    "crashTitle": "Something went wrong",
+    "crashHelp": "An unexpected error occurred · your unsaved entries are still on this phone",
+    "crashReload": "Reload the screen",
+    "notFoundTitle": "Page not found",
+    "notFoundHelp": "The link may be outdated or moved",
+    "goHome": "Go to Home"
   }
 }

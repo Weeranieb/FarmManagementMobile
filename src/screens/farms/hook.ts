@@ -14,6 +14,9 @@ export type PondsTarget = { id: number; name: string };
 export type FarmsScreenState = {
   farms: FarmModel[];
   filteredFarms: FarmModel[];
+  /** The farm list failed to load — the view shows an error + retry instead of
+   *  an empty list, which would read as "this client has no farms". */
+  isError: boolean;
   refreshing: boolean;
   onRefresh: () => Promise<void>;
   searchOpen: boolean;
@@ -43,7 +46,7 @@ export function useFarmsScreen(options?: { autoOpenCreate?: boolean }): FarmsScr
   // `activePonds` and `pondCount` come straight from the farm-list DTO, which is
   // refetched whenever a fill/move/sell mutation invalidates `farmKeys.all()`.
   // No per-farm `/pond` rollup needed — the list carries everything this screen shows.
-  const { data: farms } = useFarmsData();
+  const { data: farms, isError } = useFarmsData();
 
   const user = useAuthStore((s) => s.user);
   const clientId = user?.clientId ?? null;
@@ -134,6 +137,7 @@ export function useFarmsScreen(options?: { autoOpenCreate?: boolean }): FarmsScr
   return {
     farms,
     filteredFarms,
+    isError,
     refreshing,
     onRefresh,
     searchOpen,

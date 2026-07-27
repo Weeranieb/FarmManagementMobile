@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
-import { Pill, PillText, Tappable } from '@/components/ui';
+import { ErrorState, Pill, PillText, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row } from '@/components/layout/Row';
 import { SheetPriceEntry } from '@/screens/feed-collection/components/SheetPriceEntry';
@@ -22,6 +22,8 @@ import type { FeedPriceHistoryState } from './hook';
 export function FeedPriceHistoryView({
   feed,
   feedNotFound,
+  isError,
+  retry,
   isAdmin,
   isLoading,
   chartData,
@@ -83,6 +85,9 @@ export function FeedPriceHistoryView({
       >
         {showSkeleton ? (
           <LoadingSkeleton />
+        ) : isError && !current ? (
+          // A failed history fetch is not "this feed has no prices yet".
+          <ErrorState onRetry={retry} />
         ) : feedNotFound || !feed || !current ? (
           <NotFoundOrEmpty
             isEmptyForKnownFeed={!feedNotFound && !current}

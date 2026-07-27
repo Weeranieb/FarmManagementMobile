@@ -2,7 +2,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
-import { SearchHeader, TopBar, Tappable } from '@/components/ui';
+import { ErrorState, SearchHeader, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Col, Row } from '@/components/layout/Row';
 import { SheetPondsForm } from '@/components/domain/SheetPondsForm';
@@ -33,6 +33,8 @@ export function FarmPondsView({
   onOpenSearch,
   onCloseSearch,
   onChangeQuery,
+  isError,
+  retry,
   canCreate,
   addPondsOpen,
   openAddPonds,
@@ -52,7 +54,9 @@ export function FarmPondsView({
   const showSuggestions = searchOpen && trimmed.length === 0;
   const showResultsCount = searchOpen && trimmed.length > 0;
   // The farm itself has no ponds (not just none matching the active filter).
-  const showNoPonds = !searchOpen && ponds.length === 0;
+  const showNoPonds = !searchOpen && ponds.length === 0 && !isError;
+  // An error must not masquerade as "no ponds in this farm".
+  const showError = !searchOpen && isError && ponds.length === 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -142,7 +146,9 @@ export function FarmPondsView({
 
         {showSuggestions ? <SearchSuggestions onPick={onChangeQuery} /> : null}
 
-        {showEmptyState ? (
+        {showError ? (
+          <ErrorState onRetry={retry} />
+        ) : showEmptyState ? (
           <SearchEmptyState
             primary={tx('farmPonds.searchEmptyTitle', { query: trimmed })}
             helper={tx('farmPonds.searchEmptyHelper')}

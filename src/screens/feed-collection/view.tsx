@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
-import { SearchHeader, TopBar, Tappable } from '@/components/ui';
+import { ErrorState, SearchHeader, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { FeedCard } from './components/FeedCard';
 import { FeedEmptyState } from './components/FeedEmptyState';
@@ -20,6 +20,7 @@ type Props = FeedCollectionState & { showHeader?: boolean };
 
 export function FeedCollectionView({
   feeds,
+  isError,
   filtered,
   isAdmin,
   refreshing,
@@ -52,7 +53,9 @@ export function FeedCollectionView({
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const trimmed = query.trim();
-  const isEmpty = feeds.length === 0;
+  const isEmpty = feeds.length === 0 && !isError;
+  // A failed fetch must not render as "no feed in the collection yet".
+  const showError = isError && feeds.length === 0;
   const showSearchEmpty = searchOpen && trimmed.length > 0 && filtered.length === 0;
   const showSuggestions = searchOpen && trimmed.length === 0;
   const showResultCount = searchOpen && trimmed.length > 0 && filtered.length > 0;
@@ -128,7 +131,7 @@ export function FeedCollectionView({
         )
       ) : null}
 
-      {isEmpty || showSearchEmpty ? (
+      {showError || isEmpty || showSearchEmpty ? (
         <ScrollView
           delaysContentTouches={false}
           style={{ flex: 1 }}
@@ -138,7 +141,9 @@ export function FeedCollectionView({
           refreshControl={refreshControl}
         >
           {listHeader}
-          {isEmpty ? (
+          {showError ? (
+            <ErrorState onRetry={onRefresh} />
+          ) : isEmpty ? (
             <FeedEmptyState isAdmin={isAdmin} onAdd={openAdd} />
           ) : (
             <SearchEmpty query={trimmed} />

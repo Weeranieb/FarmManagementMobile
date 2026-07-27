@@ -3,7 +3,14 @@ import { Alert } from 'react-native';
 import { useFarmsData } from '@/features/farm';
 import { isClientAdmin, useAuthStore } from '@/features/auth';
 import { FISH_TH } from '@/utils/fmt';
-import { useCreatePonds, usePondsData, type CreatePondItem, type PondModel } from '@/features/pond';
+import {
+  pondKeys,
+  useCreatePonds,
+  usePondsData,
+  type CreatePondItem,
+  type PondModel,
+} from '@/features/pond';
+import { useQueryClient } from '@tanstack/react-query';
 import { createMasterDataErrorMessage } from '@/components/domain/createErrors';
 import { useSearchQuery } from '@/hooks/useSearchQuery';
 import i18n from '@/locale/i18n';
@@ -24,6 +31,10 @@ export type FarmPondsScreenState = {
   onOpenSearch: () => void;
   onCloseSearch: () => void;
   onChangeQuery: (s: string) => void;
+  /** The pond list failed to load — the view shows an error + retry rather than
+   *  an empty list, which would read as "this farm has no ponds". */
+  isError: boolean;
+  retry: () => Promise<void>;
   /** Only a client admin may add ponds — the server enforces it, so hide the
    *  affordance instead of surfacing a 403. */
   canCreate: boolean;
@@ -35,12 +46,13 @@ export type FarmPondsScreenState = {
 };
 
 export function useFarmPondsScreen(farmId: number): FarmPondsScreenState {
+  const queryClient = useQueryClient();
   const { data: farmsRaw } = useFarmsData();
   const farms = Array.isArray(farmsRaw) ? farmsRaw : [];
   const farm = farms.find((f) => f.id === farmId);
   // Raw name — the view prefixes it for display via `displayFarmName`.
   const farmTitle = farm?.name ?? '';
-  const { data: pondsRaw } = usePondsData(farmId);
+  const { data: pondsRaw, isError } = usePondsData(farmId);
   const ponds = useMemo(() => (Array.isArray(pondsRaw) ? pondsRaw : []), [pondsRaw]);
 
   const [filter, setFilter] = useState<PondFilter>('all');
@@ -75,6 +87,10 @@ export function useFarmPondsScreen(farmId: number): FarmPondsScreenState {
     },
     [canCreate, farmId, createPonds],
   );
+
+  const retry = useCallback(async () => {
+    await queryClient.refetchQueries({ queryKey: pondKeys.all() });
+  }, [queryClient]);
 
   const counts = useMemo<PondCounts>(
     () => ({
@@ -121,6 +137,8 @@ export function useFarmPondsScreen(farmId: number): FarmPondsScreenState {
     onOpenSearch,
     onCloseSearch,
     onChangeQuery,
+    isError,
+    retry,
     canCreate,
     addPondsOpen,
     openAddPonds,

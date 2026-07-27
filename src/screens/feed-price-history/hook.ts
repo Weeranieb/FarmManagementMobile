@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { isClientAdmin, useAuthStore } from '@/features/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import {
+  feedCollectionKeys,
   useAddFeedPriceHistory,
   useDeleteFeedPriceHistory,
   useFeedCollectionsData,
@@ -37,6 +39,10 @@ export type FeedPriceHistoryState = {
   /** Top of the feed-collection list — used to render the header. `null` while resolving. */
   feed: FeedCollectionModel | null;
   feedNotFound: boolean;
+  /** The price history failed to load — distinct from "this feed has no prices
+   *  yet", which invites logging one. */
+  isError: boolean;
+  retry: () => Promise<void>;
   isAdmin: boolean;
   isLoading: boolean;
 
@@ -99,14 +105,20 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
   /** Editing (rows, overflow, sheets) requires `userLevel >= ClientAdmin` — matches web's gate. */
   const isAdmin = isClientAdmin(user);
 
+  const queryClient = useQueryClient();
   const { data: feeds } = useFeedCollectionsData();
-  const { data: history, isLoading } = useFeedPriceHistoryData(feedCollectionId);
+  const { data: history, isLoading, isError } = useFeedPriceHistoryData(feedCollectionId);
 
   const feed = useMemo(
     () => feeds.find((f) => f.id === feedCollectionId) ?? null,
     [feeds, feedCollectionId],
   );
   const feedNotFound = !feed;
+  const retry = useCallback(async () => {
+    await queryClient.refetchQueries({
+      queryKey: feedCollectionKeys.priceHistory(feedCollectionId),
+    });
+  }, [queryClient, feedCollectionId]);
 
   const [range, setRange] = useState<RangeId>('6m');
   const [tip, setTip] = useState<number | null>(null);
@@ -255,6 +267,8 @@ export function useFeedPriceHistoryScreen(feedCollectionId: number): FeedPriceHi
   return {
     feed,
     feedNotFound,
+    isError,
+    retry,
     isAdmin,
     isLoading,
     chartData,

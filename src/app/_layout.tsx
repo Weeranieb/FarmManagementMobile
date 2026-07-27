@@ -28,6 +28,7 @@ import { restoreSavedLanguage } from '@/screens/language';
 import { mmkvPersistStorage } from '@/lib/mmkv';
 import { startNetworkWatcher } from '@/lib/network';
 import { OfflineBanner } from '@/components/ui';
+import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -159,7 +160,9 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             {appReady ? (
               <RootShell onLayout={handleContentLayout}>
-                <AuthGate />
+                <AppErrorBoundary>
+                  <AuthGate />
+                </AppErrorBoundary>
               </RootShell>
             ) : null}
           </GestureHandlerRootView>

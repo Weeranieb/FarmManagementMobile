@@ -2,7 +2,7 @@ import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
-import { SearchHeader, TopBar, Tappable } from '@/components/ui';
+import { ErrorState, SearchHeader, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Col, Row } from '@/components/layout/Row';
 import { SheetFarmForm } from '@/components/domain/SheetFarmForm';
@@ -18,6 +18,7 @@ type Props = FarmsScreenState & {
 export function FarmsView({
   farms,
   filteredFarms,
+  isError,
   refreshing,
   onRefresh,
   showHeader = true,
@@ -44,7 +45,10 @@ export function FarmsView({
   const showEmptyState = searchOpen && trimmed.length > 0 && filteredFarms.length === 0;
   // No farms at all (not a search miss) — the list has nothing to show and the
   // user's only next step is creating one.
-  const showNoFarms = !searchOpen && farms.length === 0;
+  const showNoFarms = !searchOpen && farms.length === 0 && !isError;
+  // Error wins over the empty state: an empty list here would claim the client
+  // has no farms when we simply couldn't fetch them.
+  const showError = !searchOpen && isError && farms.length === 0;
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -114,7 +118,9 @@ export function FarmsView({
           />
         }
       >
-        {showEmptyState ? (
+        {showError ? (
+          <ErrorState onRetry={onRefresh} />
+        ) : showEmptyState ? (
           <SearchEmptyState
             query={trimmed}
             primary={tx('farms.searchEmptyTitle', { query: trimmed })}
