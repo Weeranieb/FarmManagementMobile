@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
 import { Tappable } from '@/components/ui';
-import type { ActivityEventModel } from '@/features/activity';
+import type { ActivityEventModel, ActivityRecordDetail } from '@/features/activity';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import type { ThemePalette } from '@/theme/tokens';
@@ -19,15 +19,18 @@ export type ActivityItem = {
   text: string;
   by?: string;
   extra?: string;
-  /** Source record reference — used to deep-link when row is tapped. */
+  /** Source record reference — identifies what the row stands for. */
   recordType?: 'dailyLog' | 'fill' | 'move' | 'sell' | 'buy';
   recordId?: number;
+  /** Read-only facts behind the row — powers the detail sheet on tap. */
+  detail?: ActivityRecordDetail;
   /** When true, render with brand tint + left stripe (fresh save). */
   fresh?: boolean;
 };
 
 /** Map a feed event model to the row shape used by Home + activity history. */
 export function toActivityItem(e: ActivityEventModel, me?: string | null): ActivityItem {
+  const by = e.byUsername === me ? 'คุณ' : e.byName;
   return {
     id: String(e.id),
     kind: e.kind,
@@ -35,10 +38,11 @@ export function toActivityItem(e: ActivityEventModel, me?: string | null): Activ
     pond: e.pondLabel,
     farm: e.farmLabel,
     text: e.text,
-    by: e.byUsername === me ? 'คุณ' : e.byName,
+    by,
     extra: e.merchant,
     recordType: e.kind,
     recordId: e.id,
+    detail: { ...e.detail, by },
   };
 }
 
