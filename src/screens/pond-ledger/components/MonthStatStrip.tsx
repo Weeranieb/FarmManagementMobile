@@ -1,4 +1,5 @@
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { fmtCell } from '../ui';
@@ -12,6 +13,7 @@ type Props = {
 
 /** Centered month roll-up under the month nav: logged days / feed kg / deaths. */
 export function MonthStatStrip({ loggedDays, denom, feedKg, death }: Props) {
+  const { t: tx } = useTranslation();
   const { t } = useTheme();
   return (
     <View
@@ -25,9 +27,23 @@ export function MonthStatStrip({ loggedDays, denom, feedKg, death }: Props) {
         paddingBottom: 8,
       }}
     >
-      <MiniStat label="บันทึก" value={`${loggedDays}`} unit={`/ ${denom} วัน`} />
-      <MiniStat label="อาหารรวม" value={fmtCell(feedKg) ?? '0'} unit="กก." dot={t.move} />
-      <MiniStat label="ตายรวม" value={`${death}`} unit="ตัว" dot={t.warn} />
+      <MiniStat
+        label={tx('pondLedger.stat.logged')}
+        value={`${loggedDays}`}
+        unit={tx('pondLedger.stat.loggedOf', { total: denom })}
+      />
+      <MiniStat
+        label={tx('pondLedger.stat.feedTotal')}
+        value={fmtCell(feedKg) ?? '0'}
+        unit={tx('unit.kg')}
+        dot={t.move}
+      />
+      <MiniStat
+        label={tx('pondLedger.stat.deathTotal')}
+        value={`${death}`}
+        unit={tx('unit.fish')}
+        dot={t.warn}
+      />
     </View>
   );
 }

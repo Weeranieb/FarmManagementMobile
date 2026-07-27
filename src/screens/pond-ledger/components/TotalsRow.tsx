@@ -1,4 +1,5 @@
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { DAY_W, LEDGER_LEAVES, colWash, fmtCell } from '../ui';
@@ -9,6 +10,7 @@ type Props = {
 
 /** Month footer — Σ per column, anchored with a heavier top rule. */
 export function TotalsRow({ totals }: Props) {
+  const { t: tx } = useTranslation();
   const { t, mode } = useTheme();
   return (
     <View
@@ -22,7 +24,11 @@ export function TotalsRow({ totals }: Props) {
       }}
     >
       <View style={{ width: DAY_W, alignItems: 'center', justifyContent: 'center', backgroundColor: t.surfaceAlt }}>
-        <Text style={{ fontSize: 11, lineHeight: 16, fontFamily: type.familyBold, color: t.inkSoft }}>รวม</Text>
+        <Text
+          style={{ fontSize: 11, lineHeight: 16, fontFamily: type.familyBold, color: t.inkSoft }}
+        >
+          {tx('daily.total')}
+        </Text>
       </View>
       {LEDGER_LEAVES.map((l) => (
         <View

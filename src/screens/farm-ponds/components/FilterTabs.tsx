@@ -1,15 +1,15 @@
 import { ScrollView, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Tappable } from '@/components/ui';
 import type { PondCounts, PondFilter } from '../hook';
 
-type Item = { id: PondFilter; label: string };
-
-const ITEMS: Item[] = [
-  { id: 'all', label: 'ทั้งหมด' },
-  { id: 'active', label: 'ใช้งาน' },
-  { id: 'maintenance', label: 'ปิดบ่อ' },
+/** Label keys resolved inside the component so a language switch re-renders. */
+const ITEMS: { id: PondFilter; labelKey: string }[] = [
+  { id: 'all', labelKey: 'common.all' },
+  { id: 'active', labelKey: 'pond.active' },
+  { id: 'maintenance', labelKey: 'pond.maintenance' },
 ];
 
 type Props = {
@@ -20,6 +20,7 @@ type Props = {
 
 export function FilterTabs({ filter, counts, onChange }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <ScrollView
       delaysContentTouches={false}
@@ -55,7 +56,7 @@ export function FilterTabs({ filter, counts, onChange }: Props) {
                 color: selected ? t.bg : t.inkSoft,
               }}
             >
-              {it.label}
+              {tx(it.labelKey)}
             </Text>
             <Text
               style={{

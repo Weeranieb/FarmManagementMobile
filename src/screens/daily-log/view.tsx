@@ -8,6 +8,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { FarmModel } from '@/features/farm';
 import { AppBar } from './components/AppBar';
@@ -34,26 +35,28 @@ import {
   thMonthAbbr,
 } from './constants';
 import type { SaveResult, UseDailyLogV6 } from './hook';
+import i18n from '@/locale/i18n';
+import { displayFarmName } from '@/utils/fmt';
 
 /** Offline copy — the entry is on disk (features/daily-log/drafts.ts), so say so
  *  instead of the bare "บันทึกไม่สำเร็จ" that made users retype the day. */
-const OFFLINE_SAVE_MESSAGE = 'ไม่มีสัญญาณ — ข้อมูลถูกเก็บไว้ในเครื่องแล้ว ส่งอีกครั้งเมื่อมีสัญญาณ';
+const offlineSaveMessage = () => i18n.t('offlineSave.kept');
 
 function formatSaveError(result: SaveResult): string {
   // Nothing reached the server: this isn't a rejected save, it's an unsent one.
   if (result.offline) {
-    return OFFLINE_SAVE_MESSAGE;
+    return offlineSaveMessage();
   }
   // Prefer the backend's wrapped detail when present — it names the actual
   // missing field. Fall back to a code-specific hint, then to the generic
   // network copy.
   if (result.errorDetails) {
-    return `บันทึกไม่สำเร็จ — ${result.errorDetails}`;
+    return i18n.t('daily.saveFailedDetail', { detail: result.errorDetails });
   }
   if (result.errorCode === '500010') {
-    return 'บันทึกไม่สำเร็จ — บ่อนี้ยังไม่ได้ตั้งค่าชนิดอาหาร';
+    return i18n.t('daily.saveFailedNoFeed');
   }
-  return 'บันทึกไม่สำเร็จ — ตรวจสอบสัญญาณแล้วลองอีกครั้ง';
+  return i18n.t('daily.saveFailedRetry');
 }
 
 type Pending =
@@ -90,6 +93,7 @@ export function DailyLogView({
   bottomInset = 0,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
 
   const {
     ponds,
@@ -433,7 +437,7 @@ export function DailyLogView({
     // dialog stays open with an inline error so they can fix the value
     // before navigating.
     if (monthInvalidCount > 0) {
-      setSaveError('แก้ไขค่าที่ผิดเงื่อนไขก่อนบันทึก');
+      setSaveError(tx('daily.fixInvalid'));
       return;
     }
     const p = pending;
@@ -445,7 +449,7 @@ export function DailyLogView({
     } else {
       setSaveError(formatSaveError(result));
     }
-  }, [pending, monthInvalidCount, saveAll, dispatchPending, saveToast]);
+  }, [pending, monthInvalidCount, saveAll, dispatchPending, saveToast, tx]);
 
   // Non-blocking save: close the sheet immediately and report the server
   // round-trip through the status toast (saving → success / error). Pessimistic
@@ -464,7 +468,7 @@ export function DailyLogView({
             status: 'error',
             days,
             failedCount: result.failedCount,
-            message: result.offline ? OFFLINE_SAVE_MESSAGE : undefined,
+            message: result.offline ? offlineSaveMessage() : undefined,
           },
     );
   }, [saveToast, monthDaysCount, saveAll]);
@@ -475,7 +479,7 @@ export function DailyLogView({
     () =>
       farms.map((f) => {
         const raw = f.name?.trim() ?? '';
-        const display = raw ? (raw.startsWith('ฟาร์ม') ? raw : `ฟาร์ม ${raw}`) : 'ฟาร์ม';
+        const display = displayFarmName(raw);
         return {
           id: f.id,
           name: display,

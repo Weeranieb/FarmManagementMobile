@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFarmsData } from '@/features/farm';
 import { usePondData, type PondModel } from '@/features/pond';
+import i18n from '@/locale/i18n';
 
 export type PondDetailTab = 'feed' | 'history' | 'cycles';
 
@@ -33,7 +34,7 @@ export function usePondDetailScreen(pondId: number, focusTab?: PondDetailTab | n
     '';
 
   const onPondOverflow = () => {
-    Alert.alert('เมนู', 'ฟีเจอร์นี้จะเปิดใช้งานเร็วๆ นี้');
+    Alert.alert(i18n.t('pondDetail.menu'), i18n.t('pondDetail.comingSoon'));
   };
 
   // Pull-to-refresh: invalidating ['pond', pondId] prefix-matches both the

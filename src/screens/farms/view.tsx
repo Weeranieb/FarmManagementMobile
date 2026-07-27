@@ -1,4 +1,5 @@
 import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { SearchHeader, TopBar, Tappable } from '@/components/ui';
@@ -38,6 +39,7 @@ export function FarmsView({
   creatingPonds,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const trimmed = query.trim();
   const showEmptyState = searchOpen && trimmed.length > 0 && filteredFarms.length === 0;
   // No farms at all (not a search miss) — the list has nothing to show and the
@@ -52,18 +54,18 @@ export function FarmsView({
             value={query}
             onChangeText={onChangeQuery}
             onCancel={onCloseSearch}
-            placeholder="ค้นหาฟาร์ม"
+            placeholder={tx('farms.searchPlaceholder')}
           />
         ) : (
           <TopBar
-            title="ฟาร์มของฉัน"
-            subtitle={`${farms.length} ฟาร์ม`}
+            title={tx('farms.title')}
+            subtitle={tx('farms.count', { count: farms.length })}
             trailing={
               <Row gap={8} align="center">
                 <Tappable
                   onPress={onOpenSearch}
                   accessibilityRole="button"
-                  accessibilityLabel="ค้นหาฟาร์ม"
+                  accessibilityLabel={tx('farms.searchPlaceholder')}
                   style={{
                     width: 40,
                     height: 40,
@@ -80,7 +82,7 @@ export function FarmsView({
                   <Tappable
                     onPress={openCreateFarm}
                     accessibilityRole="button"
-                    accessibilityLabel="สร้างฟาร์ม"
+                    accessibilityLabel={tx('farms.createFarm')}
                     style={{
                       width: 40,
                       height: 40,
@@ -115,8 +117,8 @@ export function FarmsView({
         {showEmptyState ? (
           <SearchEmptyState
             query={trimmed}
-            primary={`ไม่พบฟาร์มที่ตรงกับ "${trimmed}"`}
-            helper="ลองค้นด้วยชื่อฟาร์ม"
+            primary={tx('farms.searchEmptyTitle', { query: trimmed })}
+            helper={tx('farms.searchEmptyHelper')}
           />
         ) : showNoFarms ? (
           <NoFarmsState canCreate={canCreate} onCreate={openCreateFarm} />
@@ -151,6 +153,7 @@ export function FarmsView({
 /** Zero farms — for a new client this is the first screen with anything to do. */
 function NoFarmsState({ canCreate, onCreate }: { canCreate: boolean; onCreate: () => void }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ alignItems: 'center', paddingTop: 56, paddingHorizontal: 32, gap: 12 }}>
       <View
@@ -173,7 +176,7 @@ function NoFarmsState({ canCreate, onCreate }: { canCreate: boolean; onCreate: (
           textAlign: 'center',
         }}
       >
-        ยังไม่มีฟาร์ม
+        {tx('farms.noFarms.title')}
       </Text>
       <Text
         style={{
@@ -184,9 +187,7 @@ function NoFarmsState({ canCreate, onCreate }: { canCreate: boolean; onCreate: (
           lineHeight: 20,
         }}
       >
-        {canCreate
-          ? 'สร้างฟาร์มแรก แล้วเพิ่มบ่อเข้าไป จากนั้นเติมปลาเพื่อเริ่มบันทึกประจำวัน'
-          : 'ให้เจ้าของฟาร์มเพิ่มฟาร์มและบ่อให้ก่อน จึงจะเริ่มบันทึกได้'}
+        {canCreate ? tx('farms.noFarms.adminHelp') : tx('farms.noFarms.workerHelp')}
       </Text>
       {canCreate ? (
         <Tappable
@@ -206,7 +207,7 @@ function NoFarmsState({ canCreate, onCreate }: { canCreate: boolean; onCreate: (
         >
           <Icon.plus size={18} color="#fff" stroke={2.2} />
           <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-            สร้างฟาร์ม
+            {tx('farms.createFarm')}
           </Text>
         </Tappable>
       ) : null}

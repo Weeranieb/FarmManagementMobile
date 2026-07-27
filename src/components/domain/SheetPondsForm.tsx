@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
@@ -55,6 +56,7 @@ type Props = {
  */
 export function SheetPondsForm({ visible, farmName, saving = false, onClose, onSubmit }: Props) {
   const { t, mode } = useTheme();
+  const { t: tx } = useTranslation();
   const [rows, setRows] = useState<PondRow[]>([BLANK_ROW]);
   const [submitted, setSubmitted] = useState(false);
 
@@ -103,11 +105,11 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
 
   const problem =
     named.length === 0
-      ? 'ใส่ชื่อบ่ออย่างน้อย 1 บ่อ'
+      ? tx('sheet.ponds.needOneName')
       : duplicateIndexes.size > 0
-        ? 'ชื่อบ่อซ้ำกัน — แก้ให้ไม่ซ้ำก่อนบันทึก'
+        ? tx('sheet.ponds.duplicate')
         : badAreaIndexes.size > 0
-          ? 'พื้นที่ต้องเป็นตัวเลข'
+          ? tx('sheet.ponds.areaNotNumber')
           : null;
 
   const handleSubmit = () => {
@@ -134,7 +136,7 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
               numberOfLines={1}
               style={{ fontFamily: type.familyBold, fontSize: type.sizes.lg, color: t.ink }}
             >
-              เพิ่มบ่อ
+              {tx('sheet.ponds.title')}
             </Text>
             <Text
               numberOfLines={1}
@@ -145,14 +147,14 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
                 marginTop: 2,
               }}
             >
-              {`เข้าฟาร์ม ${farmName}`}
+              {tx('sheet.ponds.intoFarm', { farm: farmName })}
             </Text>
           </View>
           <Tappable
             onPress={onClose}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="ปิด"
+            accessibilityLabel={tx('common.close')}
             style={{
               width: 40,
               height: 40,
@@ -170,10 +172,10 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
 
       <Row gap={space[2]} style={{ paddingHorizontal: space[5], paddingBottom: 6 }} align="center">
         <Text style={{ flex: 1, fontSize: 12, fontFamily: type.familySemi, color: t.inkSoft }}>
-          ชื่อบ่อ
+          {tx('sheet.ponds.nameHeader')}
         </Text>
         <Text style={{ width: 104, fontSize: 12, fontFamily: type.familySemi, color: t.inkSoft }}>
-          พื้นที่ (ไร่)
+          {tx('sheet.ponds.areaHeader')}
         </Text>
         {rows.length > 1 ? <View style={{ width: 36 }} /> : null}
       </Row>
@@ -192,7 +194,7 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
                 <Input
                   value={row.name}
                   onChangeText={(s) => setRow(index, { name: s })}
-                  placeholder={`บ่อที่ ${index + 1}`}
+                  placeholder={tx('sheet.ponds.rowPlaceholder', { n: index + 1 })}
                   maxLength={POND_NAME_MAX}
                   autoCapitalize="none"
                   containerStyle={{
@@ -217,7 +219,7 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
                 <Tappable
                   onPress={() => removeRow(index)}
                   accessibilityRole="button"
-                  accessibilityLabel={`ลบแถวบ่อที่ ${index + 1}`}
+                  accessibilityLabel={tx('sheet.ponds.removeRow', { n: index + 1 })}
                   hitSlop={6}
                   style={{
                     width: 36,
@@ -252,7 +254,7 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
         >
           <Icon.plus size={16} color={t.brandInk} />
           <Text style={{ color: t.brandInk, fontFamily: type.familySemi, fontSize: 14 }}>
-            เพิ่มอีกบ่อ
+            {tx('sheet.ponds.addAnother')}
           </Text>
         </Tappable>
 
@@ -292,7 +294,7 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
               fontFamily: type.family,
             }}
           >
-            บ่อใหม่จะเป็นสถานะปิดบ่อ จนกว่าจะเติมปลาเข้าบ่อ
+            {tx('sheet.ponds.maintenanceNote')}
           </Text>
         </Row>
       </View>
@@ -312,7 +314,9 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>ยกเลิก</Text>
+            <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>
+              {tx('common.cancel')}
+            </Text>
           </Tappable>
           <Tappable
             onPress={handleSubmit}
@@ -329,7 +333,11 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
             }}
           >
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-              {saving ? 'กำลังเพิ่ม…' : named.length > 1 ? `เพิ่ม ${named.length} บ่อ` : 'เพิ่มบ่อ'}
+              {saving
+                ? tx('sheet.ponds.submitting')
+                : named.length > 1
+                  ? tx('sheet.ponds.submitN', { count: named.length })
+                  : tx('sheet.ponds.title')}
             </Text>
           </Tappable>
         </Row>

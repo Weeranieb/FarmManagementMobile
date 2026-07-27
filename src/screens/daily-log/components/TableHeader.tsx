@@ -1,4 +1,5 @@
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { CELL_W, GROUP_LIGHT, NAME_W, PELLET_CELL_W } from '../constants';
@@ -83,6 +84,7 @@ function LeafCell({ w, label }: { w: number; label: string }) {
 
 export function TableHeader() {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
 
   return (
     <View
@@ -114,7 +116,7 @@ export function TableHeader() {
               textTransform: 'uppercase',
             }}
           >
-            บ่อ
+            {tx('daily.pondCol')}
           </Text>
         </View>
         <GroupBand w={PELLET_CELL_W * 2} {...GROUP_LIGHT.pellet} />
@@ -132,11 +134,11 @@ export function TableHeader() {
             borderRightColor: t.borderStrong,
           }}
         />
-        <LeafCell w={PELLET_CELL_W} label="เช้า" />
-        <LeafCell w={PELLET_CELL_W} label="เย็น" />
+        <LeafCell w={PELLET_CELL_W} label={tx('daily.morning')} />
+        <LeafCell w={PELLET_CELL_W} label={tx('daily.evening')} />
         <LeafCell w={CELL_W} label="" />
-        <LeafCell w={CELL_W} label="ตัว" />
-        <LeafCell w={CELL_W} label="ตัว" />
+        <LeafCell w={CELL_W} label={tx('unit.fish')} />
+        <LeafCell w={CELL_W} label={tx('unit.fish')} />
       </View>
     </View>
   );

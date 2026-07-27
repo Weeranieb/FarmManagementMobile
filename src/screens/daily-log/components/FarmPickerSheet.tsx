@@ -1,11 +1,13 @@
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { Tappable } from '@/components/ui';
 import { VIBRANT_BRAND } from '../constants';
+import i18n from '@/locale/i18n';
 
 export type FarmOption = {
   id: number;
@@ -29,7 +31,7 @@ type Props = {
 
 function avatarLetter(name: string): string {
   const stripped = name.replace(/^ฟาร์ม/, '').trim();
-  return stripped.charAt(0) || 'บ';
+  return stripped.charAt(0) || i18n.t('unit.farmPrefix').charAt(0);
 }
 
 export function FarmPickerSheet({
@@ -40,6 +42,7 @@ export function FarmPickerSheet({
   onSelect,
 }: Props) {
   const { t, shadowLg } = useTheme();
+  const { t: tx } = useTranslation();
   const insets = useSafeAreaInsets();
 
   return (
@@ -67,7 +70,7 @@ export function FarmPickerSheet({
             onPress={onDismiss}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             accessibilityRole="button"
-            accessibilityLabel="ปิด"
+            accessibilityLabel={tx('common.close')}
           />
         </Animated.View>
 
@@ -111,7 +114,7 @@ export function FarmPickerSheet({
                 textTransform: 'uppercase',
               }}
             >
-              เลือกฟาร์ม
+              {tx('daily.pickFarm')}
             </Text>
             <Text
               style={{
@@ -120,7 +123,7 @@ export function FarmPickerSheet({
                 color: t.inkSoft,
               }}
             >
-              {farms.length} ฟาร์ม
+              {tx('daily.farmCount', { count: farms.length })}
             </Text>
           </View>
 
@@ -195,7 +198,7 @@ export function FarmPickerSheet({
                           color: t.inkSoft,
                         }}
                       >
-                        {f.pondCount} บ่อ
+                        {tx('daily.pondCount', { count: f.pondCount })}
                       </Text>
                       {f.dirtyCount > 0 ? (
                         <>
@@ -232,7 +235,7 @@ export function FarmPickerSheet({
                               <Text style={{ fontFamily: type.familyNumBold }}>
                                 {f.dirtyCount}
                               </Text>{' '}
-                              ยังไม่บันทึก
+                              {tx('daily.notLoggedShort')}
                             </Text>
                           </View>
                         </>

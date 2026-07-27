@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Icon } from '@/components/icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { warnInk } from '@/theme/ink';
@@ -24,6 +25,7 @@ import { useIsOnline } from '@/lib/network';
  */
 export function OfflineBanner() {
   const online = useIsOnline();
+  const { t: tx } = useTranslation();
   const { t, mode } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -34,7 +36,7 @@ export function OfflineBanner() {
   return (
     <View
       accessibilityRole="alert"
-      accessibilityLabel="ออฟไลน์"
+      accessibilityLabel={tx('offline.label')}
       style={{
         paddingTop: space[2],
         paddingBottom: space[2] + insets.bottom,
@@ -57,7 +59,7 @@ export function OfflineBanner() {
           color: ink,
         }}
       >
-        ออฟไลน์ — แสดงข้อมูลที่ซิงค์ไว้ล่าสุด
+        {tx('offline.banner')}
       </Text>
     </View>
   );

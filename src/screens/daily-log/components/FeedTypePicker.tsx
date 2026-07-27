@@ -2,11 +2,13 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View, Text } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import type { FeedCollectionModel } from '@/features/feed-collection';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { Tappable } from '@/components/ui';
 import { VIBRANT_BRAND, type GroupKey } from '../constants';
+import i18n from '@/locale/i18n';
 
 type Props = {
   visible: boolean;
@@ -30,8 +32,8 @@ const BRAND_DOT: Record<GroupKey, { dot: string; tintA: string }> = {
 };
 
 function formatDetail(f: FeedCollectionModel): string {
-  if (f.price == null) return f.unit ?? 'กก.';
-  return `฿${f.price}/${f.unit || 'กก.'}`;
+  if (f.price == null) return f.unit ?? i18n.t('unit.kg');
+  return `฿${f.price}/${f.unit || i18n.t('unit.kg')}`;
 }
 
 export function FeedTypePicker({
@@ -45,6 +47,7 @@ export function FeedTypePicker({
   isError,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const [search, setSearch] = useState('');
 
   const swatch = BRAND_DOT[group];
@@ -78,7 +81,7 @@ export function FeedTypePicker({
             setSearch('');
             onClose();
           }}
-          accessibilityLabel="ปิดตัวเลือกอาหาร"
+          accessibilityLabel={tx('daily.feedPicker.close')}
         />
       </Animated.View>
 
@@ -137,7 +140,7 @@ export function FeedTypePicker({
               letterSpacing: 0.1,
             }}
           >
-            เลือกอาหาร
+            {tx('daily.pickFeed')}
           </Text>
         </View>
 
@@ -161,7 +164,7 @@ export function FeedTypePicker({
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                placeholder="ค้นหาอาหาร"
+                placeholder={tx('daily.feedPicker.search')}
                 placeholderTextColor={t.inkMute}
                 style={{
                   flex: 1,
@@ -186,7 +189,7 @@ export function FeedTypePicker({
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
-                  accessibilityLabel="ล้างคำค้นหา"
+                  accessibilityLabel={tx('daily.feedPicker.clearSearch')}
                 >
                   <Icon.x size={10} color="#fff" />
                 </Tappable>
@@ -204,16 +207,18 @@ export function FeedTypePicker({
         >
           {isLoading ? (
             <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-              <Text style={{ color: t.inkSoft, fontSize: 12.5 }}>กำลังโหลด…</Text>
+              <Text style={{ color: t.inkSoft, fontSize: 12.5 }}>{tx('daily.loading')}</Text>
             </View>
           ) : isError ? (
             <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-              <Text style={{ color: t.danger, fontSize: 12.5 }}>โหลดข้อมูลไม่สำเร็จ</Text>
+              <Text style={{ color: t.danger, fontSize: 12.5 }}>{tx('daily.loadFailed')}</Text>
             </View>
           ) : visibleFeeds.length === 0 ? (
             <View style={{ paddingHorizontal: 14, paddingVertical: 24 }}>
               <Text style={{ color: t.inkMute, fontSize: 12.5, textAlign: 'center' }}>
-                {q ? `ไม่พบอาหารที่ตรงกับ "${search}"` : 'ยังไม่มีชนิดอาหารนี้'}
+                {q
+                  ? `${tx('daily.feedPicker.noMatch')} "${search}"`
+                  : tx('daily.feedPicker.emptyKind')}
               </Text>
             </View>
           ) : (

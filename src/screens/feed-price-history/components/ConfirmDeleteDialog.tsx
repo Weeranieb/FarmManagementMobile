@@ -1,4 +1,5 @@
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Tappable } from '@/components/ui';
@@ -23,6 +24,7 @@ type Props = {
  */
 export function ConfirmDeleteDialog({ visible, entry, unit, onCancel, onConfirm }: Props) {
   const { t, shadowLg } = useTheme();
+  const { t: tx } = useTranslation();
   if (!entry) return null;
   const d = new Date(entry.effectiveDate);
 
@@ -31,7 +33,7 @@ export function ConfirmDeleteDialog({ visible, entry, unit, onCancel, onConfirm 
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <Pressable
           onPress={onCancel}
-          accessibilityLabel="ยกเลิก"
+          accessibilityLabel={tx('common.cancel')}
           style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(10,15,25,0.55)' }]}
         />
         <View
@@ -64,7 +66,7 @@ export function ConfirmDeleteDialog({ visible, entry, unit, onCancel, onConfirm 
           <Text
             style={{ fontSize: 18, fontFamily: type.familyBold, color: t.ink, marginBottom: 6 }}
           >
-            ลบรายการราคานี้?
+            {tx('feedPrice.delete.title')}
           </Text>
           <Text
             style={{
@@ -75,15 +77,15 @@ export function ConfirmDeleteDialog({ visible, entry, unit, onCancel, onConfirm 
               marginBottom: 14,
             }}
           >
-            กำลังจะลบราคา{' '}
+            {tx('feedPrice.delete.body1')}{' '}
             <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>
               {fmt.baht(entry.price)}
             </Text>
-            <Text style={{ color: t.inkSoft }}>/{unit}</Text> วันที่{' '}
+            <Text style={{ color: t.inkSoft }}>/{unit}</Text> {tx('feedPrice.delete.body2')}{' '}
             <Text style={{ fontFamily: type.familyNumSemi, color: t.ink }}>
               {thaiDate.short(d)}
             </Text>{' '}
-            ออกจากประวัติ — การกระทำนี้ย้อนกลับไม่ได้
+            {tx('feedPrice.delete.body3')}
           </Text>
           <Row gap={10}>
             <Tappable
@@ -100,7 +102,7 @@ export function ConfirmDeleteDialog({ visible, entry, unit, onCancel, onConfirm 
               }}
             >
               <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 14 }}>
-                ยกเลิก
+                {tx('common.cancel')}
               </Text>
             </Tappable>
             <Tappable
@@ -116,7 +118,7 @@ export function ConfirmDeleteDialog({ visible, entry, unit, onCancel, onConfirm 
               }}
             >
               <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 14 }}>
-                ลบรายการ
+                {tx('feedPrice.delete.confirm')}
               </Text>
             </Tappable>
           </Row>

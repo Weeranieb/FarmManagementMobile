@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Tappable } from '@/components/ui';
@@ -11,6 +12,7 @@ type Props = {
 
 export function RangeSegmented({ value, onChange }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View
       accessibilityRole="tablist"
@@ -48,7 +50,7 @@ export function RangeSegmented({ value, onChange }: Props) {
                 color: sel ? t.ink : t.inkSoft,
               }}
             >
-              {r.label}
+              {tx(r.labelKey)}
             </Text>
           </Tappable>
         );

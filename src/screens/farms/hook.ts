@@ -6,6 +6,7 @@ import { isClientAdmin, useAuthStore } from '@/features/auth';
 import { useCreatePonds, type CreatePondItem } from '@/features/pond';
 import { createMasterDataErrorMessage } from '@/components/domain/createErrors';
 import { useSearchQuery } from '@/hooks/useSearchQuery';
+import i18n from '@/locale/i18n';
 
 /** Farm the ponds sheet is targeting. */
 export type PondsTarget = { id: number; name: string };
@@ -88,10 +89,8 @@ export function useFarmsScreen(options?: { autoOpenCreate?: boolean }): FarmsScr
             setPondsTarget({ id: farm.id, name: farm.name || name });
           },
           onError: (err) => {
-            Alert.alert(
-              'สร้างฟาร์มไม่สำเร็จ',
-              createMasterDataErrorMessage(err, 'สร้างฟาร์มไม่สำเร็จ'),
-            );
+            const title = i18n.t('farms.createFailed');
+            Alert.alert(title, createMasterDataErrorMessage(err, title));
           },
         },
       );
@@ -108,10 +107,8 @@ export function useFarmsScreen(options?: { autoOpenCreate?: boolean }): FarmsScr
         {
           onSuccess: () => setPondsTarget(null),
           onError: (err) => {
-            Alert.alert(
-              'เพิ่มบ่อไม่สำเร็จ',
-              createMasterDataErrorMessage(err, 'เพิ่มบ่อไม่สำเร็จ'),
-            );
+            const title = i18n.t('farmPonds.addFailed');
+            Alert.alert(title, createMasterDataErrorMessage(err, title));
           },
         },
       );

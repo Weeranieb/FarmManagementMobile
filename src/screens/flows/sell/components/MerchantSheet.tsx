@@ -1,4 +1,5 @@
 import { ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -28,10 +29,11 @@ export function MerchantSheet({
   onClose: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const isEmpty = merchants.length === 0;
 
   return (
-    <SheetShell visible={visible} onClose={onClose} title="เลือกผู้ซื้อ / ตลาด" heightPct={0.72}>
+    <SheetShell visible={visible} onClose={onClose} title={tx('flows.sell.pickBuyer')} heightPct={0.72}>
       {isEmpty ? (
         <View style={{ paddingVertical: 24, paddingHorizontal: 8, alignItems: 'center', gap: 12 }}>
           <View
@@ -48,7 +50,7 @@ export function MerchantSheet({
           </View>
           <View style={{ alignItems: 'center', gap: 4 }}>
             <Text style={{ fontSize: 15, fontFamily: type.familyBold, color: t.ink }}>
-              ยังไม่มีผู้ซื้อ
+              {tx('flows.sell.noBuyers')}
             </Text>
             <Text
               style={{
@@ -60,7 +62,7 @@ export function MerchantSheet({
                 lineHeight: 19,
               }}
             >
-              เพิ่มรายชื่อผู้ซื้อ / ตลาดได้เลย แล้วเลือกใช้ในการขายครั้งนี้ได้ทันที
+              {tx('flows.sell.noBuyersHelp')}
             </Text>
           </View>
           <Tappable
@@ -79,7 +81,7 @@ export function MerchantSheet({
           >
             <Icon.plus size={18} color="#fff" stroke={2.2} />
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-              เพิ่มผู้ซื้อใหม่
+              {tx('flows.sell.addBuyer')}
             </Text>
           </Tappable>
         </View>
@@ -120,7 +122,7 @@ export function MerchantSheet({
               <Icon.plus size={18} color={t.sellInk} stroke={2.2} />
             </View>
             <Text style={{ flex: 1, fontFamily: type.familySemi, fontSize: 14, color: t.sellInk }}>
-              เพิ่มผู้ซื้อใหม่
+              {tx('flows.sell.addBuyer')}
             </Text>
           </Tappable>
 

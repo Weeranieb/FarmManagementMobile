@@ -1,5 +1,6 @@
 import { Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { maintInk } from '@/theme/ink';
@@ -22,6 +23,7 @@ type Props = {
  * just noise.
  */
 export function FarmCard({ farm, onPress }: Props) {
+  const { t: tx } = useTranslation();
   const { t, shadow, mode } = useTheme();
   const name = displayFarmName(farm.name);
   const isEmpty = farm.pondCount === 0;
@@ -69,7 +71,7 @@ export function FarmCard({ farm, onPress }: Props) {
               lineHeight: 18,
             }}
           >
-            ยังไม่มีบ่อ
+            {tx('farms.card.noPonds')}
           </Text>
         ) : isMaint ? (
           <Text
@@ -82,9 +84,9 @@ export function FarmCard({ farm, onPress }: Props) {
             }}
           >
             <Text style={{ fontFamily: type.familyMedium, color: maintInk(mode, t) }}>
-              ปิดปรับปรุง
+              {tx('farms.card.maintenance')}
             </Text>
-            <Text> · {farm.pondCount} บ่อ</Text>
+            <Text> · {tx('farms.card.pondCount', { count: farm.pondCount })}</Text>
           </Text>
         ) : (
           <Text
@@ -96,7 +98,7 @@ export function FarmCard({ farm, onPress }: Props) {
               lineHeight: 18,
             }}
           >
-            <Text>บ่อใช้งาน </Text>
+            <Text>{tx('farms.card.activeLabel')} </Text>
             <Text
               style={{
                 fontFamily: type.familyNumSemi,
@@ -105,7 +107,10 @@ export function FarmCard({ farm, onPress }: Props) {
             >
               {farm.activePonds}
             </Text>
-            <Text style={{ fontFamily: type.familyNum }}> จาก {farm.pondCount}</Text>
+            <Text style={{ fontFamily: type.familyNum }}>
+              {' '}
+              {tx('farms.card.outOf', { total: farm.pondCount })}
+            </Text>
           </Text>
         )}
       </Col>

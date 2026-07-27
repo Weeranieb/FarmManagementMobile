@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Tappable } from '@/components/ui';
@@ -50,6 +51,7 @@ function packSeed(editing: FeedCollectionModel | null | undefined): string {
 
 export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubmit }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const [name, setName] = useState(editing?.name ?? '');
   const [kind, setKind] = useState<FeedKind>(editing?.kind ?? 'pellet');
   const [fcr, setFcr] = useState(editing?.fcr != null ? editing.fcr.toFixed(2) : '');
@@ -79,16 +81,18 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
     const n = Number(s);
     return s.trim() !== '' && Number.isFinite(n) && n > 0;
   };
-  const nameError = name.trim() === '' ? 'กรุณากรอกชื่ออาหาร' : null;
+  const nameError = name.trim() === '' ? tx('feedCollection.form.nameRequired') : null;
   const priceError =
     price.trim() === ''
-      ? 'กรุณากรอกราคา'
+      ? tx('feedCollection.form.priceRequired')
       : !isPositive(price)
-        ? 'ราคาต้องมากกว่า 0'
+        ? tx('feedCollection.form.priceGtZero')
         : null;
   const packError =
-    packSizeKg.trim() !== '' && !isPositive(packSizeKg) ? 'ขนาดบรรจุต้องมากกว่า 0' : null;
-  const fcrError = fcr.trim() !== '' && !isPositive(fcr) ? 'FCR ต้องมากกว่า 0' : null;
+    packSizeKg.trim() !== '' && !isPositive(packSizeKg)
+      ? tx('feedCollection.form.packGtZero')
+      : null;
+  const fcrError = fcr.trim() !== '' && !isPositive(fcr) ? tx('feedCollection.form.fcrGtZero') : null;
   const hasErrors = Boolean(nameError || priceError || packError || fcrError);
 
   // The sheet stays mounted inside a Modal, so the useState seeds above run
@@ -135,7 +139,9 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
     // saving state can show until then — don't close optimistically here.
   };
 
-  const priceLabel = hasPackSize ? `ราคาเริ่มต้นต่อ${unit}` : 'ราคาเริ่มต้น';
+  const priceLabel = hasPackSize
+    ? tx('feedCollection.form.priceStartPerUnit', { unit })
+    : tx('feedCollection.form.priceStart');
   const priceSuffix = `฿/${unit}`;
 
   return (
@@ -147,7 +153,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
               numberOfLines={1}
               style={{ fontFamily: type.familyBold, fontSize: type.sizes.lg, color: t.ink }}
             >
-              {isEdit ? 'แก้ไขรายละเอียด' : 'เพิ่มอาหาร'}
+              {isEdit ? tx('feedCollection.form.editTitle') : tx('feedCollection.form.addTitle')}
             </Text>
             <Text
               numberOfLines={1}
@@ -158,14 +164,14 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
                 marginTop: 2,
               }}
             >
-              {isEdit ? editing.name : 'กรอกข้อมูลพื้นฐาน + ราคาเริ่มต้น'}
+              {isEdit ? editing.name : tx('feedCollection.form.addSubtitle')}
             </Text>
           </View>
           <Tappable
             onPress={onClose}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="ปิด"
+            accessibilityLabel={tx('common.close')}
             style={{
               width: 40,
               height: 40,
@@ -187,16 +193,16 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Field label="ชื่ออาหาร" error={submitted ? nameError : undefined}>
+        <Field label={tx('feedCollection.form.nameLabel')} error={submitted ? nameError : undefined}>
           <FInput
             value={name}
             onChangeText={setName}
-            placeholder="เช่น โปรฟีด, ปลาเป็ด"
+            placeholder={tx('feedCollection.form.namePlaceholder')}
             invalid={submitted && !!nameError}
           />
         </Field>
 
-        <Field label="ประเภท">
+        <Field label={tx('feedCollection.form.kindLabel')}>
           <Segmented
             value={kind}
             options={(['pellet', 'fresh'] as const).map((k) => {
@@ -204,7 +210,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
               const palette = feedPaletteFor(k);
               return {
                 value: k,
-                label: k === 'pellet' ? 'เม็ด' : 'สด',
+                label: k === 'pellet' ? tx('feed.kindPellet') : tx('feed.kindFresh'),
                 icon: (selected: boolean) => (
                   <Glyph size={16} stroke={2} color={selected ? palette.tileEdge : undefined} />
                 ),
@@ -224,7 +230,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
 
         <Row gap={10} align="flex-start">
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Field label="หน่วย">
+            <Field label={tx('feedCollection.form.unitLabel')}>
               <UnitBox unit={unit} />
             </Field>
           </View>
@@ -233,7 +239,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
               <FInput
                 value={fcr}
                 onChangeText={setFcr}
-                placeholder="เช่น 1.50"
+                placeholder={tx('feedCollection.form.unitPlaceholder')}
                 numeric
                 keyboardType="decimal-pad"
                 invalid={submitted && !!fcrError}
@@ -244,14 +250,17 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
 
         <Row gap={10} align="flex-start">
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Field label="ขนาดบรรจุ" error={submitted ? packError : undefined}>
+            <Field
+              label={tx('feedCollection.form.packLabel')}
+              error={submitted ? packError : undefined}
+            >
               <FInput
                 value={packSizeKg}
                 onChangeText={setPackSizeKg}
                 placeholder={kind === 'pellet' ? '20' : '30'}
                 numeric
                 keyboardType="decimal-pad"
-                suffix="กก."
+                suffix={tx('unit.kg')}
                 invalid={submitted && !!packError}
               />
             </Field>
@@ -276,16 +285,16 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
         </Row>
 
         {!isEdit && hasPackSize && derived?.pricePerKg != null ? (
-          <ComputedPriceHint unit="กก." price={derived.pricePerKg} />
+          <ComputedPriceHint unit={tx('unit.kg')} price={derived.pricePerKg} />
         ) : null}
 
         {!isEdit ? (
-          <Field label="วันที่มีผล">
+          <Field label={tx('feedCollection.form.effectiveDate')}>
             <DateField value={effectiveDate} onChange={setEffectiveDate} />
           </Field>
         ) : null}
 
-        <Field label="ผู้ขาย">
+        <Field label={tx('feedCollection.form.supplier')}>
           <FInput value={supplier} onChangeText={setSupplier} />
         </Field>
       </ScrollView>
@@ -314,7 +323,9 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>ยกเลิก</Text>
+            <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>
+              {tx('common.cancel')}
+            </Text>
           </Tappable>
           <Tappable
             onPress={handleSubmit}
@@ -331,7 +342,11 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
             }}
           >
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-              {saving ? 'กำลังบันทึก…' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึก'}
+              {saving
+                ? tx('common.saving')
+                : isEdit
+                  ? tx('feedCollection.form.submitEdit')
+                  : tx('common.save')}
             </Text>
           </Tappable>
         </Row>
@@ -343,6 +358,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
 /** Read-only unit chip — the buy/pack unit (ถุง/ลัง) is fixed by feed type. */
 function UnitBox({ unit }: { unit: string }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View
       style={{
@@ -366,7 +382,7 @@ function UnitBox({ unit }: { unit: string }) {
           fontFamily: type.family,
         }}
       >
-        ตามประเภท
+        {tx('feedCollection.form.byKind')}
       </Text>
     </View>
   );

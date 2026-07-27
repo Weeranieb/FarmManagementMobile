@@ -10,6 +10,7 @@
 import { useCallback } from 'react';
 import { Text, View } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type, radii } from '@/theme/tokens';
 import { dangerInk, warnInk } from '@/theme/ink';
@@ -63,7 +64,11 @@ export function CycleBody({ pondId }: { pondId: number }) {
 
 function SectionHeader({ total, closed }: { total: number; closed: number }) {
   const { t } = useTheme();
-  const countText = closed > 0 ? `ทั้งหมด ${total} รอบ · ปิดแล้ว ${closed}` : `ทั้งหมด ${total} รอบ`;
+  const { t: tx } = useTranslation();
+  const countText =
+    closed > 0
+      ? tx('pondDetail.cycles.countClosed', { total, closed })
+      : tx('pondDetail.cycles.count', { total });
   return (
     <Row justify="space-between" align="center" style={{ paddingHorizontal: 2 }}>
       <Text
@@ -73,7 +78,7 @@ function SectionHeader({ total, closed }: { total: number; closed: number }) {
           color: t.ink,
         }}
       >
-        ประวัติรอบเลี้ยง
+        {tx('pondDetail.cycles.title')}
       </Text>
       <Text style={{ fontSize: type.sizes.sm, fontFamily: type.familyNum, color: t.inkSoft }}>
         {countText}
@@ -84,6 +89,7 @@ function SectionHeader({ total, closed }: { total: number; closed: number }) {
 
 function CycleCard({ c }: { c: PondCycleModel }) {
   const { t, mode } = useTheme();
+  const { t: tx } = useTranslation();
   const active = c.isActive;
   const netColor = c.netResult >= 0 ? t.success : dangerInk(mode, t);
   const start = new Date(c.startDate);
@@ -106,14 +112,14 @@ function CycleCard({ c }: { c: PondCycleModel }) {
             {active ? (
               <Pill tone="brand">
                 <Icon.cycle size={12} color={t.brandInk} />
-                <PillText tone="brand">รอบปัจจุบัน</PillText>
+                <PillText tone="brand">{tx('pondDetail.cycles.current')}</PillText>
               </Pill>
             ) : (
               // Outlined status pill (design's `ghost` primitive carries a
               // border; mobile's `ghost` tone is borderless for fish chips, so
               // restore the outline locally here to read as a status pill).
               <Pill tone="ghost" style={{ borderWidth: 1, borderColor: t.border }}>
-                ปิดรอบแล้ว
+                {tx('pondDetail.cycles.closed')}
               </Pill>
             )}
             {c.fishTypes.map((f) => (
@@ -124,10 +130,10 @@ function CycleCard({ c }: { c: PondCycleModel }) {
           </Row>
           <Col gap={1} align="flex-end" style={{ marginLeft: 8, flexShrink: 0 }}>
             <Text style={{ fontSize: type.sizes.xs, fontFamily: type.familySemi, color: t.inkMute }}>
-              อายุรอบ
+              {tx('pondDetail.cycleAge')}
             </Text>
             <Text style={{ fontSize: type.sizes.sm, fontFamily: type.familyNumSemi, color: t.inkSoft }}>
-              {dur.toLocaleString('en-US')} วัน
+              {tx('pondDetail.cycles.ageDays', { days: dur.toLocaleString('en-US') })}
             </Text>
           </Col>
         </Row>
@@ -149,7 +155,7 @@ function CycleCard({ c }: { c: PondCycleModel }) {
             <Text
               style={{ fontSize: type.sizes.sm, fontFamily: type.familySemi, color: t.brandInk }}
             >
-              กำลังเลี้ยง
+              {tx('pondDetail.cycles.growing')}
             </Text>
           )}
         </Row>
@@ -163,11 +169,11 @@ function CycleCard({ c }: { c: PondCycleModel }) {
               <Text
                 style={{ fontSize: type.sizes.xs, fontFamily: type.familySemi, color: t.inkMute }}
               >
-                กำไรสุทธิ
+                {tx('pondDetail.cycles.netProfit')}
               </Text>
               {active ? (
                 <Pill tone="warn" style={{ paddingVertical: 2, paddingHorizontal: 7 }}>
-                  <PillText tone="warn">ประมาณการ</PillText>
+                  <PillText tone="warn">{tx('pondDetail.cycles.estimated')}</PillText>
                 </Pill>
               ) : null}
             </Row>
@@ -190,7 +196,7 @@ function CycleCard({ c }: { c: PondCycleModel }) {
               <Text
                 style={{ fontSize: type.sizes.xs, fontFamily: type.familySemi, color: t.inkMute }}
               >
-                ปลาคงเหลือ
+                {tx('pondDetail.cycles.fishLeft')}
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
                 <Text
@@ -201,7 +207,7 @@ function CycleCard({ c }: { c: PondCycleModel }) {
                 <Text
                   style={{ fontSize: type.sizes.xs, fontFamily: type.familyMedium, color: t.inkMute }}
                 >
-                  ตัว
+                  {tx('unit.fish')}
                 </Text>
               </View>
             </Col>
@@ -221,12 +227,20 @@ function CycleCard({ c }: { c: PondCycleModel }) {
           alignItems: 'stretch',
         }}
       >
-        <MoneyCol label="รายได้" value={fmt.baht(c.totalRevenue)} color={t.ink} />
-        <ColDivider />
-        <MoneyCol label="ต้นทุน" value={fmt.baht(c.totalCost)} color={t.inkSoft} />
+        <MoneyCol
+          label={tx('pondDetail.cycles.revenue')}
+          value={fmt.baht(c.totalRevenue)}
+          color={t.ink}
+        />
         <ColDivider />
         <MoneyCol
-          label="ค่าอาหาร"
+          label={tx('pondDetail.cycles.cost')}
+          value={fmt.baht(c.totalCost)}
+          color={t.inkSoft}
+        />
+        <ColDivider />
+        <MoneyCol
+          label={tx('pondDetail.cycles.feedCost')}
           value={feedMissing ? '—' : fmt.baht(c.feedCost as number)}
           color={feedMissing ? t.inkMute : t.inkSoft}
         />
@@ -258,8 +272,10 @@ function CycleCard({ c }: { c: PondCycleModel }) {
               lineHeight: 19,
             }}
           >
-            ไม่มีข้อมูลค่าอาหารในรอบนี้ · กำไรสุทธิยัง
-            <Text style={{ fontFamily: type.familyBold, color: t.ink }}>ไม่ได้หักค่าอาหาร</Text>
+            {tx('pondDetail.cycles.noFeedNote1')}{' '}
+            <Text style={{ fontFamily: type.familyBold, color: t.ink }}>
+              {tx('pondDetail.cycles.noFeedNote2')}
+            </Text>
           </Text>
         </Row>
       ) : null}
@@ -318,6 +334,7 @@ function CycleSkeleton() {
 
 function CycleEmpty() {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ paddingHorizontal: 24, paddingVertical: 40, alignItems: 'center' }}>
       <View
@@ -334,7 +351,7 @@ function CycleEmpty() {
         <Icon.cycle size={24} color={t.inkMute} />
       </View>
       <Text style={{ fontSize: type.sizes.base, fontFamily: type.familyBold, color: t.ink }}>
-        ยังไม่มีรอบเลี้ยง
+        {tx('pondDetail.cycles.empty')}
       </Text>
       <Text
         style={{
@@ -346,7 +363,7 @@ function CycleEmpty() {
           lineHeight: 20,
         }}
       >
-        เมื่อเริ่มลงปลา รอบเลี้ยงและผลประกอบการจะแสดงที่นี่
+        {tx('pondDetail.cycles.emptyHelp')}
       </Text>
     </View>
   );
@@ -354,6 +371,7 @@ function CycleEmpty() {
 
 function CycleError({ onRetry }: { onRetry: () => void }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ paddingHorizontal: 24, paddingVertical: 34, alignItems: 'center' }}>
       <View
@@ -370,7 +388,7 @@ function CycleError({ onRetry }: { onRetry: () => void }) {
         <Icon.warn size={24} color={t.danger} />
       </View>
       <Text style={{ fontSize: type.sizes.base, fontFamily: type.familyBold, color: t.ink }}>
-        โหลดข้อมูลรอบเลี้ยงไม่สำเร็จ
+        {tx('pondDetail.cycles.loadFailed')}
       </Text>
       <Text
         style={{
@@ -382,7 +400,7 @@ function CycleError({ onRetry }: { onRetry: () => void }) {
           textAlign: 'center',
         }}
       >
-        ตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง
+        {tx('pondDetail.cycles.loadFailedHelp')}
       </Text>
       <Btn
         tone="brand"
@@ -391,7 +409,7 @@ function CycleError({ onRetry }: { onRetry: () => void }) {
         leading={<Icon.cycle size={16} color={t.brandInk} />}
         onPress={onRetry}
       >
-        ลองอีกครั้ง
+        {tx('pondDetail.cycles.retry')}
       </Btn>
     </View>
   );

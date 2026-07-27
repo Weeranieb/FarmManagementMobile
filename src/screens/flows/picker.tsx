@@ -17,6 +17,7 @@
 
 import { useCallback, useRef, type RefObject } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type, type ThemePalette } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -25,6 +26,7 @@ import { Col, Row } from '@/components/layout/Row';
 import { displayFarmName, displayPondName, fmt } from '@/utils/fmt';
 import type { FarmModel } from '@/features/farm';
 import type { PondModel } from '@/features/pond';
+import i18n from '@/locale/i18n';
 
 type PickerTone = 'fill' | 'sell' | 'move';
 
@@ -420,12 +422,13 @@ function PickerCard({ children }: { children: React.ReactNode }) {
 }
 
 function pondMeta(pond: PondModel): string {
-  const age = pond.ageDays != null ? ` · อายุ ${pond.ageDays} วัน` : '';
-  return `${fmt.num(pond.totalFish)} ตัว${age}`;
+  return pond.ageDays != null
+    ? i18n.t('flows.stockWithAge', { count: fmt.num(pond.totalFish), days: pond.ageDays })
+    : i18n.t('flows.stockOnly', { count: fmt.num(pond.totalFish) });
 }
 
 function sellPondMeta(pond: PondModel): string {
-  if (pond.totalFish === 0) return 'ไม่มีปลา';
+  if (pond.totalFish === 0) return i18n.t('flows.noFish');
   return pondMeta(pond);
 }
 
@@ -446,9 +449,10 @@ type FarmPondPickerProps = {
   pondSectionRef?: RefObject<View | null>;
 };
 
-const ACTION_LABEL = {
-  fill: 'เลือกบ่อปลายทาง',
-  sell: 'เลือกบ่อที่จะขาย',
+/** i18next keys for the pond-section heading, resolved in the component. */
+const ACTION_LABEL_KEY = {
+  fill: 'flows.move.pickDest',
+  sell: 'flows.sell.pickPond',
 } as const;
 
 const ACTION_TONE: Record<'fill' | 'sell', PickerTone> = {
@@ -495,6 +499,7 @@ export function InlineFarmPondPicker({
   onPondChange,
   pondSectionRef,
 }: FarmPondPickerProps) {
+  const { t: tx } = useTranslation();
   const tone = ACTION_TONE[action];
   const pondsForFarm = farmId != null ? ponds.filter((p) => p.farmId === farmId) : [];
   // Sell hides non-sellable ponds (closed or empty). Fill lists everything —
@@ -513,7 +518,7 @@ export function InlineFarmPondPicker({
     <PickerCard>
       <StepLabel
         num={1}
-        label="เลือกฟาร์ม"
+        label={tx('flows.pickFarm')}
         isCurrent={farmId == null}
         isComplete={farmId != null}
         tone={tone}
@@ -521,8 +526,8 @@ export function InlineFarmPondPicker({
       {farms.length === 0 ? (
         <EmptyInline
           icon="farm"
-          title="ยังไม่มีฟาร์ม"
-          body="คุณยังไม่ได้รับสิทธิ์เข้าฟาร์มใด ๆ — ติดต่อผู้ดูแลระบบ"
+          title={tx('flows.noFarms')}
+          body={tx('flows.noFarmAccess')}
         />
       ) : (
         <Row wrap gap={space[2]}>
@@ -533,7 +538,9 @@ export function InlineFarmPondPicker({
               selected={farmId === f.id}
               disabled={deadEnd(f)}
               label={displayFarmName(f.name)}
-              meta={`${action === 'sell' ? f.activePonds : f.pondCount} บ่อ`}
+              meta={tx('daily.pondCount', {
+                count: action === 'sell' ? f.activePonds : f.pondCount,
+              })}
               onPress={() => onFarmChange(f.id)}
             />
           ))}
@@ -545,20 +552,24 @@ export function InlineFarmPondPicker({
 
       <StepLabel
         num={2}
-        label={ACTION_LABEL[action]}
+        label={tx(ACTION_LABEL_KEY[action])}
         isCurrent={farmId != null && pondId == null}
         isComplete={pondId != null}
         tone={tone}
       />
       {farmId == null ? (
-        <DisabledSlot msg="เลือกฟาร์มก่อนเพื่อดูรายการบ่อ" />
+        <DisabledSlot msg={tx('flows.pickFarmToSeePonds')} />
       ) : pondsForFarm.length === 0 ? (
-        <EmptyInline icon="fish" title="ฟาร์มนี้ยังไม่มีบ่อ" body="เพิ่มบ่อแรกของฟาร์มจากเว็บแอปก่อน" />
+        <EmptyInline
+          icon="fish"
+          title={tx('flows.farmNoPonds')}
+          body={tx('flows.addPondsFirst')}
+        />
       ) : visiblePonds.length === 0 ? (
         <EmptyInline
           icon="fish"
-          title="ไม่มีบ่อที่ขายได้"
-          body="ทุกบ่อในฟาร์มนี้ปิดอยู่หรือไม่มีปลา"
+          title={tx('flows.sell.noSellablePonds')}
+          body={tx('flows.allPondsClosed')}
         />
       ) : (
         <Col gap={space[2]}>
@@ -575,7 +586,7 @@ export function InlineFarmPondPicker({
           ))}
           {closedPonds.length > 0 ? (
             <>
-              <GroupDivider label="บ่อที่ปิดอยู่ · เติมเพื่อเริ่มรอบใหม่" />
+              <GroupDivider label={tx('flows.closedPondFill')} />
               {closedPonds.map((p) => (
                 <PondRow
                   key={p.id}
@@ -583,7 +594,7 @@ export function InlineFarmPondPicker({
                   pond={p}
                   selected={pondId === p.id}
                   primary={displayPondName(p.name)}
-                  secondary="พร้อมเริ่มรอบใหม่"
+                  secondary={tx('flows.readyNewCycle')}
                   onPress={() => onPondChange(p.id)}
                 />
               ))}
@@ -639,6 +650,7 @@ export function InlineMovePicker({
 }: MovePickerProps) {
   const tone: PickerTone = 'move';
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const c = toneColors(t, tone);
   const locked = lockedFrom != null;
   // With a locked source there is no farm step, so the destination is step 2.
@@ -684,14 +696,20 @@ export function InlineMovePicker({
         >
           <Icon.swap size={12} color={c.ink} />
           <Text style={{ fontSize: type.sizes.xs, fontFamily: type.familyMedium, color: c.ink }}>
-            โหมดข้ามฟาร์ม
+            {tx('flows.crossFarmMode')}
           </Text>
         </View>
       ) : null}
 
       {locked ? (
         <>
-          <StepLabel num={1} label="จากบ่อ (ต้นทาง)" isCurrent={false} isComplete tone={tone} />
+          <StepLabel
+            num={1}
+            label={tx('flows.move.fromLabel')}
+            isCurrent={false}
+            isComplete
+            tone={tone}
+          />
           {/* No onPress — the source came from the pond the user opened this
               from, so the row states it rather than offering a choice. The
               neutral badge stays legible on the selected row's tone fill. */}
@@ -701,20 +719,24 @@ export function InlineMovePicker({
             selected
             primary={displayPondName(lockedFrom.name)}
             secondary={pondMeta(lockedFrom)}
-            badge={<Pill tone="neutral">ต้นทาง</Pill>}
+            badge={<Pill tone="neutral">{tx('flows.move.source')}</Pill>}
           />
         </>
       ) : (
         <>
           <StepLabel
             num={1}
-            label={allowCrossFarm ? 'ฟาร์มอ้างอิง' : 'เลือกฟาร์ม'}
+            label={allowCrossFarm ? tx('flows.refFarm') : tx('flows.pickFarm')}
             isCurrent={farmId == null}
             isComplete={farmId != null}
             tone={tone}
           />
           {farms.length === 0 ? (
-            <EmptyInline icon="farm" title="ยังไม่มีฟาร์ม" body="ติดต่อผู้ดูแลระบบเพื่อขอเข้าถึง" />
+            <EmptyInline
+              icon="farm"
+              title={tx('flows.noFarms')}
+              body={tx('flows.contactAdmin')}
+            />
           ) : (
             <Row wrap gap={space[2]}>
               {orderedFarms.map((f) => (
@@ -723,7 +745,7 @@ export function InlineMovePicker({
                   tone={tone}
                   selected={farmId === f.id}
                   label={displayFarmName(f.name)}
-                  meta={`${f.activePonds} บ่อ`}
+                  meta={tx('daily.pondCount', { count: f.activePonds })}
                   onPress={() => onFarmChange(f.id)}
                 />
               ))}
@@ -735,18 +757,18 @@ export function InlineMovePicker({
 
           <StepLabel
             num={2}
-            label="จากบ่อ (ต้นทาง)"
+            label={tx('flows.move.fromLabel')}
             isCurrent={farmId != null && fromId == null}
             isComplete={fromId != null}
             tone={tone}
           />
           {farmId == null ? (
-            <DisabledSlot msg="เลือกฟาร์มก่อน" />
+            <DisabledSlot msg={tx('flows.pickFarmFirst')} />
           ) : sourcePonds.length === 0 ? (
             <EmptyInline
               icon="fish"
-              title="ไม่มีบ่อที่มีปลาให้ย้าย"
-              body="ฟาร์มนี้ยังไม่มีบ่อที่มีปลาอยู่"
+              title={tx('flows.move.noSource')}
+              body={tx('flows.farmNoStockedPonds')}
             />
           ) : (
             <Col gap={space[2]}>
@@ -772,15 +794,19 @@ export function InlineMovePicker({
 
       <StepLabel
         num={destStepNum}
-        label="ไปยังบ่อ (ปลายทาง)"
+        label={tx('flows.move.toLabel')}
         isCurrent={fromId != null && toId == null}
         isComplete={toId != null && fromId !== toId}
         tone={tone}
       />
       {fromId == null ? (
-        <DisabledSlot msg="เลือกบ่อต้นทางก่อน" />
+        <DisabledSlot msg={tx('flows.move.pickSourceFirst')} />
       ) : destPonds.length === 0 ? (
-        <EmptyInline icon="fish" title="ไม่มีบ่อปลายทางให้เลือก" body="ต้องมีบ่ออื่นในฟาร์มก่อน" />
+        <EmptyInline
+          icon="fish"
+          title={tx('flows.move.noDest')}
+          body={tx('flows.move.needOtherPond')}
+        />
       ) : (
         <Col gap={space[2]}>
           {destActive.map((p) => (
@@ -797,7 +823,7 @@ export function InlineMovePicker({
           ))}
           {destClosed.length > 0 ? (
             <>
-              <GroupDivider label="บ่อที่ปิดอยู่ · ย้ายเข้าเพื่อเริ่มรอบใหม่" />
+              <GroupDivider label={tx('flows.closedPondMove')} />
               {destClosed.map((p) => (
                 <PondRow
                   key={p.id}
@@ -805,7 +831,7 @@ export function InlineMovePicker({
                   pond={p}
                   selected={toId === p.id}
                   primary={displayPondName(p.name)}
-                  secondary="พร้อมเริ่มรอบใหม่"
+                  secondary={tx('flows.readyNewCycle')}
                   badge={crossFarmBadge(p)}
                   onPress={() => onToChange(p.id)}
                 />

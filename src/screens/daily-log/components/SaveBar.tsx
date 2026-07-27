@@ -1,4 +1,5 @@
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -25,6 +26,7 @@ export function SaveBar({
   bottomInset = 0,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const hasInvalid = invalidCount > 0;
   const enabled = editsCount > 0 && !hasInvalid;
 
@@ -69,7 +71,7 @@ export function SaveBar({
               textTransform: 'uppercase',
             }}
           >
-            {hasInvalid ? 'ค่าผิดเงื่อนไข' : 'รออัปโหลด'}
+            {hasInvalid ? tx('daily.invalidLabel') : tx('daily.pendingUpload')}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 1 }}>
             {hasInvalid ? (
@@ -87,7 +89,7 @@ export function SaveBar({
                     marginLeft: 4,
                   }}
                 >
-                  รายการต้องแก้ก่อน
+                  {tx('daily.itemsToFix')}
                 </Text>
               </>
             ) : (
@@ -98,7 +100,7 @@ export function SaveBar({
                 <Text
                   style={{ fontSize: 13, fontFamily: type.familyBold, color: t.ink, marginLeft: 4 }}
                 >
-                  วัน ·
+                  {tx('daily.daysAnd')}
                 </Text>
                 <Text
                   style={{ fontSize: 13, fontFamily: type.familyNumBold, color: t.ink, marginLeft: 4 }}
@@ -108,7 +110,7 @@ export function SaveBar({
                 <Text
                   style={{ fontSize: 13, fontFamily: type.familyBold, color: t.ink, marginLeft: 4 }}
                 >
-                  รายการ
+                  {tx('daily.itemsUnit')}
                 </Text>
               </>
             )}
@@ -134,7 +136,7 @@ export function SaveBar({
           }}
           accessibilityRole="button"
           accessibilityState={{ disabled: !enabled }}
-          accessibilityLabel={`บันทึกทั้งเดือน ${editsCount} รายการ`}
+          accessibilityLabel={tx('daily.saveMonthA11y', { count: editsCount })}
         >
           <Icon.check size={15} color={enabled ? '#fff' : t.borderStrong} />
           <Text
@@ -144,7 +146,7 @@ export function SaveBar({
               color: enabled ? '#fff' : t.borderStrong,
             }}
           >
-            บันทึกทั้งเดือน
+            {tx('daily.saveMonth')}
           </Text>
           <View
             style={{

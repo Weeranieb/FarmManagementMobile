@@ -1,9 +1,18 @@
 // Number formatters — ported from "Farm OS/primitives.jsx" `window.fmt`.
+//
+// Unit suffixes and domain names read from i18next directly rather than taking a
+// `t` argument: these are called from deep inside render trees and from plain
+// helpers, and threading `t` through every caller would touch most of the app.
+// The trade-off is that a language switch only refreshes them when the calling
+// component re-renders — which it does, since every screen now reads at least
+// one key through `useTranslation`.
+
+import i18n from '@/locale/i18n';
 
 export const fmt = {
   num: (n: number | null | undefined): string => (n ?? 0).toLocaleString('en-US'),
   kg: (n: number | string): string =>
-    `${Number(n).toLocaleString('en-US', { maximumFractionDigits: 1 })} กก.`,
+    `${Number(n).toLocaleString('en-US', { maximumFractionDigits: 1 })} ${i18n.t('unit.kg')}`,
   baht: (n: number | string): string => `฿${Math.round(Number(n)).toLocaleString('en-US')}`,
   bahtPrecise: (n: number | string): string =>
     `฿${Number(n).toLocaleString('en-US', {
@@ -19,23 +28,46 @@ export const fmt = {
   },
 };
 
-export const FISH_TH: Record<string, string> = {
-  nil: 'ปลานิล',
-  kaphong: 'ปลากะพง',
-  kang: 'ปลาคัง',
-  duk: 'ปลาดุก',
-};
+/** Fish-type codes the backend sends. */
+export const FISH_CODES = ['nil', 'kaphong', 'kang', 'duk'] as const;
 
-/** Prefix a farm name with "ฟาร์ม" unless it's already there. */
-export function displayFarmName(name: string | null | undefined): string {
-  const raw = (name ?? '').trim();
-  if (!raw) return 'ฟาร์ม';
-  return raw.startsWith('ฟาร์ม') ? raw : `ฟาร์ม ${raw}`;
+/**
+ * Localized fish name by backend code, e.g. `FISH_TH['nil']`.
+ *
+ * Kept as an index-able object (not a `fishLabel(code)` call) so the
+ * `FISH_TH[code] ?? code` idiom at every call site keeps working — the lookup
+ * just resolves through i18next now. An unknown code returns undefined, so those
+ * fallbacks still show the raw code.
+ */
+export const FISH_TH: Record<string, string> = new Proxy(
+  {},
+  {
+    get(_target, key) {
+      if (typeof key !== 'string') return undefined;
+      const label = i18n.t(`fish.${key}`, { defaultValue: '' });
+      return label || undefined;
+    },
+    has: (_t, key) => (FISH_CODES as readonly string[]).includes(String(key)),
+    ownKeys: () => [...FISH_CODES],
+    getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
+  },
+);
+
+/** Strip a display prefix the data may already carry (legacy rows store it). */
+function stripPrefix(raw: string, thaiPrefix: string): string {
+  return raw.startsWith(thaiPrefix) ? raw.slice(thaiPrefix.length).trim() : raw;
 }
 
-/** Prefix a pond name with "บ่อ" unless it's already there. */
+/** Prefix a farm name for display — "ฟาร์ม 1" / "Farm 1". */
+export function displayFarmName(name: string | null | undefined): string {
+  const prefix = i18n.t('unit.farmPrefix');
+  const bare = stripPrefix((name ?? '').trim(), 'ฟาร์ม');
+  return bare ? `${prefix} ${bare}` : prefix;
+}
+
+/** Prefix a pond name for display — "บ่อ A2" / "Pond A2". */
 export function displayPondName(name: string | null | undefined): string {
-  const raw = (name ?? '').trim();
-  if (!raw) return 'บ่อ';
-  return raw.startsWith('บ่อ') ? raw : `บ่อ ${raw}`;
+  const prefix = i18n.t('unit.pondPrefix');
+  const bare = stripPrefix((name ?? '').trim(), 'บ่อ');
+  return bare ? `${prefix} ${bare}` : prefix;
 }

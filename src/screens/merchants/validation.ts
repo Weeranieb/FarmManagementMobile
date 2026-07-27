@@ -1,3 +1,5 @@
+import i18n from '@/locale/i18n';
+
 // Merchant form validation — shared by the management add/edit sheet and the
 // sell-flow inline "add merchant" sheet so both enforce the same rules.
 
@@ -31,19 +33,22 @@ export function validateMerchantForm(values: MerchantFormValues): MerchantFormEr
   const location = values.location.trim();
 
   let nameError: string | null = null;
-  if (name === '') nameError = 'กรุณากรอกชื่อผู้ขาย';
-  else if (name.length > MERCHANT_LIMITS.name) nameError = `ชื่อยาวเกินไป (ไม่เกิน ${MERCHANT_LIMITS.name} ตัวอักษร)`;
+  if (name === '') nameError = i18n.t('merchants.validation.nameRequired');
+  else if (name.length > MERCHANT_LIMITS.name)
+    nameError = i18n.t('merchants.validation.nameTooLong', { max: MERCHANT_LIMITS.name });
 
   let contactError: string | null = null;
   if (contact !== '') {
-    if (!/^\d+$/.test(contact)) contactError = 'เบอร์ติดต่อต้องเป็นตัวเลขเท่านั้น';
+    if (!/^\d+$/.test(contact)) contactError = i18n.t('merchants.validation.contactDigits');
     else if (contact.length < 9 || contact.length > MERCHANT_LIMITS.contact)
-      contactError = `เบอร์ติดต่อต้องมี 9–${MERCHANT_LIMITS.contact} หลัก`;
+      contactError = i18n.t('merchants.validation.contactLen', { max: MERCHANT_LIMITS.contact });
   }
 
   let locationError: string | null = null;
   if (location.length > MERCHANT_LIMITS.location)
-    locationError = `ที่อยู่ยาวเกินไป (ไม่เกิน ${MERCHANT_LIMITS.location} ตัวอักษร)`;
+    locationError = i18n.t('merchants.validation.locationTooLong', {
+      max: MERCHANT_LIMITS.location,
+    });
 
   return { name: nameError, contactNumber: contactError, location: locationError };
 }

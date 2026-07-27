@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -19,6 +20,7 @@ type Props = {
 /** Actions for a single merchant: edit (primary) + delete (demoted, destructive). */
 export function SheetMerchantActions({ visible, merchant, onClose, onEdit, onDelete }: Props) {
   const { t, mode, shadow } = useTheme();
+  const { t: tx } = useTranslation();
   const danger = dangerInk(mode, t);
 
   if (!merchant) {
@@ -95,12 +97,12 @@ export function SheetMerchantActions({ visible, merchant, onClose, onEdit, onDel
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={{ fontSize: type.sizes.md, fontFamily: type.familyBold, color: t.brandInk }}>
-                แก้ไขข้อมูล
+                {tx('merchants.editRow')}
               </Text>
               <Text
                 style={{ fontSize: type.sizes.sm, color: t.brandInk, fontFamily: type.family, marginTop: 2 }}
               >
-                ชื่อ · เบอร์ติดต่อ · ที่อยู่
+                {tx('merchants.editRowSub')}
               </Text>
             </View>
             <Icon.chevR size={18} color={t.brandInk} />
@@ -134,10 +136,10 @@ export function SheetMerchantActions({ visible, merchant, onClose, onEdit, onDel
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontSize: type.sizes.base, fontFamily: type.familySemi, color: danger }}>
-              ลบผู้ขาย
+              {tx('merchants.delete')}
             </Text>
             <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}>
-              การขายที่บันทึกไว้แล้วจะไม่ถูกลบ
+              {tx('merchants.deleteNote')}
             </Text>
           </View>
         </Tappable>

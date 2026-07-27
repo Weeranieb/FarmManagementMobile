@@ -12,6 +12,7 @@ import {
 } from '@/features/daily-log';
 import { useAuthStore } from '@/features/auth';
 import { apiErrorStatus } from '@/shared/http';
+import i18n from '@/locale/i18n';
 import { usePondData, usePondActivitiesData, type PondActivityModel } from '@/features/pond';
 import { COLS, isCellValueInvalid, type ColKey } from '@/screens/daily-log/constants';
 import type { MonthSummary } from '@/screens/daily-log/hook';
@@ -368,15 +369,12 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
       // still on disk, so say that rather than "save failed", which reads as
       // "retype it".
       if (apiErrorStatus(err) == null) {
-        return {
-          ok: false,
-          error: 'ไม่มีสัญญาณ — ข้อมูลถูกเก็บไว้ในเครื่องแล้ว ส่งอีกครั้งเมื่อมีสัญญาณ',
-        };
+        return { ok: false, error: i18n.t('offlineSave.kept') };
       }
       const message =
         (err as { message?: string; details?: string })?.details ??
         (err as { message?: string })?.message ??
-        'บันทึกไม่สำเร็จ — โปรดลองใหม่';
+        i18n.t('pondLedger.saveFailed');
       return { ok: false, error: message };
     }
   }, [dirtyDays, invalidCount, valuesForDay, ym, feedPick, log, upsert]);

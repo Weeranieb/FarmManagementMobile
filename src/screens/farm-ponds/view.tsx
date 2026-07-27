@@ -1,10 +1,12 @@
 import { ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { SearchHeader, TopBar, Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Col, Row } from '@/components/layout/Row';
 import { SheetPondsForm } from '@/components/domain/SheetPondsForm';
+import { displayFarmName } from '@/utils/fmt';
 import { PondRowCard } from './components/PondRowCard';
 import { FilterTabs } from './components/FilterTabs';
 import { SearchSuggestions } from './components/SearchSuggestions';
@@ -39,7 +41,12 @@ export function FarmPondsView({
   creatingPonds,
 }: Props) {
   const { t } = useTheme();
-  const countLabel = `${counts.active} ใช้งาน · ${counts.maintenance} ปิดบ่อ`;
+  const { t: tx } = useTranslation();
+  const farmLabel = displayFarmName(farmTitle);
+  const countLabel = tx('farmPonds.countLabel', {
+    active: counts.active,
+    maintenance: counts.maintenance,
+  });
   const trimmed = query.trim();
   const showEmptyState = searchOpen && trimmed.length > 0 && filteredPonds.length === 0;
   const showSuggestions = searchOpen && trimmed.length === 0;
@@ -55,18 +62,18 @@ export function FarmPondsView({
             value={query}
             onChangeText={onChangeQuery}
             onCancel={onCloseSearch}
-            placeholder="ค้นหาบ่อ หรือชนิดปลา"
+            placeholder={tx('farmPonds.searchPlaceholder')}
           />
         ) : (
           <TopBar
-            title={`ฟาร์ม ${farmTitle}`}
+            title={farmLabel}
             subtitle={countLabel}
             leading={
               onBack ? (
                 <Tappable
                   onPress={onBack}
                   accessibilityRole="button"
-                  accessibilityLabel="ย้อนกลับ"
+                  accessibilityLabel={tx('common.back')}
                   style={{
                     width: 40,
                     height: 40,
@@ -86,7 +93,7 @@ export function FarmPondsView({
                 <Tappable
                   onPress={onOpenSearch}
                   accessibilityRole="button"
-                  accessibilityLabel="ค้นหาบ่อ"
+                  accessibilityLabel={tx('farmPonds.searchA11y')}
                   style={{
                     width: 40,
                     height: 40,
@@ -103,7 +110,7 @@ export function FarmPondsView({
                   <Tappable
                     onPress={openAddPonds}
                     accessibilityRole="button"
-                    accessibilityLabel="เพิ่มบ่อ"
+                    accessibilityLabel={tx('pond.addPonds')}
                     style={{
                       width: 40,
                       height: 40,
@@ -137,8 +144,8 @@ export function FarmPondsView({
 
         {showEmptyState ? (
           <SearchEmptyState
-            primary={`ไม่พบบ่อที่ตรงกับ "${trimmed}"`}
-            helper="ลองค้นด้วยชื่อบ่อ (เช่น A2) หรือชนิดปลา (เช่น ปลานิล)"
+            primary={tx('farmPonds.searchEmptyTitle', { query: trimmed })}
+            helper={tx('farmPonds.searchEmptyHelper')}
           />
         ) : showNoPonds ? (
           <NoPondsState canCreate={canCreate} onAdd={openAddPonds} />
@@ -146,7 +153,7 @@ export function FarmPondsView({
           <Col gap={10} style={{ paddingHorizontal: 20, paddingTop: showSuggestions ? 6 : 0 }}>
             {filteredPonds.length === 0 && !searchOpen ? (
               <Text style={{ fontSize: 14, color: t.inkMute, fontFamily: type.family }}>
-                {emptyFilterLabel(filter)}
+                {tx(emptyFilterLabelKey(filter))}
               </Text>
             ) : (
               filteredPonds.map((p) => (
@@ -159,7 +166,7 @@ export function FarmPondsView({
 
       <SheetPondsForm
         visible={addPondsOpen}
-        farmName={farmTitle}
+        farmName={farmLabel}
         saving={creatingPonds}
         onClose={closeAddPonds}
         onSubmit={submitAddPonds}
@@ -171,6 +178,7 @@ export function FarmPondsView({
 /** A farm with zero ponds — the state a just-created farm lands in. */
 function NoPondsState({ canCreate, onAdd }: { canCreate: boolean; onAdd: () => void }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ alignItems: 'center', paddingTop: 48, paddingHorizontal: 32, gap: 12 }}>
       <View
@@ -188,7 +196,7 @@ function NoPondsState({ canCreate, onAdd }: { canCreate: boolean; onAdd: () => v
       <Text
         style={{ fontSize: 17, fontFamily: type.familyBold, color: t.ink, textAlign: 'center' }}
       >
-        ยังไม่มีบ่อในฟาร์มนี้
+        {tx('farmPonds.noPonds.title')}
       </Text>
       <Text
         style={{
@@ -199,9 +207,7 @@ function NoPondsState({ canCreate, onAdd }: { canCreate: boolean; onAdd: () => v
           lineHeight: 20,
         }}
       >
-        {canCreate
-          ? 'เพิ่มบ่อเข้าฟาร์ม แล้วเติมปลาเพื่อเปิดใช้งานบ่อ'
-          : 'ให้เจ้าของฟาร์มเพิ่มบ่อให้ก่อน'}
+        {canCreate ? tx('farmPonds.noPonds.adminHelp') : tx('farmPonds.noPonds.workerHelp')}
       </Text>
       {canCreate ? (
         <Tappable
@@ -220,27 +226,32 @@ function NoPondsState({ canCreate, onAdd }: { canCreate: boolean; onAdd: () => v
           }}
         >
           <Icon.plus size={18} color="#fff" stroke={2.2} />
-          <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>เพิ่มบ่อ</Text>
+          <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
+            {tx('pond.addPonds')}
+          </Text>
         </Tappable>
       ) : null}
     </View>
   );
 }
 
-function emptyFilterLabel(filter: PondFilter): string {
-  if (filter === 'active') return 'ยังไม่มีบ่อที่ใช้งาน';
-  if (filter === 'maintenance') return 'ยังไม่มีบ่อที่ปิดอยู่';
-  return 'ยังไม่มีบ่อในฟาร์มนี้';
+function emptyFilterLabelKey(filter: PondFilter): string {
+  if (filter === 'active') return 'farmPonds.emptyFilter.active';
+  if (filter === 'maintenance') return 'farmPonds.emptyFilter.maintenance';
+  return 'farmPonds.noPonds.title';
 }
 
 function ResultsCount({ n, query }: { n: number; query: string }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Row gap={4} style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 6 }}>
-      <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>พบ</Text>
+      <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
+        {tx('farmPonds.resultsFound')}
+      </Text>
       <Text style={{ fontSize: 12, color: t.ink, fontFamily: type.familyNumBold }}>{n}</Text>
       <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-        {`รายการที่ตรงกับ "${query}"`}
+        {tx('farmPonds.resultsMatching', { query })}
       </Text>
     </Row>
   );

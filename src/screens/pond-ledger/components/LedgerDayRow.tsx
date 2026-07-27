@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
@@ -35,6 +36,7 @@ export const LedgerDayRow = memo(function LedgerDayRow({
   hasEvent,
   onCell,
 }: Props) {
+  const { t: tx } = useTranslation();
   const { t, mode } = useTheme();
   // "Logged" drives the emphasized treatment (bold day number, size-15 values).
   // Key it off what actually renders — fmtCell hides zeros — so an all-zero day
@@ -49,7 +51,7 @@ export const LedgerDayRow = memo(function LedgerDayRow({
           onPress={isFuture ? undefined : () => onCell(day, 'pm')}
           disabled={isFuture}
           accessibilityRole="button"
-          accessibilityLabel={`วันที่ ${day}`}
+          accessibilityLabel={tx('daily.dayA11y', { day })}
           style={{
             width: DAY_W,
             alignItems: 'center',

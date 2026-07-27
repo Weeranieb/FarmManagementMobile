@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Pill, PillText, Tappable } from '@/components/ui';
@@ -51,6 +52,7 @@ export function FeedPriceHistoryView({
   dismissPriceToast,
 }: FeedPriceHistoryState) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -62,7 +64,7 @@ export function FeedPriceHistoryView({
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <PriceHistoryTopBar
-        title={feed?.name ?? 'ประวัติราคา'}
+        title={feed?.name ?? tx('feedPrice.title')}
         kindLabel={feed ? FEED_TYPE_LABEL_TH[feed.kind] : null}
         kindTone={feed ? FEED_PILL_TONE_BY_KIND[feed.kind] : 'warn'}
         fcr={feed?.fcr ?? null}
@@ -172,6 +174,7 @@ function PriceHistoryTopBar({
   onOverflow: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View
       style={{
@@ -189,7 +192,7 @@ function PriceHistoryTopBar({
       <Tappable
         onPress={onBack}
         accessibilityRole="button"
-        accessibilityLabel="ย้อนกลับ"
+        accessibilityLabel={tx('common.back')}
         style={iconButtonStyle(t.border)}
       >
         <Icon.back size={18} color={t.ink} />
@@ -221,7 +224,7 @@ function PriceHistoryTopBar({
         <Tappable
           onPress={onOverflow}
           accessibilityRole="button"
-          accessibilityLabel="ตัวเลือก"
+          accessibilityLabel={tx('feedPrice.options')}
           style={iconButtonStyle(t.border)}
         >
           <Icon.more size={20} color={t.ink} />
@@ -252,11 +255,12 @@ function OverflowMenu({
   onAddPrice: () => void;
 }) {
   const { t, shadowLg } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <>
       <Pressable
         onPress={onClose}
-        accessibilityLabel="ปิดเมนู"
+        accessibilityLabel={tx('feedPrice.closeMenu')}
         style={{
           position: 'absolute',
           zIndex: 8,
@@ -297,7 +301,7 @@ function OverflowMenu({
         >
           <Icon.plus size={18} stroke={2.1} color={t.ink} />
           <Text style={{ fontSize: 14, fontFamily: type.familySemi, color: t.ink }}>
-            เพิ่มราคา
+            {tx('feedPrice.addPrice')}
           </Text>
         </Tappable>
       </View>
@@ -316,6 +320,7 @@ function NotFoundOrEmpty({
   onLogPrice: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View
       style={{
@@ -346,7 +351,7 @@ function NotFoundOrEmpty({
           textAlign: 'center',
         }}
       >
-        {isEmptyForKnownFeed ? 'ยังไม่มีประวัติราคา' : 'ไม่พบรายการอาหารนี้'}
+        {isEmptyForKnownFeed ? tx('feedPrice.noHistory') : tx('feedPrice.feedNotFound')}
       </Text>
       <Text
         style={{
@@ -359,8 +364,8 @@ function NotFoundOrEmpty({
         }}
       >
         {isEmptyForKnownFeed
-          ? 'บันทึกราคาใหม่เพื่อเริ่มเก็บประวัติ — ค่าเฉลี่ย ค่าสูงสุด/ต่ำสุด จะคำนวณให้อัตโนมัติ'
-          : 'ลองกลับไปยังหน้าคลังอาหารแล้วเปิดรายการที่ต้องการดู'}
+          ? tx('feedPrice.noHistoryHelp')
+          : tx('feedPrice.notFoundHelp')}
       </Text>
       {isEmptyForKnownFeed && isAdmin ? (
         <Tappable
@@ -379,7 +384,7 @@ function NotFoundOrEmpty({
         >
           <Icon.plus size={18} stroke={2.2} color="#fff" />
           <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 14 }}>
-            บันทึกราคาใหม่
+            {tx('feedPrice.logNewPrice')}
           </Text>
         </Tappable>
       ) : null}

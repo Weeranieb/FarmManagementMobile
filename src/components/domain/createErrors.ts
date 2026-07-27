@@ -1,4 +1,5 @@
 import { apiErrorMessage } from '@/shared/http';
+import i18n from '@/locale/i18n';
 
 /**
  * User-facing copy for the two failures a farm/pond create actually hits.
@@ -13,7 +14,7 @@ import { apiErrorMessage } from '@/shared/http';
  */
 export function createMasterDataErrorMessage(err: unknown, fallback: string): string {
   const code = err && typeof err === 'object' ? (err as { code?: unknown }).code : null;
-  if (code === '500041') return 'มีฟาร์มชื่อนี้อยู่แล้ว — ใช้ชื่ออื่น';
-  if (code === '500071') return 'มีบ่อชื่อนี้อยู่แล้วในฟาร์มนี้ — ยังไม่มีบ่อไหนถูกเพิ่ม';
+  if (code === '500041') return i18n.t('sheet.error.farmExists');
+  if (code === '500071') return i18n.t('sheet.error.pondExists');
   return apiErrorMessage(err, fallback);
 }

@@ -6,6 +6,7 @@ import { FISH_TH } from '@/utils/fmt';
 import { useCreatePonds, usePondsData, type CreatePondItem, type PondModel } from '@/features/pond';
 import { createMasterDataErrorMessage } from '@/components/domain/createErrors';
 import { useSearchQuery } from '@/hooks/useSearchQuery';
+import i18n from '@/locale/i18n';
 
 export type PondFilter = 'all' | 'active' | 'maintenance';
 
@@ -37,7 +38,8 @@ export function useFarmPondsScreen(farmId: number): FarmPondsScreenState {
   const { data: farmsRaw } = useFarmsData();
   const farms = Array.isArray(farmsRaw) ? farmsRaw : [];
   const farm = farms.find((f) => f.id === farmId);
-  const farmTitle = farm?.name ?? 'ฟาร์ม';
+  // Raw name — the view prefixes it for display via `displayFarmName`.
+  const farmTitle = farm?.name ?? '';
   const { data: pondsRaw } = usePondsData(farmId);
   const ponds = useMemo(() => (Array.isArray(pondsRaw) ? pondsRaw : []), [pondsRaw]);
 
@@ -65,10 +67,8 @@ export function useFarmPondsScreen(farmId: number): FarmPondsScreenState {
         {
           onSuccess: () => setAddPondsOpen(false),
           onError: (err) => {
-            Alert.alert(
-              'เพิ่มบ่อไม่สำเร็จ',
-              createMasterDataErrorMessage(err, 'เพิ่มบ่อไม่สำเร็จ'),
-            );
+            const title = i18n.t('farmPonds.addFailed');
+            Alert.alert(title, createMasterDataErrorMessage(err, title));
           },
         },
       );

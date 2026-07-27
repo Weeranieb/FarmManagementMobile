@@ -1,15 +1,18 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 
-const RECENT: string[] = ['A2', 'ปลานิล', 'ปลากะพง'];
-
 type Props = { onPick: (s: string) => void };
 
 export function SearchSuggestions({ onPick }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
+  // Example queries — a pond name plus the two commonest fish, localized so an
+  // English user isn't offered Thai terms the search then can't match.
+  const recent = ['A2', tx('fish.nil'), tx('fish.kaphong')];
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 }}>
       <Text
@@ -22,16 +25,16 @@ export function SearchSuggestions({ onPick }: Props) {
           marginBottom: 8,
         }}
       >
-        ค้นหาล่าสุด
+        {tx('farmPonds.recentSearches')}
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        {RECENT.map((r) => (
+        {recent.map((r) => (
           <Tappable
             key={r}
             feedback="opacity"
             onPress={() => onPick(r)}
             accessibilityRole="button"
-            accessibilityLabel={`ค้นหา ${r}`}
+            accessibilityLabel={tx('common.searchFor', { query: r })}
             style={{
               paddingHorizontal: 12,
               paddingVertical: 8,

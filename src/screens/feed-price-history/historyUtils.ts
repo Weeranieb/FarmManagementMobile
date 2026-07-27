@@ -6,12 +6,13 @@ import type { FeedPriceHistoryEntry } from '@/features/feed-collection';
 
 export type RangeId = '1m' | '3m' | '6m' | '1y' | 'all';
 
-export const RANGES: readonly { id: RangeId; label: string }[] = [
-  { id: '1m', label: '1ด' },
-  { id: '3m', label: '3ด' },
-  { id: '6m', label: '6ด' },
-  { id: '1y', label: '1ป' },
-  { id: 'all', label: 'ทั้งหมด' },
+/** Label keys, resolved by the consumer so a language switch re-renders them. */
+export const RANGES: readonly { id: RangeId; labelKey: string }[] = [
+  { id: '1m', labelKey: 'feedPrice.range.1m' },
+  { id: '3m', labelKey: 'feedPrice.range.3m' },
+  { id: '6m', labelKey: 'feedPrice.range.6m' },
+  { id: '1y', labelKey: 'feedPrice.range.1y' },
+  { id: 'all', labelKey: 'common.all' },
 ];
 
 export function sliceByRange(

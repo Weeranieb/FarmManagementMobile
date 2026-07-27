@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { dangerInk } from '@/theme/ink';
@@ -21,6 +22,7 @@ type Props = {
 
 export function TimelineList({ entries, isAdmin, currentId, onEditEntry }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ marginTop: 4 }}>
       <View
@@ -34,11 +36,12 @@ export function TimelineList({ entries, isAdmin, currentId, onEditEntry }: Props
         }}
       >
         <Text style={{ fontSize: 14, fontFamily: type.familyBold, color: t.ink }}>
-          ประวัติราคา
+          {tx('feedPrice.timeline.title')}
         </Text>
         <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>
-          <Text style={{ fontFamily: type.familyNumSemi }}>{entries.length}</Text> รายการ
-          {isAdmin ? ' · แตะเพื่อแก้ไข' : ''}
+          <Text style={{ fontFamily: type.familyNumSemi }}>{entries.length}</Text>{' '}
+          {tx('feedPrice.timeline.countUnit')}
+          {isAdmin ? tx('feedPrice.timeline.tapToEdit') : ''}
         </Text>
       </View>
       <Card padded={false}>
@@ -84,11 +87,12 @@ function PriceRow({
   onEdit: () => void;
 }) {
   const { t, mode } = useTheme();
+  const { t: tx } = useTranslation();
   const d = new Date(entry.effectiveDate);
 
   let chipBg = t.surfaceAlt;
   let chipFg = t.inkMute;
-  let chipText = 'รายการแรก';
+  let chipText = tx('feedPrice.timeline.firstEntry');
   let ChipIcon: ((p: { size?: number; stroke?: number; color?: string }) => React.JSX.Element) | null =
     null;
   if (delta != null && pct != null) {
@@ -115,7 +119,9 @@ function PriceRow({
       onPress={onEdit}
       disabled={!isAdmin}
       accessibilityRole={isAdmin ? 'button' : undefined}
-      accessibilityLabel={isAdmin ? `แก้ไขราคา ${thaiDate.long(d)}` : undefined}
+      accessibilityLabel={
+        isAdmin ? tx('feedPrice.timeline.editA11y', { date: thaiDate.long(d) }) : undefined
+      }
     >
       {/* Layout goes on this inner View, not the Pressable. A flex row set
           directly on a Pressable's function-style renders as a column under
@@ -177,7 +183,7 @@ function PriceRow({
               }}
             >
               <Text style={{ fontSize: 10, fontFamily: type.familyBold, color: t.brandInk }}>
-                ราคาปัจจุบัน
+                {tx('feedPrice.timeline.current')}
               </Text>
             </View>
           ) : null}

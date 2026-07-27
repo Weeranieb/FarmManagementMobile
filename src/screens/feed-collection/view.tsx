@@ -2,6 +2,7 @@ import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { SearchHeader, TopBar, Tappable } from '@/components/ui';
@@ -47,6 +48,7 @@ export function FeedCollectionView({
   showHeader = true,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const trimmed = query.trim();
@@ -70,9 +72,9 @@ export function FeedCollectionView({
         {showResultCount ? (
           <View style={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 6 }}>
             <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-              พบ{' '}
+              {tx('feedCollection.resultsFound')}{' '}
               <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>{filtered.length}</Text>{' '}
-              รายการที่ตรงกับ &ldquo;{trimmed}&rdquo;
+              {tx('feedCollection.resultsMatching')} &ldquo;{trimmed}&rdquo;
             </Text>
           </View>
         ) : null}
@@ -88,19 +90,23 @@ export function FeedCollectionView({
             value={query}
             onChangeText={onChangeQuery}
             onCancel={onCloseSearch}
-            placeholder="ค้นหาอาหาร · ประเภท · ผู้ขาย"
+            placeholder={tx('feedCollection.searchPlaceholder')}
           />
         ) : (
           <TopBar
-            title="คลังอาหาร"
-            subtitle={isEmpty ? 'ยังไม่มีรายการ' : `${feeds.length} รายการ`}
+            title={tx('feedCollection.title')}
+            subtitle={
+              isEmpty
+                ? tx('feedCollection.countEmpty')
+                : tx('feedCollection.count', { count: feeds.length })
+            }
             leading={
               <Tappable
                 onPress={() =>
                   router.canGoBack() ? router.back() : router.replace('/(app)/(tabs)/manage')
                 }
                 accessibilityRole="button"
-                accessibilityLabel="ย้อนกลับ"
+                accessibilityLabel={tx('common.back')}
                 style={iconButtonStyle(t.border)}
               >
                 <Icon.back size={18} color={t.ink} />
@@ -111,7 +117,7 @@ export function FeedCollectionView({
                 <Tappable
                   onPress={onOpenSearch}
                   accessibilityRole="button"
-                  accessibilityLabel="ค้นหาอาหาร"
+                  accessibilityLabel={tx('feedCollection.searchA11y')}
                   style={iconButtonStyle(t.border)}
                 >
                   <Icon.search size={18} color={t.ink} />
@@ -178,7 +184,7 @@ export function FeedCollectionView({
           <Tappable
             onPress={openAdd}
             accessibilityRole="button"
-            accessibilityLabel="เพิ่มอาหาร"
+            accessibilityLabel={tx('feedCollection.add')}
             style={{
               height: 52,
               borderRadius: radii.md,
@@ -191,7 +197,7 @@ export function FeedCollectionView({
           >
             <Icon.plus size={20} color="#fff" stroke={2.2} />
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: type.sizes.base }}>
-              เพิ่มอาหาร
+              {tx('feedCollection.add')}
             </Text>
           </Tappable>
         </View>
@@ -243,6 +249,7 @@ function FeedSeparator() {
 
 function SearchEmpty({ query }: { query: string }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ paddingTop: 56, paddingHorizontal: 32, paddingBottom: 24, alignItems: 'center' }}>
       <View
@@ -268,7 +275,7 @@ function SearchEmpty({ query }: { query: string }) {
           textAlign: 'center',
         }}
       >
-        ไม่พบอาหารที่ตรงกับ &ldquo;{query}&rdquo;
+        {tx('feedCollection.searchEmptyTitle')} &ldquo;{query}&rdquo;
       </Text>
       <Text
         style={{
@@ -280,7 +287,7 @@ function SearchEmpty({ query }: { query: string }) {
           textAlign: 'center',
         }}
       >
-        ลองค้นด้วยชื่อยี่ห้อ (เช่น ซีพี, เบทาโกร) หรือประเภท (เม็ด · สด)
+        {tx('feedCollection.searchEmptyHelper')}
       </Text>
     </View>
   );

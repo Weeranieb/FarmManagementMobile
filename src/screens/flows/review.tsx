@@ -3,6 +3,7 @@
 // (§⑤ Web-parity · Confirmation in FAB Picker Fix.html).
 
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type, type ThemePalette } from '@/theme/tokens';
 import { Card } from '@/components/ui';
@@ -99,8 +100,9 @@ export function ReviewRow({
 }
 
 /** Empty placeholder used inside an additional-costs section with zero rows. */
-export function ReviewEmpty({ label = '— ไม่มี —' }: { label?: string }) {
+export function ReviewEmpty({ label }: { label?: string }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ paddingVertical: 14 }}>
       <Text
@@ -111,7 +113,7 @@ export function ReviewEmpty({ label = '— ไม่มี —' }: { label?: str
           fontFamily: type.family,
         }}
       >
-        {label}
+        {label ?? tx('flows.none')}
       </Text>
     </View>
   );
@@ -206,11 +208,13 @@ export function GrandTotalBlock({
 
 /** "⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้" sticker pinned above the confirm row. */
 export function WarningBanner({
-  msg = '⚠️ การดำเนินการนี้ไม่สามารถย้อนกลับได้',
+  msg,
 }: {
   msg?: string;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
+  const warning = msg ?? tx('flows.irreversible');
   return (
     <View
       style={{
@@ -236,7 +240,7 @@ export function WarningBanner({
           lineHeight: 19,
         }}
       >
-        {msg}
+        {warning}
       </Text>
     </View>
   );
@@ -279,6 +283,7 @@ export function AdditionalCostsList({
   /** '+' (default) shows raw value; '-' prepends '-' to each amount (sell screen). */
   signed?: '+' | '-';
 }) {
+  const { t: tx } = useTranslation();
   const filtered = rows.filter((r) => r.category.trim() || parseFloat(r.amount) > 0);
   if (filtered.length === 0) return <ReviewEmpty />;
   const total = filtered.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
@@ -293,7 +298,7 @@ export function AdditionalCostsList({
           last={i === filtered.length - 1}
         />
       ))}
-      <SubtotalRow label="รวมค่าใช้จ่ายเพิ่มเติม" value={fmtAmount(total)} />
+      <SubtotalRow label={tx('flows.extraCostsTotal')} value={fmtAmount(total)} />
     </>
   );
 }

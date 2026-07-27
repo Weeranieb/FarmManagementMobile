@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -36,6 +37,7 @@ type Props = {
  */
 export function SheetFarmForm({ visible, saving = false, onClose, onSubmit }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const [name, setName] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -52,7 +54,7 @@ export function SheetFarmForm({ visible, saving = false, onClose, onSubmit }: Pr
   }, [visible]);
 
   const cleaned = normalizeFarmName(name);
-  const error = cleaned.length === 0 ? 'ใส่ชื่อฟาร์ม' : null;
+  const error = cleaned.length === 0 ? tx('sheet.farm.nameRequired') : null;
 
   const handleSubmit = () => {
     if (error) {
@@ -73,7 +75,7 @@ export function SheetFarmForm({ visible, saving = false, onClose, onSubmit }: Pr
               numberOfLines={1}
               style={{ fontFamily: type.familyBold, fontSize: type.sizes.lg, color: t.ink }}
             >
-              สร้างฟาร์ม
+              {tx('sheet.farm.title')}
             </Text>
             <Text
               numberOfLines={1}
@@ -84,14 +86,14 @@ export function SheetFarmForm({ visible, saving = false, onClose, onSubmit }: Pr
                 marginTop: 2,
               }}
             >
-              ตั้งชื่อฟาร์ม แล้วเพิ่มบ่อในขั้นถัดไป
+              {tx('sheet.farm.subtitle')}
             </Text>
           </View>
           <Tappable
             onPress={onClose}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="ปิด"
+            accessibilityLabel={tx('common.close')}
             style={{
               width: 40,
               height: 40,
@@ -109,13 +111,15 @@ export function SheetFarmForm({ visible, saving = false, onClose, onSubmit }: Pr
 
       <View style={{ paddingHorizontal: space[5], paddingTop: space[2] }}>
         <Row gap={4} align="center" style={{ marginBottom: 6 }}>
-          <Text style={{ fontSize: 13, fontFamily: type.familySemi, color: t.ink }}>ชื่อฟาร์ม</Text>
+          <Text style={{ fontSize: 13, fontFamily: type.familySemi, color: t.ink }}>
+            {tx('sheet.farm.nameLabel')}
+          </Text>
           <Text style={{ color: t.danger, fontFamily: type.familySemi, fontSize: 13 }}>*</Text>
         </Row>
         <Input
           value={name}
           onChangeText={setName}
-          placeholder="เช่น 1, บางเลน, ฟาร์มลุงสมชาย"
+          placeholder={tx('sheet.farm.placeholder')}
           maxLength={FARM_NAME_MAX}
           autoCapitalize="none"
           returnKeyType="done"
@@ -130,7 +134,7 @@ export function SheetFarmForm({ visible, saving = false, onClose, onSubmit }: Pr
             marginTop: 4,
           }}
         >
-          {submitted && error ? error : 'ไม่ต้องพิมพ์คำว่า "ฟาร์ม" — ระบบเติมให้เอง'}
+          {submitted && error ? error : tx('sheet.farm.hint')}
         </Text>
       </View>
 
@@ -149,7 +153,9 @@ export function SheetFarmForm({ visible, saving = false, onClose, onSubmit }: Pr
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>ยกเลิก</Text>
+            <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>
+              {tx('common.cancel')}
+            </Text>
           </Tappable>
           <Tappable
             onPress={handleSubmit}
@@ -166,7 +172,7 @@ export function SheetFarmForm({ visible, saving = false, onClose, onSubmit }: Pr
             }}
           >
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-              {saving ? 'กำลังสร้าง…' : 'สร้างฟาร์ม'}
+              {saving ? tx('sheet.farm.submitting') : tx('sheet.farm.title')}
             </Text>
           </Tappable>
         </Row>

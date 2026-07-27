@@ -2,6 +2,7 @@ import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { SearchHeader, Tappable, TopBar } from '@/components/ui';
@@ -41,6 +42,7 @@ export function MerchantsView({
   showHeader = true,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const trimmed = query.trim();
@@ -60,9 +62,9 @@ export function MerchantsView({
   const listHeader = showResultCount ? (
     <View style={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 6 }}>
       <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-        พบ{' '}
+        {tx('merchants.resultsFound')}{' '}
         <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>{filtered.length}</Text>{' '}
-        รายชื่อที่ตรงกับ &ldquo;{trimmed}&rdquo;
+        {tx('merchants.resultsMatching')} &ldquo;{trimmed}&rdquo;
       </Text>
     </View>
   ) : null;
@@ -75,19 +77,23 @@ export function MerchantsView({
             value={query}
             onChangeText={onChangeQuery}
             onCancel={onCloseSearch}
-            placeholder="ค้นหาชื่อ · เบอร์ · ที่อยู่"
+            placeholder={tx('merchants.searchPlaceholder')}
           />
         ) : (
           <TopBar
-            title="ผู้ขาย"
-            subtitle={isEmpty ? 'ยังไม่มีรายชื่อ' : `${merchants.length} รายชื่อ`}
+            title={tx('merchants.title')}
+            subtitle={
+              isEmpty
+                ? tx('merchants.countEmpty')
+                : tx('merchants.count', { count: merchants.length })
+            }
             leading={
               <Tappable
                 onPress={() =>
                   router.canGoBack() ? router.back() : router.replace('/(app)/(tabs)/manage')
                 }
                 accessibilityRole="button"
-                accessibilityLabel="ย้อนกลับ"
+                accessibilityLabel={tx('common.back')}
                 style={iconButtonStyle(t.border)}
               >
                 <Icon.back size={18} color={t.ink} />
@@ -98,7 +104,7 @@ export function MerchantsView({
                 <Tappable
                   onPress={onOpenSearch}
                   accessibilityRole="button"
-                  accessibilityLabel="ค้นหาผู้ขาย"
+                  accessibilityLabel={tx('merchants.searchA11y')}
                   style={iconButtonStyle(t.border)}
                 >
                   <Icon.search size={18} color={t.ink} />
@@ -160,7 +166,7 @@ export function MerchantsView({
           <Tappable
             onPress={openAdd}
             accessibilityRole="button"
-            accessibilityLabel="เพิ่มผู้ขาย"
+            accessibilityLabel={tx('merchants.add')}
             style={{
               height: 52,
               borderRadius: radii.md,
@@ -173,7 +179,7 @@ export function MerchantsView({
           >
             <Icon.plus size={20} color="#fff" stroke={2.2} />
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: type.sizes.base }}>
-              เพิ่มผู้ขาย
+              {tx('merchants.add')}
             </Text>
           </Tappable>
         </View>
@@ -214,6 +220,7 @@ function Separator() {
 
 function SearchEmpty({ query }: { query: string }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ paddingTop: 56, paddingHorizontal: 32, paddingBottom: 24, alignItems: 'center' }}>
       <View
@@ -239,7 +246,7 @@ function SearchEmpty({ query }: { query: string }) {
           textAlign: 'center',
         }}
       >
-        ไม่พบผู้ขายที่ตรงกับ &ldquo;{query}&rdquo;
+        {tx('merchants.searchEmptyTitle')} &ldquo;{query}&rdquo;
       </Text>
       <Text
         style={{
@@ -251,7 +258,7 @@ function SearchEmpty({ query }: { query: string }) {
           textAlign: 'center',
         }}
       >
-        ลองค้นด้วยชื่อ เบอร์โทร หรือชื่อตลาด
+        {tx('merchants.searchEmptyHelper')}
       </Text>
     </View>
   );
