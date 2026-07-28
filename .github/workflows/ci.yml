@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+# A new push to the same branch makes the previous run irrelevant.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck · Lint · Locales · Bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Every check below runs even when an earlier one fails, so a red build
+      # reports everything that is wrong in one pass instead of one thing per
+      # push. The job still fails if any single step does.
+      - name: Typecheck
+        if: ${{ !cancelled() }}
+        run: npm run typecheck
+
+      # Errors only. `eslint.config.js` deliberately sets react-compiler to
+      # "warn" — a bail-out is a signal to make a component compiler-friendly,
+      # not a reason to block a merge — so warnings are reported, not gated.
+      - name: Lint
+        if: ${{ !cancelled() }}
+        run: npm run lint
+
+      - name: Locale parity
+        if: ${{ !cancelled() }}
+        run: npm run check:locales
+
+      # Resolves and bundles the whole app through Metro (~15s). Catches what
+      # typecheck cannot: a missing runtime-only file, an unresolvable import,
+      # a bad asset path.
+      - name: Bundle
+        if: ${{ !cancelled() }}
+        run: npx expo export --platform ios --output-dir "$RUNNER_TEMP/expo-export"
