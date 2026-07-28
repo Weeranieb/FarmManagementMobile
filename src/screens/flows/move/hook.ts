@@ -5,7 +5,15 @@ import { useMovePond, usePondData, usePondsData } from '@/features/pond';
 import { useAuthStore } from '@/features/auth';
 import { apiErrorMessage } from '@/shared/http';
 import { toIsoDate } from '@/shared/time';
-import { additionalCostsTotal, toWireCosts, type CostRow } from '../additional-costs';
+import { toWireCosts, type CostRow } from '../additional-costs';
+import {
+  additionalCostsTotal,
+  fishValue,
+  moveSplit,
+  toCount,
+  toDecimal,
+  totalWeightKg as totalWeight,
+} from '../money';
 import i18n from '@/locale/i18n';
 
 // Standard species ordering — same canonical list the fill flow uses. Keeps
@@ -86,15 +94,18 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
     ];
   }, [fromPond]);
 
-  const amountNum = parseInt(amount || '0', 10);
-  const priceNum = parseFloat(pricePerUnit || '0');
-  const weightNum = parseFloat(avgWeightKg || '0');
-  const totalWeightKg = useMemo(() => amountNum * weightNum, [amountNum, weightNum]);
+  const amountNum = toCount(amount);
+  const priceNum = toDecimal(pricePerUnit);
+  const weightNum = toDecimal(avgWeightKg);
+  const totalWeightKg = useMemo(
+    () => totalWeight(amountNum, weightNum),
+    [amountNum, weightNum],
+  );
 
-  // Fish-value at submit time: amount × avg weight × price/kg (matches the
-  // CalculateMoveCost formula on the backend and the fill flow's cost basis).
+  // Fish value at submit time — same basis as the fill flow and the backend's
+  // CalculateMoveCost. See `../money`.
   const fishCost = useMemo(
-    () => Math.round(amountNum * weightNum * priceNum),
+    () => fishValue(amountNum, weightNum, priceNum),
     [amountNum, weightNum, priceNum],
   );
   const extraTotal = useMemo(
@@ -103,18 +114,17 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
   );
   const grandTotal = useMemo(() => fishCost + extraTotal, [fishCost, extraTotal]);
 
-  // Per-side cost split — mirrors the backend's CalcMovePond. Additional
-  // costs are split 50/50; the source treats the move as a sale (fish value
-  // is revenue, halfExtra is its cost share), the destination treats it as
-  // a purchase (fish value + halfExtra). Useful for showing both sides on
-  // the review screen without a preview round-trip.
-  const halfExtra = useMemo(() => Math.round(extraTotal / 2), [extraTotal]);
-  const sourceFishRevenue = fishCost;
-  const sourceAdditionalCost = halfExtra;
-  const sourceNetEffect = fishCost - halfExtra;
-  const destFishCost = fishCost;
-  const destAdditionalCost = halfExtra;
-  const destTotalCost = fishCost + halfExtra;
+  // Per-side split — mirrors the backend's CalcMovePond, so the review screen
+  // can show both sides without a preview round-trip.
+  const {
+    halfExtra,
+    sourceFishRevenue,
+    sourceAdditionalCost,
+    sourceNetEffect,
+    destFishCost,
+    destAdditionalCost,
+    destTotalCost,
+  } = useMemo(() => moveSplit(fishCost, extraTotal), [fishCost, extraTotal]);
 
   const moveMutation = useMovePond(fromId ?? 0);
   const isAuthed = useAuthStore((s) => s.token != null);

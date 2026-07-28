@@ -1,6 +1,9 @@
 node_modules/
 .expo/
 dist/
+
+# Jest coverage output (see jest.config.js collectCoverageFrom)
+coverage/
 web-build/
 .env
 .env.local

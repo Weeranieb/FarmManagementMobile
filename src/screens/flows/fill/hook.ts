@@ -5,7 +5,14 @@ import { useFillPond, usePondData, usePondsData } from '@/features/pond';
 import { useAuthStore } from '@/features/auth';
 import { apiErrorMessage } from '@/shared/http';
 import { toIsoDate } from '@/shared/time';
-import { additionalCostsTotal, toWireCosts, type CostRow } from '../additional-costs';
+import { toWireCosts, type CostRow } from '../additional-costs';
+import {
+  additionalCostsTotal,
+  fishValue,
+  toCount,
+  toDecimal,
+  totalWeightKg as totalWeight,
+} from '../money';
 import i18n from '@/locale/i18n';
 
 export function useFillFlow(initialPondId: number | undefined, onClose?: () => void) {
@@ -112,15 +119,13 @@ export function useFillFlow(initialPondId: number | undefined, onClose?: () => v
     }
   };
 
-  const amountNum = parseInt(amount || '0', 10);
-  const priceNum = parseFloat(pricePerUnit || '0');
-  const weightNum = parseFloat(avgWeightKg || '0');
+  const amountNum = toCount(amount);
+  const priceNum = toDecimal(pricePerUnit);
+  const weightNum = toDecimal(avgWeightKg);
 
-  // Cost basis = จำนวน × น้ำหนักเฉลี่ยต่อตัว × ราคาต่อกก.
-  //   amount  ×    avgWeightKg              ×  pricePerKg
-  // (matches web "ต้นทุนรวม = น้ำหนักรวม × ราคาต่อหน่วย".)
+  // Cost basis = จำนวน × น้ำหนักเฉลี่ยต่อตัว × ราคาต่อกก. See `../money`.
   const fishCost = useMemo(
-    () => Math.round(amountNum * weightNum * priceNum),
+    () => fishValue(amountNum, weightNum, priceNum),
     [amountNum, weightNum, priceNum],
   );
   const extraTotal = useMemo(
@@ -128,7 +133,10 @@ export function useFillFlow(initialPondId: number | undefined, onClose?: () => v
     [additionalCosts],
   );
   const grandTotal = useMemo(() => fishCost + extraTotal, [fishCost, extraTotal]);
-  const totalWeightKg = useMemo(() => amountNum * weightNum, [amountNum, weightNum]);
+  const totalWeightKg = useMemo(
+    () => totalWeight(amountNum, weightNum),
+    [amountNum, weightNum],
+  );
 
   const stockBefore = pond?.totalFish ?? 0;
   const delta = amountNum;
