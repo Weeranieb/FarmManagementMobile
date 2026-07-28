@@ -9,6 +9,13 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.19](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.18...v0.2.19) (2026-07-28)
+
+
+### Features
+
+* offline drafts, i18n, error states, session expiry, feed paging and staff management ([#49](https://github.com/Weeranieb/FarmManagementMobile/issues/49)) ([b0f595d](https://github.com/Weeranieb/FarmManagementMobile/commit/b0f595dfd5ac264d33a19e8e14733b4306f175c5))
+
 ## [0.2.18](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.17...v0.2.18) (2026-07-25)
 
 
