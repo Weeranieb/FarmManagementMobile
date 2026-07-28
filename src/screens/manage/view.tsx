@@ -179,19 +179,6 @@ export function ManageView({
             onPress={openWorkers}
           />
         </View>
-
-        <View style={{ paddingHorizontal: space[6], paddingTop: space[4], paddingBottom: space[3] }}>
-          <Text
-            style={{
-              fontSize: type.sizes.xs,
-              color: t.inkMute,
-              lineHeight: 18,
-              fontFamily: type.family,
-            }}
-          >
-            {tx('manage.footnote')}
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );

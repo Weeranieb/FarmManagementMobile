@@ -48,7 +48,6 @@
     "merchantSub": "{{count}} traders · Updated {{date}}",
     "merchantSubNoDate": "{{count}} traders",
     "merchantSubEmpty": "No traders yet — tap to add",
-    "footnote": "You see this tab because you're a farm owner or admin · regular users won't see it",
     "adminOnly": "This page is for farm owners and admins only",
     "workerSub": "{{count}} people",
     "workerSubEmpty": "No staff yet"
