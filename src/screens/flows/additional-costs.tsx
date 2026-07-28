@@ -9,6 +9,7 @@
 
 import type { AdditionalCostItem } from '@/features/pond';
 import { Platform, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type, type ThemePalette } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -27,7 +28,13 @@ export function toWireCosts(rows: CostRow[]): AdditionalCostItem[] {
     .filter((c) => c.title.length > 0 && c.cost > 0);
 }
 
-const PRESETS = ['ค่าขนส่ง', 'ค่าแรง', 'ค่ารถ', 'ค่าอาหาร'] as const;
+/** Preset category keys — resolved in the component so a language switch applies. */
+const PRESET_KEYS = [
+  'flows.costTransport',
+  'flows.costLabor',
+  'flows.costTruck',
+  'flows.costFeed',
+] as const;
 
 type Tone = 'fill' | 'sell' | 'move';
 
@@ -72,6 +79,7 @@ function AddChip({
   onPress: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Tappable
       onPress={used ? undefined : onPress}
@@ -79,7 +87,9 @@ function AddChip({
       hitSlop={8}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!used }}
-      accessibilityLabel={used ? `${label} — เพิ่มแล้ว` : `เพิ่ม${label}`}
+      accessibilityLabel={
+        used ? tx('flows.costAdded', { name: label }) : tx('flows.addNamed', { name: label })
+      }
       style={{
         opacity: used ? 0.5 : 1,
         alignSelf: 'flex-start',
@@ -130,7 +140,9 @@ function CostRowItem({
   onRemove: () => void;
 }) {
   const { t } = useTheme();
-  const isPreset = (PRESETS as readonly string[]).includes(row.category.trim());
+  const { t: tx } = useTranslation();
+  const presets = PRESET_KEYS.map((k) => tx(k));
+  const isPreset = presets.includes(row.category.trim());
   return (
     <View
       style={{
@@ -161,7 +173,7 @@ function CostRowItem({
         <TextInput
           value={row.category}
           onChangeText={onCategory}
-          placeholder="ระบุหมวด"
+          placeholder={tx('flows.category')}
           placeholderTextColor={t.inkMute}
           style={{
             flex: 1,
@@ -216,7 +228,7 @@ function CostRowItem({
         onPress={onRemove}
         hitSlop={6}
         accessibilityRole="button"
-        accessibilityLabel="ลบรายการนี้"
+        accessibilityLabel={tx('flows.removeRow')}
         style={{
           width: 42,
           height: 48,
@@ -234,6 +246,7 @@ function CostRowItem({
 
 export function AdditionalCostsEditor({ tone, rows, onChange }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const c = toneColors(t, tone);
 
   const usedPresets = new Set(rows.map((r) => r.category.trim()));
@@ -254,7 +267,7 @@ export function AdditionalCostsEditor({ tone, rows, onChange }: Props) {
       {/* Chip menu — the single way to add a cost. Presets check off once used;
           "อื่นๆ" appends a custom, free-text row. */}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space[2] }}>
-        {PRESETS.map((p) => (
+        {PRESET_KEYS.map((k) => tx(k)).map((p) => (
           <AddChip
             key={p}
             label={p}
@@ -263,7 +276,7 @@ export function AdditionalCostsEditor({ tone, rows, onChange }: Props) {
             onPress={() => addPreset(p)}
           />
         ))}
-        <AddChip label="อื่นๆ" ink={c.ink} onPress={addCustom} />
+        <AddChip label={tx('flows.costOther')} ink={c.ink} onPress={addCustom} />
       </View>
 
       {rows.length > 0 ? (
@@ -293,7 +306,7 @@ export function AdditionalCostsEditor({ tone, rows, onChange }: Props) {
           }}
         >
           <Text style={{ fontSize: type.sizes.sm, color: c.ink, fontFamily: type.familySemi }}>
-            รวมค่าใช้จ่าย
+            {tx('flows.costsTotal')}
           </Text>
           <Text style={{ fontFamily: type.familyNumBold, fontSize: type.sizes.md, color: c.ink }}>
             {fmt.baht(sum)}

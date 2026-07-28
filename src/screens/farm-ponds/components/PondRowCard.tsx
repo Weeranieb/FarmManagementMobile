@@ -1,20 +1,15 @@
 import { Platform, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space, type } from '@/theme/tokens';
 import { Card } from '@/components/ui';
 import { Row, Col } from '@/components/layout/Row';
 import { StatusBadge } from '@/components/domain/StatusPip';
-import { fmt, FISH_TH } from '@/utils/fmt';
+import { displayPondName, fmt, FISH_TH } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import type { PondModel } from '@/features/pond';
 
 type Props = { pond: PondModel; onPress?: () => void };
-
-const CLOSE_LABEL: Record<'fill' | 'move' | 'sell', string> = {
-  fill: 'เติม',
-  move: 'ย้าย',
-  sell: 'ขาย',
-};
 
 /**
  * Flat, fixed-height pond row. Both active and maintenance states share the same
@@ -23,14 +18,20 @@ const CLOSE_LABEL: Record<'fill' | 'move' | 'sell', string> = {
  */
 export function PondRowCard({ pond, onPress }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const isMaintenance = pond.status === 'maintenance';
 
   const fishText = pond.fishTypes.map((ft) => FISH_TH[ft] ?? ft).join(', ');
-  const activeMeta = [fishText, `อายุ ${pond.ageDays ?? 0} วัน`].filter(Boolean).join(' · ');
+  const activeMeta = [fishText, tx('pond.ageDays', { days: pond.ageDays ?? 0 })]
+    .filter(Boolean)
+    .join(' · ');
   const maintMeta =
     pond.latestActivityDate && pond.latestActivityType
-      ? `ปิดอยู่ · ${CLOSE_LABEL[pond.latestActivityType]} ${thaiDate.short(new Date(pond.latestActivityDate))}`
-      : 'ปิดอยู่ — เริ่มรอบใหม่ได้';
+      ? tx('farmPonds.closedWithAction', {
+          action: tx(`pond.actions.${pond.latestActivityType}`),
+          date: thaiDate.short(new Date(pond.latestActivityDate)),
+        })
+      : tx('farmPonds.closedIdle');
 
   return (
     <Card padded={false} onPress={onPress} style={{ overflow: 'hidden' }}>
@@ -52,7 +53,7 @@ export function PondRowCard({ pond, onPress }: Props) {
                 ...Platform.select({ android: { includeFontPadding: false } }),
               }}
             >
-              {`บ่อ ${pond.name}`}
+              {displayPondName(pond.name)}
             </Text>
             {/* Neutralize the Pill's own alignSelf so it centres in the row */}
             <View>
@@ -91,7 +92,7 @@ export function PondRowCard({ pond, onPress }: Props) {
                 marginLeft: 3,
               }}
             >
-              ตัว
+              {tx('unit.fish')}
             </Text>
           </View>
         ) : null}

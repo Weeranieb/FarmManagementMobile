@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -37,6 +38,7 @@ type Props = {
  */
 export function SheetMerchantForm({ visible, editing, saving = false, onClose, onSubmit }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const isEdit = editing != null;
 
   const [name, setName] = useState(editing?.name ?? '');
@@ -84,14 +86,14 @@ export function SheetMerchantForm({ visible, editing, saving = false, onClose, o
               numberOfLines={1}
               style={{ fontFamily: type.familyBold, fontSize: type.sizes.lg, color: t.ink }}
             >
-              {isEdit ? 'แก้ไขข้อมูล ผู้ขาย' : 'เพิ่มผู้ขาย'}
+              {isEdit ? tx('merchants.edit') : tx('merchants.add')}
             </Text>
             {!isEdit ? (
               <Text
                 numberOfLines={1}
                 style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}
               >
-                ชื่อผู้ซื้อ / ตลาด และช่องทางติดต่อ
+                {tx('merchants.form.subtitle')}
               </Text>
             ) : null}
           </View>
@@ -99,7 +101,7 @@ export function SheetMerchantForm({ visible, editing, saving = false, onClose, o
             onPress={onClose}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="ปิด"
+            accessibilityLabel={tx('common.close')}
             style={{
               width: 40,
               height: 40,
@@ -118,11 +120,15 @@ export function SheetMerchantForm({ visible, editing, saving = false, onClose, o
       {/* Plain View (not a ScrollView) so the sheet hugs its content via
           fitContent — a short 3-field form shouldn't reserve a tall fixed panel. */}
       <View style={{ paddingHorizontal: space[5], paddingTop: space[3] }}>
-        <Field label="ชื่อผู้ขาย / ตลาด" required error={showErr ? errors.name : undefined}>
+        <Field
+          label={tx('merchants.form.nameLabel')}
+          required
+          error={showErr ? errors.name : undefined}
+        >
           <MInput
             value={name}
             onChangeText={setName}
-            placeholder="เช่น เจ๊แดง, ตลาดไท, แพปลาสมชาย"
+            placeholder={tx('merchants.form.namePlaceholder')}
             maxLength={MERCHANT_LIMITS.name}
             invalid={showErr && !!errors.name}
             leading={<Icon.merchant size={16} color={t.inkSoft} />}
@@ -130,8 +136,8 @@ export function SheetMerchantForm({ visible, editing, saving = false, onClose, o
         </Field>
 
         <Field
-          label="เบอร์ติดต่อ"
-          hint="ไม่บังคับ · ตัวเลขเท่านั้น สูงสุด 10 หลัก"
+          label={tx('merchants.form.contactLabel')}
+          hint={tx('merchants.form.contactHint')}
           error={showErr ? errors.contactNumber : undefined}
         >
           <MInput
@@ -147,14 +153,14 @@ export function SheetMerchantForm({ visible, editing, saving = false, onClose, o
         </Field>
 
         <Field
-          label="ที่อยู่ / ตลาด"
-          hint="ไม่บังคับ · เช่น ตำบล/อำเภอ หรือชื่อตลาด"
+          label={tx('merchants.form.locationLabel')}
+          hint={tx('merchants.form.locationHint')}
           error={showErr ? errors.location : undefined}
         >
           <MInput
             value={location}
             onChangeText={setLocation}
-            placeholder="เช่น อ.เมือง สมุทรสาคร"
+            placeholder={tx('merchants.form.locationPlaceholder')}
             multiline
             maxLength={MERCHANT_LIMITS.location}
             invalid={showErr && !!errors.location}
@@ -178,7 +184,9 @@ export function SheetMerchantForm({ visible, editing, saving = false, onClose, o
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>ยกเลิก</Text>
+            <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>
+              {tx('common.cancel')}
+            </Text>
           </Tappable>
           <Tappable
             onPress={handleSubmit}
@@ -195,7 +203,11 @@ export function SheetMerchantForm({ visible, editing, saving = false, onClose, o
             }}
           >
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-              {saving ? 'กำลังบันทึก…' : isEdit ? 'บันทึกการแก้ไข' : 'เพิ่มผู้ขาย'}
+              {saving
+                ? tx('common.saving')
+                : isEdit
+                  ? tx('merchants.form.submitEdit')
+                  : tx('merchants.add')}
             </Text>
           </Tappable>
         </Row>

@@ -1,5 +1,6 @@
 import { memo, useEffect, useRef } from 'react';
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -59,6 +60,7 @@ function TableRowImpl({ pond, idx, activeCell, liveValue, onCellTap, onActiveMea
 
 function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const rowRef = useRef<View>(null);
 
   const accentByState = {
@@ -181,7 +183,7 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
             }}
             numberOfLines={1}
           >
-            {`${pond.stock.toLocaleString('th-TH')} ตัว`}
+            {tx('daily.stockFish', { count: pond.stock.toLocaleString('th-TH') })}
           </Text>
         </View>
       </View>
@@ -384,8 +386,9 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
 // ────────────────────────────────────────────────────────────
 function LockedRow({ pond }: { pond: PondRow }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const PillIcon = pond.maintenance ? Icon.wrench : Icon.lock;
-  const pillLabel = pond.maintenance ? 'ซ่อมบำรุง' : 'ปิดบ่อ';
+  const pillLabel = pond.maintenance ? tx('daily.maintenance') : tx('pond.maintenance');
   return (
     <View
       style={{

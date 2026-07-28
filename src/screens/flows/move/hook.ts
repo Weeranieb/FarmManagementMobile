@@ -6,6 +6,7 @@ import { useAuthStore } from '@/features/auth';
 import { apiErrorMessage } from '@/shared/http';
 import { toIsoDate } from '@/shared/time';
 import { additionalCostsTotal, toWireCosts, type CostRow } from '../additional-costs';
+import i18n from '@/locale/i18n';
 
 // Standard species ordering — same canonical list the fill flow uses. Keeps
 // the chip order stable across flows so users see a consistent picker.
@@ -122,16 +123,16 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
   // steps, so its picker can still be incomplete (no destination yet).
   const validationMsg = fromFab
     ? farmId == null
-      ? 'เลือกฟาร์มก่อน'
+      ? i18n.t('flows.pickFarmFirst')
       : fromId == null
-        ? 'เลือกบ่อต้นทาง'
+        ? i18n.t('flows.move.pickSource')
         : toId == null
-          ? 'เลือกบ่อปลายทาง'
+          ? i18n.t('flows.move.pickDest')
           : fromId === toId
-            ? 'บ่อต้นทางและปลายทางต้องต่างกัน'
+            ? i18n.t('flows.move.sameSourceDest')
             : null
     : toId == null
-      ? 'เลือกบ่อปลายทาง'
+      ? i18n.t('flows.move.pickDest')
       : null;
 
   const handleConfirm = async () => {
@@ -157,7 +158,7 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
       });
       onClose?.();
     } catch (err) {
-      Alert.alert('ย้ายปลาไม่สำเร็จ', apiErrorMessage(err, 'บันทึกไม่สำเร็จ'));
+      Alert.alert(i18n.t('flows.move.failed'), apiErrorMessage(err, i18n.t('flows.saveFailed')));
     }
   };
 
@@ -177,9 +178,9 @@ export function useMoveFlow(initialFromId: number | undefined, onClose?: () => v
   const amountError: string | null = !amount
     ? null
     : amountNum <= 0
-      ? 'จำนวนต้องมากกว่า 0'
+      ? i18n.t('flows.amountGtZero')
       : exceedsStock
-        ? `เกินจำนวนปลาในบ่อต้นทาง (มี ${sourceStock.toLocaleString('en-US')} ตัว)`
+        ? i18n.t('flows.move.exceeds', { count: sourceStock.toLocaleString('en-US') })
         : null;
 
   const goBack = () => {

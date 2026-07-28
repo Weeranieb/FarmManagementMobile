@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { Card } from '@/components/ui';
@@ -7,6 +8,7 @@ import { Row, Col } from '@/components/layout/Row';
 import { fmt, FISH_TH, displayPondName } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import { usePondActivitiesData, type PondActivityModel } from '@/features/pond';
+import i18n from '@/locale/i18n';
 
 export function HistoryBody({ pondId }: { pondId: number }) {
   const { data: list, isLoading } = usePondActivitiesData(pondId);
@@ -44,20 +46,22 @@ export function HistoryBody({ pondId }: { pondId: number }) {
 
 function LoadingState() {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Text style={{ color: t.inkMute, fontFamily: type.family, fontSize: type.sizes.sm }}>
-      กำลังโหลดประวัติกิจกรรม…
+      {tx('pondDetail.history.loading')}
     </Text>
   );
 }
 
 function EmptyState() {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Col gap={space[2] - 2} align="center">
       <Icon.doc size={28} color={t.inkMute} />
       <Text style={{ color: t.inkSoft, fontFamily: type.family, fontSize: type.sizes.sm }}>
-        ยังไม่มีประวัติกิจกรรมในบ่อนี้
+        {tx('pondDetail.history.empty')}
       </Text>
     </Col>
   );
@@ -80,13 +84,20 @@ type Metric = { label: string; value: string };
  */
 function metricsFor(a: PondActivityModel, showCount: boolean): Metric[] {
   const out: Metric[] = [];
-  if (showCount && a.amount > 0) out.push({ label: 'จำนวน', value: `${fmt.num(a.amount)} ตัว` });
+  if (showCount && a.amount > 0)
+    out.push({
+      label: i18n.t('pondDetail.history.amount'),
+      value: `${fmt.num(a.amount)} ${i18n.t('unit.fish')}`,
+    });
   if (a.mode === 'sell' && a.totalWeightKg) {
-    out.push({ label: 'น้ำหนักรวม', value: fmt.kg(a.totalWeightKg) });
+    out.push({ label: i18n.t('pondDetail.history.totalWeight'), value: fmt.kg(a.totalWeightKg) });
   }
   if (a.pricePerUnit) {
     out.push({
-      label: a.mode === 'sell' ? 'เฉลี่ย/กก.' : 'ราคา/กก.',
+      label:
+        a.mode === 'sell'
+          ? i18n.t('pondDetail.history.avgPerKg')
+          : i18n.t('pondDetail.history.pricePerKg'),
       value: fmt.baht(a.pricePerUnit),
     });
   }
@@ -95,6 +106,7 @@ function metricsFor(a: PondActivityModel, showCount: boolean): Metric[] {
 
 function ActivityHistoryCard({ a }: { a: PondActivityModel }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const accentMap = {
     fill: { fg: t.fillInk, bg: t.fillSoft, border: t.fill },
     move: { fg: t.moveInk, bg: t.moveSoft, border: t.move },
@@ -104,7 +116,13 @@ function ActivityHistoryCard({ a }: { a: PondActivityModel }) {
 
   const isIncomingMove = a.mode === 'move' && a.direction === 'in';
   const label =
-    a.mode === 'move' ? (isIncomingMove ? 'ย้ายเข้า' : 'ย้ายออก') : a.mode === 'fill' ? 'เติมปลา' : 'ขายปลา';
+    a.mode === 'move'
+      ? isIncomingMove
+        ? i18n.t('pondDetail.history.moveIn')
+        : i18n.t('pondDetail.history.moveOut')
+      : a.mode === 'fill'
+        ? i18n.t('activity.fill')
+        : i18n.t('activity.sell');
   const fishLabel = FISH_TH[a.fishType] ?? a.fishType;
 
   // Headline value: money for fill/sell, head count for a move (a transfer has
@@ -113,19 +131,19 @@ function ActivityHistoryCard({ a }: { a: PondActivityModel }) {
   const headline = hasMoney
     ? `${a.mode === 'sell' ? '+' : ''}${fmt.baht(a.total)}`
     : a.amount > 0
-      ? `${isIncomingMove ? '+' : '−'}${fmt.num(a.amount)} ตัว`
+      ? `${isIncomingMove ? '+' : '−'}${fmt.num(a.amount)} ${i18n.t('unit.fish')}`
       : '';
 
   // Line 1 tail — the date plus who/what this was with, one muted run.
   const counterparty =
     a.mode === 'sell'
-      ? (a.merchant ?? 'ไม่ระบุผู้ซื้อ')
+      ? (a.merchant ?? i18n.t('pondDetail.history.noMerchant'))
       : isIncomingMove
         ? a.fromPondName
-          ? `จาก ${displayPondName(a.fromPondName)}`
+          ? i18n.t('pondDetail.history.fromPond', { pond: displayPondName(a.fromPondName) })
           : null
         : a.toPondName
-          ? `ไป ${displayPondName(a.toPondName)}`
+          ? i18n.t('pondDetail.history.toPond', { pond: displayPondName(a.toPondName) })
           : null;
   const context = [thaiDate.short(new Date(a.date)), fishLabel || null, counterparty]
     .filter(Boolean)
@@ -233,7 +251,7 @@ function ActivityHistoryCard({ a }: { a: PondActivityModel }) {
                 fill/move already have them inside the headline total. */}
             {net != null ? (
               <>
-                หักค่าใช้จ่าย {fmt.baht(a.additionalCost)} → สุทธิ{' '}
+                {tx('pondDetail.history.lessCosts', { cost: fmt.baht(a.additionalCost) })}{' '}
                 <Text
                   style={{
                     color: net < 0 ? t.danger : fg,
@@ -245,7 +263,7 @@ function ActivityHistoryCard({ a }: { a: PondActivityModel }) {
                 </Text>
               </>
             ) : (
-              `รวมค่าใช้จ่ายเพิ่มเติม ${fmt.baht(a.additionalCost)}`
+              tx('pondDetail.history.extraCosts', { cost: fmt.baht(a.additionalCost) })
             )}
           </Text>
         ) : null}

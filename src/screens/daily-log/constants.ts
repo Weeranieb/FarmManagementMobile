@@ -2,6 +2,7 @@
 // Mirrors the prototype in `Daily Log v6.html` (lines 187-201 + 341-342).
 
 import { TH_MONTH_NAMES_FULL, TH_MONTH_NAMES_SHORT, TH_WEEKDAYS_SHORT } from '@/locale/thaiDate';
+import i18n from '@/locale/i18n';
 
 // Design widths derived from the v6 prototype. Pellet sub-cells (morning /
 // evening) hold short numeric values like "14.5" and can be narrower than the
@@ -61,11 +62,25 @@ export type GroupKey = 'pellet' | 'fresh' | 'death' | 'catch';
 export const COLS: readonly {
   key: ColKey;
   group: GroupKey;
-  leaf: string;
+  /** Localized sub-label under the pellet group; '' where the group label
+   *  already says it. Read through i18next so a language switch applies. */
+  readonly leaf: string;
   integer?: boolean;
 }[] = [
-  { key: 'pm', group: 'pellet', leaf: 'เช้า' },
-  { key: 'pe', group: 'pellet', leaf: 'เย็น' },
+  {
+    key: 'pm',
+    group: 'pellet',
+    get leaf() {
+      return i18n.t('daily.morning');
+    },
+  },
+  {
+    key: 'pe',
+    group: 'pellet',
+    get leaf() {
+      return i18n.t('daily.evening');
+    },
+  },
   { key: 'fresh', group: 'fresh', leaf: '' },
   { key: 'death', group: 'death', leaf: '', integer: true },
   { key: 'cat', group: 'catch', leaf: '', integer: true },
@@ -85,11 +100,51 @@ export type GroupMeta = {
   ink: string;
 };
 
+/** Group bands. `title`/`unit` resolve through i18next on read (getters) so the
+ *  table header and keypad follow a language switch without re-plumbing props. */
 export const GROUP_LIGHT: Record<GroupKey, GroupMeta> = {
-  pellet: { title: 'อาหารเม็ด', unit: 'kg', tint: '#eef4ff', edge: '#d9e6fb', ink: '#1f4cb0' },
-  fresh: { title: 'เหยื่อสด', unit: 'ลัง', tint: '#ecf7ee', edge: '#cfe7d4', ink: '#216c34' },
-  death: { title: 'ปลาตาย', unit: 'ตัว', tint: '#fdf3df', edge: '#efdcae', ink: '#8a5a04' },
-  catch: { title: 'ตกปลา', unit: 'ตัว', tint: '#f1f3f9', edge: '#dde1ec', ink: '#4a5675' },
+  pellet: {
+    get title() {
+      return i18n.t('daily.pelletFeed');
+    },
+    unit: 'kg',
+    tint: '#eef4ff',
+    edge: '#d9e6fb',
+    ink: '#1f4cb0',
+  },
+  fresh: {
+    get title() {
+      return i18n.t('daily.freshFeed');
+    },
+    get unit() {
+      return i18n.t('unit.crate');
+    },
+    tint: '#ecf7ee',
+    edge: '#cfe7d4',
+    ink: '#216c34',
+  },
+  death: {
+    get title() {
+      return i18n.t('daily.deaths');
+    },
+    get unit() {
+      return i18n.t('unit.fish');
+    },
+    tint: '#fdf3df',
+    edge: '#efdcae',
+    ink: '#8a5a04',
+  },
+  catch: {
+    get title() {
+      return i18n.t('daily.catchShort');
+    },
+    get unit() {
+      return i18n.t('unit.fish');
+    },
+    tint: '#f1f3f9',
+    edge: '#dde1ec',
+    ink: '#4a5675',
+  },
 };
 
 export const thDow = (dayIndex: number): string => TH_WEEKDAYS_SHORT[dayIndex] ?? '';

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
@@ -67,6 +68,7 @@ export function DailyFeedBody({ pondId, onOpenLedger, onOpenDailyLog }: Props) {
 
 function UnloggedNudge({ onPress }: { onPress: () => void }) {
   const { t, mode } = useTheme();
+  const { t: tx } = useTranslation();
   const wInk = warnInk(mode, t);
   return (
     <View
@@ -95,16 +97,16 @@ function UnloggedNudge({ onPress }: { onPress: () => void }) {
       </View>
       <Col gap={2} style={{ flex: 1, minWidth: 0 }}>
         <Text style={{ fontFamily: type.familyBold, fontSize: 14, lineHeight: 22, color: wInk }}>
-          วันนี้ยังไม่บันทึก
+          {tx('pondDetail.daily.notLoggedToday')}
         </Text>
         <Text style={{ fontSize: 12, lineHeight: 18, color: t.inkSoft, fontFamily: type.family }}>
-          อาหาร · ปลาตาย · จับปลา
+          {tx('pondDetail.daily.notLoggedSub')}
         </Text>
       </Col>
       <Tappable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel="ไปบันทึก"
+        accessibilityLabel={tx('pondDetail.daily.goLog')}
         style={{
           height: 40,
           paddingHorizontal: 14,
@@ -115,7 +117,9 @@ function UnloggedNudge({ onPress }: { onPress: () => void }) {
           gap: 6,
         }}
       >
-        <Text style={{ fontFamily: type.familyBold, fontSize: 13, color: '#fff' }}>ไปบันทึก</Text>
+        <Text style={{ fontFamily: type.familyBold, fontSize: 13, color: '#fff' }}>
+          {tx('pondDetail.daily.goLog')}
+        </Text>
         <Icon.chevR size={14} color="#fff" />
       </Tappable>
     </View>
@@ -140,6 +144,7 @@ function MonthLedgerCard({
   onPress: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Card onPress={onPress} padded={false}>
       <View style={{ padding: 16 }}>
@@ -154,7 +159,7 @@ function MonthLedgerCard({
               textTransform: 'uppercase',
             }}
           >
-            ตารางบันทึกรายเดือน
+            {tx('pondDetail.daily.monthTable')}
           </Text>
           <Icon.chevR size={18} color={t.inkMute} />
         </Row>
@@ -164,13 +169,21 @@ function MonthLedgerCard({
             {monthLabel}
           </Text>
           <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.familyNum }}>
-            บันทึกแล้ว {loggedDays}/{nDays} วัน
+            {tx('pondDetail.daily.loggedDays', { logged: loggedDays, total: nDays })}
           </Text>
         </Row>
 
         <Row gap={20} style={{ marginTop: 12 }}>
-          <DetailStat label="อาหารรวม" value={fmt.kg(pellet)} dot={t.move} />
-          <DetailStat label="ตายรวม" value={`${death} ตัว`} dot={t.warn} />
+          <DetailStat
+            label={tx('pondDetail.daily.feedTotal')}
+            value={fmt.kg(pellet)}
+            dot={t.move}
+          />
+          <DetailStat
+            label={tx('pondDetail.daily.deathTotal')}
+            value={`${death} ${tx('unit.fish')}`}
+            dot={t.warn}
+          />
         </Row>
 
         {recent.length > 0 ? (
@@ -178,10 +191,14 @@ function MonthLedgerCard({
             {recent.map((e) => (
               <Row key={e.day} gap={8}>
                 <Text style={{ minWidth: 54, fontFamily: type.familyNumBold, fontSize: 12, color: t.ink }}>
-                  วันที่ {e.day}
+                  {tx('pondDetail.daily.dayN', { day: e.day })}
                 </Text>
                 <Text style={{ fontFamily: type.familyNum, fontSize: 12, color: t.inkSoft }}>
-                  เม็ด {numText(pelletKg(e))} · สด {numText(num(e.fresh))} · ตาย {num(e.deathFishCount)}
+                  {tx('pondDetail.daily.rowSummary', {
+                    pellet: numText(pelletKg(e)),
+                    fresh: numText(num(e.fresh)),
+                    death: num(e.deathFishCount),
+                  })}
                 </Text>
               </Row>
             ))}
@@ -201,7 +218,7 @@ function MonthLedgerCard({
           }}
         >
           <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.brandInk }}>
-            เปิดตารางรายเดือน
+            {tx('pondDetail.daily.openMonthTable')}
           </Text>
           <Icon.arrow size={16} color={t.brandInk} />
         </View>

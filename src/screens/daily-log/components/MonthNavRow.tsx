@@ -1,4 +1,5 @@
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -25,6 +26,7 @@ export function MonthNavRow({
   onLabelPress,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const label = `${thMonth(selectedDate.getMonth())} ${selectedDate.getFullYear() + 543}`;
 
   return (
@@ -51,7 +53,7 @@ export function MonthNavRow({
           justifyContent: 'center',
         }}
         accessibilityRole="button"
-        accessibilityLabel="เดือนก่อนหน้า"
+        accessibilityLabel={tx('daily.prevMonth')}
       >
         <Icon.chevL size={14} color={t.inkSoft} />
       </Tappable>
@@ -60,7 +62,7 @@ export function MonthNavRow({
         onPress={onLabelPress}
         disabled={!onLabelPress}
         accessibilityRole="button"
-        accessibilityLabel={`เลือกเดือน · ปี · ${label}`}
+        accessibilityLabel={tx('daily.pickMonthA11y', { month: label })}
         style={{
           flex: 1,
           height: 32,
@@ -90,7 +92,7 @@ export function MonthNavRow({
           opacity: nextDisabled ? 0.4 : 1,
         }}
         accessibilityRole="button"
-        accessibilityLabel="เดือนถัดไป"
+        accessibilityLabel={tx('daily.nextMonth')}
         accessibilityState={{ disabled: nextDisabled }}
       >
         <Icon.chevR size={14} color={nextDisabled ? t.borderStrong : t.inkSoft} />

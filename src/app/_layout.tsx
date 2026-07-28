@@ -26,11 +26,27 @@ import { useAppFonts } from '@/theme/useAppFonts';
 import { useAuthStore } from '@/features/auth';
 import { restoreSavedLanguage } from '@/screens/language';
 import { mmkvPersistStorage } from '@/lib/mmkv';
+import { startNetworkWatcher } from '@/lib/network';
+import { OfflineBanner } from '@/components/ui';
+import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
 
+// Teach React Query about connectivity before the first query mounts, so a cold
+// start out of signal pauses fetches instead of firing them into a dead socket.
+startNetworkWatcher();
+
 const queryClient = new QueryClient({
   defaultOptions: {
+    mutations: {
+      // Fire writes even when `onlineManager` says we're offline. The default
+      // ('online') *pauses* the mutation instead: `mutateAsync` never settles,
+      // which would leave the daily-log / ledger save stuck behind a spinner
+      // with no way to tell the user anything. Failing fast is what lets those
+      // screens say "no signal — kept on this phone" while the persisted drafts
+      // (features/daily-log/drafts.ts) hold the data until the next attempt.
+      networkMode: 'always',
+    },
     queries: {
       retry: 1,
       // Read-mostly farm data: stay fresh for 5 min so navigation doesn't
@@ -74,7 +90,10 @@ function RootShell({
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }} onLayout={onLayout}>
       <StatusBar style={statusBarStyle} translucent backgroundColor="transparent" />
-      {children}
+      {/* Screens get the flexible box; the offline strip is laid out under them
+          so it can never overlap a tab bar, save bar or table row. */}
+      <View style={{ flex: 1 }}>{children}</View>
+      <OfflineBanner />
     </View>
   );
 }
@@ -141,7 +160,9 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             {appReady ? (
               <RootShell onLayout={handleContentLayout}>
-                <AuthGate />
+                <AppErrorBoundary>
+                  <AuthGate />
+                </AppErrorBoundary>
               </RootShell>
             ) : null}
           </GestureHandlerRootView>

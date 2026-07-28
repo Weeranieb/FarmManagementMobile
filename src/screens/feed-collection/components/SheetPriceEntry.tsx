@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { dangerInk } from '@/theme/ink';
@@ -78,6 +79,7 @@ export function SheetPriceEntry({
   saving = false,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const isEdit = mode === 'edit' && entry != null;
   const currentPrice = feed?.price ?? null;
 
@@ -211,7 +213,7 @@ export function SheetPriceEntry({
         <Row justify="space-between">
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontFamily: type.familyBold, fontSize: 18, color: t.ink }}>
-              {isEdit ? 'แก้ไขรายการราคา' : 'เพิ่มราคา'}
+              {isEdit ? tx('feedCollection.price.editTitle') : tx('feedCollection.price.addTitle')}
             </Text>
             <Text
               numberOfLines={1}
@@ -224,7 +226,7 @@ export function SheetPriceEntry({
             onPress={onClose}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="ปิด"
+            accessibilityLabel={tx('common.close')}
             style={{
               width: 40,
               height: 40,
@@ -278,7 +280,9 @@ export function SheetPriceEntry({
                   textTransform: 'uppercase',
                 }}
               >
-                {isEdit ? 'ราคาเดิมของรายการนี้' : 'ราคาปัจจุบัน'}
+                {isEdit
+                  ? tx('feedCollection.price.oldPrice')
+                  : tx('feedCollection.price.currentPrice')}
               </Text>
               {isCurrentEntry ? (
                 <View
@@ -292,7 +296,7 @@ export function SheetPriceEntry({
                   <Text
                     style={{ fontSize: 9.5, fontFamily: type.familyBold, color: t.brandInk }}
                   >
-                    ราคาปัจจุบัน
+                    {tx('feedCollection.price.currentPrice')}
                   </Text>
                 </View>
               ) : null}
@@ -321,14 +325,20 @@ export function SheetPriceEntry({
                 </>
               ) : (
                 <Text style={{ fontSize: 13, color: t.inkSoft, fontFamily: type.family }}>
-                  ยังไม่มีประวัติราคา
+                  {tx('feedCollection.price.noHistory')}
                 </Text>
               )}
             </Row>
           </View>
         </View>
 
-        <Field label={hasPackSize ? `ราคาต่อ${feed.unit}` : 'ราคา'}>
+        <Field
+          label={
+            hasPackSize
+              ? tx('feedCollection.price.pricePerUnit', { unit: feed.unit })
+              : tx('feedCollection.price.priceLabel')
+          }
+        >
           <FInput
             value={price}
             onChangeText={setPrice}
@@ -350,11 +360,15 @@ export function SheetPriceEntry({
               marginBottom: 14,
             }}
           >
-            = {fmt.bahtPrecise(derived.pricePerKg)}/กก.
+            = {fmt.bahtPrecise(derived.pricePerKg)}
+            {tx('feedCollection.price.perKg')}
           </Text>
         ) : null}
 
-        <Field label="วันที่มีผล" hint="เลือกวันย้อนหลังได้">
+        <Field
+          label={tx('feedCollection.price.effectiveDate')}
+          hint={tx('feedCollection.price.effectiveHint')}
+        >
           <DateField
             ref={dateRef}
             value={effectiveDate}
@@ -387,7 +401,7 @@ export function SheetPriceEntry({
           >
             <Icon.trash size={16} color={t.danger} />
             <Text style={{ color: t.danger, fontFamily: type.familySemi, fontSize: 14 }}>
-              ลบรายการราคา
+              {tx('feedCollection.price.deleteEntry')}
             </Text>
           </Tappable>
         ) : null}
@@ -410,7 +424,7 @@ export function SheetPriceEntry({
               }}
             >
               <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>
-                เลือกวันอื่น
+                {tx('feedCollection.price.pickAnotherDay')}
               </Text>
             </Tappable>
             <Tappable
@@ -428,7 +442,7 @@ export function SheetPriceEntry({
               }}
             >
               <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-                {saving ? 'กำลังบันทึก…' : 'เขียนทับราคาเดิม'}
+                {saving ? tx('common.saving') : tx('feedCollection.price.overwrite')}
               </Text>
             </Tappable>
           </Row>
@@ -448,7 +462,7 @@ export function SheetPriceEntry({
               }}
             >
               <Text style={{ color: t.ink, fontFamily: type.familySemi, fontSize: 15 }}>
-                ยกเลิก
+                {tx('common.cancel')}
               </Text>
             </Tappable>
             <Tappable
@@ -466,7 +480,11 @@ export function SheetPriceEntry({
               }}
             >
               <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-                {saving ? 'กำลังบันทึก…' : isEdit ? 'บันทึกการแก้ไข' : 'บันทึกราคาใหม่'}
+                {saving
+                  ? tx('common.saving')
+                  : isEdit
+                    ? tx('feedCollection.form.submitEdit')
+                    : tx('feedCollection.price.submitNew')}
               </Text>
             </Tappable>
           </Row>
@@ -511,6 +529,7 @@ function Field({
 
 function CollisionWarning({ collidingDate }: { collidingDate: Date }) {
   const { t, mode } = useTheme();
+  const { t: tx } = useTranslation();
   const ink = dangerInk(mode, t);
   return (
     <View
@@ -531,10 +550,10 @@ function CollisionWarning({ collidingDate }: { collidingDate: Date }) {
       </View>
       <View style={{ flex: 1, gap: 3 }}>
         <Text style={{ fontSize: 13, fontFamily: type.familyBold, color: ink }}>
-          มีราคาของวันที่ {thaiDate.short(collidingDate)} อยู่แล้ว
+          {tx('feedCollection.price.collision', { date: thaiDate.short(collidingDate) })}
         </Text>
         <Text style={{ fontSize: 12, color: t.inkSoft, fontFamily: type.family, lineHeight: 18 }}>
-          หนึ่งวันมีได้เพียงราคาเดียว — เลือกวันอื่น หรือเขียนทับราคาเดิมของวันนั้น
+          {tx('feedCollection.price.collisionHelp')}
         </Text>
       </View>
     </View>
@@ -545,6 +564,7 @@ function CollisionWarning({ collidingDate }: { collidingDate: Date }) {
  *  (red), lower is good (green). */
 function DiffHint({ delta, pct, isEdit }: { delta: number; pct: number; isEdit: boolean }) {
   const { t, mode } = useTheme();
+  const { t: tx } = useTranslation();
   const up = delta > 0;
   const flatDelta = delta === 0;
   const fg = flatDelta ? t.inkSoft : up ? dangerInk(mode, t) : t.fillInk;
@@ -564,7 +584,7 @@ function DiffHint({ delta, pct, isEdit }: { delta: number; pct: number; isEdit: 
     >
       <TrendIcon size={14} stroke={2} color={fg} />
       <Text style={{ color: fg, fontSize: 12, fontFamily: type.family }}>
-        {isEdit ? 'ต่างจากรายการก่อนหน้า' : 'เปลี่ยนจากราคาปัจจุบัน'}
+        {isEdit ? tx('feedCollection.price.deltaEdit') : tx('feedCollection.price.deltaNew')}
       </Text>
       <Text style={{ color: fg, fontSize: 12, fontFamily: type.familyNumBold }}>
         {up ? '+' : delta < 0 ? '−' : ''}

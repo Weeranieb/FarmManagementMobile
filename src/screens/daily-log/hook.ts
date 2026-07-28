@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useIsAuthenticated } from '@/features/auth';
+import { useAuthStore, useIsAuthenticated } from '@/features/auth';
 import {
   dailyLogKeys,
   getDailyLogMonth,
+  loadGridDrafts,
+  saveGridDrafts,
   upsertDailyLogMonth,
   type DailyLogEntry,
   type DailyLogResponse,
 } from '@/features/daily-log';
 import { adaptPond, usePonds, type PondModel } from '@/features/pond';
+import { apiErrorStatus } from '@/shared/http';
 import { toIsoDate, toMonthKey } from '@/shared/time';
 import { COLS, isCellValueInvalid, type ColKey } from './constants';
 
@@ -125,6 +128,10 @@ export type SaveResult = {
   /** Wrapped backend detail when present — e.g. "freshFeedCollectionId is
    *  required when logging fresh feed amounts". */
   errorDetails?: string;
+  /** Every failure was transport-level (request never reached the server), so
+   *  the honest message is "no signal, your entry is still saved on this
+   *  phone" rather than "save failed". Drafts are kept either way. */
+  offline?: boolean;
 };
 
 /** By-feed-type roll-up of the current month's drafts, shown in the confirm
@@ -269,7 +276,14 @@ export function useDailyLogV6(
   const loading =
     (farmId == null && farmsLoading) || (pondsQuery.isLoading && pondModels.length === 0);
 
-  const [overrides, setOverrides] = useState<OverrideMap>({});
+  // Drafts are restored from (and mirrored to) MMKV so a force-quit or an
+  // OS-evicted background app can't take the day's unsaved entry with it. Read
+  // once, synchronously, in a lazy initializer — the auth store is hydrated
+  // before any screen mounts (src/app/_layout.tsx gates on `ready`), so the
+  // user id is already known here.
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const [restoredDrafts] = useState(() => ({ userId, ...loadGridDrafts(userId) }));
+  const [overrides, setOverrides] = useState<OverrideMap>(restoredDrafts.overrides);
   // saveAll reads the latest overrides through this ref rather than the value
   // captured in its useCallback closure. A stale closure (e.g. the confirm
   // sheet or a queued callback holding an older saveAll) must never build the
@@ -279,9 +293,20 @@ export function useDailyLogV6(
   overridesRef.current = overrides;
   const [feedSelections, setFeedSelections] = useState<
     Record<string, { pellet?: number; fresh?: number }>
-  >({});
+  >(restoredDrafts.feedSelections);
   const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [activeCell, setActiveCell] = useState<ActiveCell>(null);
+
+  // Mirror every draft change straight to disk. Writes are synchronous MMKV
+  // sets of a small blob, so this can sit on the keystroke path.
+  //
+  // Skipped unless the session still belongs to the user we restored for —
+  // otherwise a mid-mount identity change would persist this hook's (empty)
+  // state over the other user's real drafts.
+  useEffect(() => {
+    if (userId == null || userId !== restoredDrafts.userId) return;
+    saveGridDrafts(userId, { overrides, feedSelections });
+  }, [userId, restoredDrafts.userId, overrides, feedSelections]);
 
   const setFeedSelection = useCallback(
     (pondKey: string, group: 'pellet' | 'fresh', feedId: number) => {
@@ -628,6 +653,8 @@ export function useDailyLogV6(
 
     const successKeys = new Set<string>();
     let failedCount = 0;
+    // Failures that never reached the server (fetch threw — no HTTP status).
+    let networkFailures = 0;
     let errorCode: string | undefined;
     let errorMessage: string | undefined;
     let errorDetails: string | undefined;
@@ -639,6 +666,7 @@ export function useDailyLogV6(
         qc.setQueryData(dailyLogKeys.month(Number(r.value.pondKey), month), r.value.response);
       } else {
         failedCount += 1;
+        if (apiErrorStatus(r.reason) == null) networkFailures += 1;
         if (errorCode == null) {
           const reason = r.reason as
             | { code?: string; message?: string; details?: string }
@@ -687,7 +715,14 @@ export function useDailyLogV6(
       });
     }
 
-    return { ok: failedCount === 0, failedCount, errorCode, errorMessage, errorDetails };
+    return {
+      ok: failedCount === 0,
+      failedCount,
+      errorCode,
+      errorMessage,
+      errorDetails,
+      offline: failedCount > 0 && networkFailures === failedCount,
+    };
     // `overrides` is read via `overridesRef.current`, not the closure, so it's
     // intentionally not a dependency — that's what keeps saveAll from ever
     // acting on a stale draft set.

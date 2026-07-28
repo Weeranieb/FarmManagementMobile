@@ -6,6 +6,7 @@ import { useAuthStore } from '@/features/auth';
 import { apiErrorMessage } from '@/shared/http';
 import { toIsoDate } from '@/shared/time';
 import { additionalCostsTotal, toWireCosts, type CostRow } from '../additional-costs';
+import i18n from '@/locale/i18n';
 
 export function useFillFlow(initialPondId: number | undefined, onClose?: () => void) {
   const fromFab = initialPondId == null;
@@ -77,9 +78,9 @@ export function useFillFlow(initialPondId: number | undefined, onClose?: () => v
 
   const validationMsg = fromFab
     ? farmId == null
-      ? 'เลือกฟาร์มก่อน'
+      ? i18n.t('flows.pickFarmFirst')
       : selectedPondId == null
-        ? 'เลือกบ่อก่อน'
+        ? i18n.t('flows.pickPondFirst')
         : null
     : null;
 
@@ -106,7 +107,8 @@ export function useFillFlow(initialPondId: number | undefined, onClose?: () => v
       });
       onClose?.();
     } catch (err) {
-      Alert.alert('บันทึกไม่สำเร็จ', apiErrorMessage(err, 'บันทึกไม่สำเร็จ'));
+      const title = i18n.t('flows.saveFailed');
+      Alert.alert(title, apiErrorMessage(err, title));
     }
   };
 

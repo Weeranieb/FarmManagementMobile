@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -19,10 +20,12 @@ export function SearchHeader({
   onChangeText,
   onCancel,
   placeholder,
-  cancelLabel = 'ยกเลิก',
+  cancelLabel,
   autoFocus = true,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
+  const cancelText = cancelLabel ?? tx('common.cancel');
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -98,7 +101,7 @@ export function SearchHeader({
       </View>
       <Tappable onPress={onCancel} hitSlop={10} accessibilityRole="button">
         <Text style={{ color: t.brand, fontSize: 14, fontFamily: type.familyMedium }}>
-          {cancelLabel}
+          {cancelText}
         </Text>
       </Tappable>
     </View>

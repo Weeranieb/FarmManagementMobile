@@ -1,15 +1,17 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Tappable } from '@/components/ui';
 import { Icon } from '@/components/icons';
 
-const RECENT = ['อาหารเม็ด', 'CP', 'สด', 'เบทาโกร'];
-
 type Props = { onPick: (q: string) => void };
 
 export function SearchSuggestions({ onPick }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
+  // Example queries, localized so an English user isn't handed Thai terms.
+  const RECENT = [tx('daily.pelletFeed'), 'CP', tx('feed.kindFresh'), 'Betagro'];
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 14, paddingBottom: 4 }}>
       <Text
@@ -22,7 +24,7 @@ export function SearchSuggestions({ onPick }: Props) {
           marginBottom: 8,
         }}
       >
-        ค้นหาล่าสุด
+        {tx('feedCollection.recentSearches')}
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {RECENT.map((r) => (

@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { space, type } from '@/theme/tokens';
 import { Skeleton, SkeletonShape, Tappable } from '@/components/ui';
+import { ActivityDetailSheet } from '@/components/activity/ActivityDetailSheet';
+import type { ActivityRecordDetail } from '@/features/activity';
 import { today } from '@/shared/time';
 import { ActivityRow, type ActivityItem } from './components/activity-row';
 import { ActivityRowSkeleton } from './components/activity-row-skeleton';
@@ -36,7 +39,6 @@ type Props = {
    *  the "+3" bump pill on the card without the toast hanging around forever. */
   showSavedToast?: boolean;
   onOpenDailyLog?: (target?: DailyLogTarget) => void;
-  onOpenActivity?: (e: ActivityItem) => void;
   onOpenSecondaryAction?: (id: SecondaryActionId) => void;
   onCreateFarm?: () => void;
   onPressSavedToast?: () => void;
@@ -62,7 +64,6 @@ export function HomeView({
   isJustSaved,
   showSavedToast,
   onOpenDailyLog,
-  onOpenActivity,
   onOpenSecondaryAction,
   onCreateFarm,
   onPressSavedToast,
@@ -72,6 +73,11 @@ export function HomeView({
 }: Props) {
   const { t } = useTheme();
   const bottomPad = bottomClearance ?? space[10];
+  // Tapping a row opens the read-only record sheet — Home stays mounted behind
+  // it, so a glance costs no navigation and no lost scroll position. It used to
+  // push the fill/move/sell creation wizard, which offered to book a second
+  // transaction instead of showing the one that was tapped.
+  const [openRecord, setOpenRecord] = useState<ActivityRecordDetail | null>(null);
 
   const handlePending = (pond: PendingPond) => {
     log('pending chip pressed', {
@@ -89,7 +95,7 @@ export function HomeView({
       recordType: e.recordType,
       recordId: e.recordId,
     });
-    onOpenActivity?.(e);
+    if (e.detail) setOpenRecord(e.detail);
   };
 
   return (
@@ -271,6 +277,8 @@ export function HomeView({
           onDismiss={onDismissSavedToast}
         />
       ) : null}
+
+      <ActivityDetailSheet detail={openRecord} onClose={() => setOpenRecord(null)} />
     </View>
   );
 }

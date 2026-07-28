@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, Easing, Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
 import { Tappable } from '@/components/ui';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 
@@ -42,6 +43,7 @@ export function SaveStatusToast({
   onDismiss,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const enter = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -125,10 +127,10 @@ export function SaveStatusToast({
             }}
           >
             {status === 'saving'
-              ? 'กำลังบันทึก…'
+              ? tx('common.saving')
               : status === 'success'
-                ? `บันทึกแล้ว ${days} วัน`
-                : 'บันทึกไม่สำเร็จ'}
+                ? tx('daily.savedDays', { count: days })
+                : tx('daily.saveFailed')}
           </Text>
           {status === 'saving' ? (
             <Text
@@ -139,7 +141,7 @@ export function SaveStatusToast({
                 marginTop: 2,
               }}
             >
-              รอเซิร์ฟเวอร์ตอบกลับ
+              {tx('daily.waitingServer')}
             </Text>
           ) : isError ? (
             <Text
@@ -151,7 +153,10 @@ export function SaveStatusToast({
                 marginTop: 2,
               }}
             >
-              {message ?? (failedCount > 0 ? `${failedCount} บ่อยังไม่ถูกบันทึก` : 'ลองอีกครั้ง')}
+              {message ??
+                (failedCount > 0
+                  ? tx('daily.nPondsFailed', { count: failedCount })
+                  : tx('pondDetail.cycles.retry'))}
             </Text>
           ) : null}
         </View>
@@ -162,7 +167,7 @@ export function SaveStatusToast({
             <Tappable
               onPress={onRetry}
               accessibilityRole="button"
-              accessibilityLabel="ลองใหม่"
+              accessibilityLabel={tx('common.retry')}
               style={{
                 paddingHorizontal: 12,
                 paddingVertical: 7,
@@ -172,14 +177,14 @@ export function SaveStatusToast({
               }}
             >
               <Text style={{ color: '#fff', fontSize: type.sizes.sm, fontFamily: type.familySemi }}>
-                ลองใหม่
+                {tx('common.retry')}
               </Text>
             </Tappable>
             <Tappable
               onPress={onDismiss}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="ปิด"
+              accessibilityLabel={tx('common.close')}
               style={{ flexShrink: 0, padding: 2 }}
             >
               <Icon.x size={16} color="rgba(255,255,255,0.7)" />

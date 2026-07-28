@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useFeedCollectionsData } from '@/features/feed-collection';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -173,6 +174,7 @@ export function Numpad({
   onFeedChange,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const meta = COLS.find((c) => c.key === col);
   const group: GroupKey = (meta?.group ?? 'pellet') as GroupKey;
   const integerOnly = meta?.integer === true;
@@ -349,7 +351,7 @@ export function Numpad({
                 letterSpacing: 0.2,
               }}
             >
-              บ่อ {pondId} · {slotLabel}
+              {tx('daily.cellHeader', { pond: pondId, slot: slotLabel })}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 1 }}>
               <Text
@@ -393,7 +395,7 @@ export function Numpad({
                 elevation: 4,
               }}
               accessibilityRole="button"
-              accessibilityLabel="เลือกชนิดอาหาร"
+              accessibilityLabel={tx('daily.feedPicker.title')}
             >
               {/* Brand color dot with halo */}
               <View
@@ -491,7 +493,7 @@ export function Numpad({
                 color: CELL_HIGHLIGHT.errorInk,
               }}
             >
-              {`ค่าต้องอยู่ระหว่าง 0–${CELL_MAX_VALUE} ${g.unit}`}
+              {`${tx('daily.outOfRange', { max: CELL_MAX_VALUE })} ${g.unit}`}
             </Text>
           </View>
         ) : null}
@@ -552,7 +554,7 @@ export function Numpad({
             }}
           >
             <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.inkSoft }}>
-              ยกเลิก
+              {tx('common.cancel')}
             </Text>
           </Tappable>
           <Tappable
@@ -571,7 +573,7 @@ export function Numpad({
             }}
           >
             <Text style={{ fontFamily: type.familyBold, fontSize: 15, color: '#fff' }}>
-              {isLastCell ? 'เสร็จสิ้น' : 'ถัดไป'}
+              {isLastCell ? tx('daily.finish') : tx('daily.next')}
             </Text>
             {isLastCell ? (
               <Icon.check size={16} color="#fff" stroke={2.6} />

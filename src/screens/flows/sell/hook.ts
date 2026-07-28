@@ -14,6 +14,7 @@ import { useAuthStore } from '@/features/auth';
 import { apiErrorMessage } from '@/shared/http';
 import { toIsoDate } from '@/shared/time';
 import { additionalCostsTotal, toWireCosts, type CostRow } from '../additional-costs';
+import i18n from '@/locale/i18n';
 
 /**
  * One editable sell-row in the UI. Values are strings so partial input
@@ -157,7 +158,10 @@ export function useSellFlow(
   const exceedsStock = totalFishCount > sourceStock;
   const fishCountError: string | null =
     totalFishCount > 0 && exceedsStock
-      ? `ผลรวม ${totalFishCount.toLocaleString('en-US')} ตัว เกินจำนวนปลาในบ่อ (${sourceStock.toLocaleString('en-US')})`
+      ? i18n.t('flows.sell.exceedsStock', {
+          total: totalFishCount.toLocaleString('en-US'),
+          stock: sourceStock.toLocaleString('en-US'),
+        })
       : null;
 
   const submittableRows = useMemo(() => rows.filter(rowIsSubmittable), [rows]);
@@ -192,9 +196,9 @@ export function useSellFlow(
 
   const validationMsg = fromFab
     ? farmId == null
-      ? 'เลือกฟาร์มก่อน'
+      ? i18n.t('flows.pickFarmFirst')
       : selectedPondId == null
-        ? 'เลือกบ่อที่จะขาย'
+        ? i18n.t('flows.sell.pickPond')
         : null
     : null;
 
@@ -224,7 +228,7 @@ export function useSellFlow(
       // from a cancel and land the user where the outcome now lives.
       onClose?.({ pondId: selectedPondId, pondClosed: markToClose });
     } catch (err) {
-      Alert.alert('ขายปลาไม่สำเร็จ', apiErrorMessage(err, 'บันทึกไม่สำเร็จ'));
+      Alert.alert(i18n.t('flows.sell.failed'), apiErrorMessage(err, i18n.t('flows.saveFailed')));
     }
   };
 

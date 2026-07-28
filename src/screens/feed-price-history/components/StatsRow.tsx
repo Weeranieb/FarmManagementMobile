@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { dangerInk } from '@/theme/ink';
@@ -13,6 +14,7 @@ type Props = {
 
 export function StatsRow({ data }: Props) {
   const { t, mode } = useTheme();
+  const { t: tx } = useTranslation();
   if (data.length === 0) return null;
 
   const prices = data.map((d) => d.price);
@@ -28,21 +30,21 @@ export function StatsRow({ data }: Props) {
   return (
     <View style={{ flexDirection: 'row', gap: 8 }}>
       <StatTile
-        label="สูงสุด"
+        label={tx('feedPrice.stats.high')}
         value={fmt.baht(maxP)}
         sub={thaiDate.short(new Date(maxAt))}
         accent={dangerInk(mode, t)}
       />
       <StatTile
-        label="ต่ำสุด"
+        label={tx('feedPrice.stats.low')}
         value={fmt.baht(minP)}
         sub={thaiDate.short(new Date(minAt))}
         accent={t.fillInk}
       />
       <StatTile
-        label="เฉลี่ย"
+        label={tx('feedPrice.stats.avg')}
         value={fmt.baht(avg)}
-        sub={`${data.length} จุด`}
+        sub={tx('feedPrice.stats.points', { count: data.length })}
       />
     </View>
   );

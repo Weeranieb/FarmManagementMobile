@@ -1,13 +1,17 @@
+import { useState } from 'react';
 import { Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Icon } from '@/components/icons';
 import { Tappable } from '@/components/ui';
+import { ActivityDetailSheet } from '@/components/activity/ActivityDetailSheet';
+import type { ActivityRecordDetail } from '@/features/activity';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import type { ActivityItem } from '@/screens/home/components/activity-row';
 import { FilterChips } from './components/filter-chips';
 import { DayGroup } from './components/day-group';
 import { EndCap } from './components/end-cap';
+import { LoadingMore } from './components/loading-more';
 import { EmptyAll, EmptyFiltered } from './components/empty-states';
 import { HistorySkeleton } from './components/history-skeleton';
 import { KIND_LABEL } from './constants';
@@ -16,13 +20,11 @@ import type { ActivityHistoryState } from './hook';
 type Props = ActivityHistoryState & {
   bottomClearance?: number;
   onBack?: () => void;
-  onOpenActivity?: (e: ActivityItem) => void;
 };
 
 export function ActivityHistoryView({
   bottomClearance,
   onBack,
-  onOpenActivity,
   isLoading,
   isEmpty,
   filteredEmpty,
@@ -33,9 +35,17 @@ export function ActivityHistoryView({
   groups,
   refreshing,
   onRefresh,
+  hasMore,
+  loadingMore,
+  onEndReached,
 }: Props) {
   const { t } = useTheme();
   const bottomPad = bottomClearance ?? space[10];
+  // Same read-only record sheet as Home — one component, both call sites.
+  const [openRecord, setOpenRecord] = useState<ActivityRecordDetail | null>(null);
+  const onPressItem = (e: ActivityItem) => {
+    if (e.detail) setOpenRecord(e.detail);
+  };
 
   const refreshControl = (
     <RefreshControl
@@ -99,7 +109,10 @@ export function ActivityHistoryView({
                 <>
                   {filter === 'all' ? 'ทั้งหมด' : KIND_LABEL[filter]}{' '}
                   <Text style={{ fontFamily: type.familyNumSemi, color: t.inkSoft }}>
+                    {/* "+" while pages remain: this counts loaded rows, and
+                        claiming it as the total would be wrong. */}
                     {filteredCount}
+                    {hasMore ? '+' : ''}
                   </Text>{' '}
                   รายการ
                 </>
@@ -111,7 +124,13 @@ export function ActivityHistoryView({
 
       {/* ── Filter chips — hidden when there is nothing to filter ──── */}
       {!isEmpty ? (
-        <FilterChips filter={filter} counts={counts} disabled={isLoading} onChange={setFilter} />
+        <FilterChips
+          filter={filter}
+          counts={counts}
+          partial={hasMore}
+          disabled={isLoading}
+          onChange={setFilter}
+        />
       ) : null}
 
       {/* ── Body ──────────────────────────────────────────────────── */}
@@ -140,9 +159,13 @@ export function ActivityHistoryView({
             data={groups}
             keyExtractor={(g) => g.dateKey}
             renderItem={({ item, index }) => (
-              <DayGroup group={item} first={index === 0} onPressItem={onOpenActivity} />
+              <DayGroup group={item} first={index === 0} onPressItem={onPressItem} />
             )}
-            ListFooterComponent={<EndCap count={filteredCount} />}
+            ListFooterComponent={
+              hasMore ? <LoadingMore active={loadingMore} /> : <EndCap count={filteredCount} />
+            }
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.5}
             contentContainerStyle={{
               paddingHorizontal: space[4],
               paddingTop: space[2],
@@ -154,6 +177,8 @@ export function ActivityHistoryView({
           />
         </View>
       )}
+
+      <ActivityDetailSheet detail={openRecord} onClose={() => setOpenRecord(null)} />
     </View>
   );
 }

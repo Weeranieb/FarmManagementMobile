@@ -12,6 +12,7 @@ import { fmt } from '@/utils/fmt';
 import type { GroupKey, ColKey } from '@/screens/daily-log/constants';
 import type { PondActivityModel } from '@/features/pond';
 import { Icon } from '@/components/icons';
+import i18n from '@/locale/i18n';
 
 export type IconName = keyof typeof Icon;
 
@@ -53,20 +54,27 @@ export function colWash(group: GroupKey, t: Theme, mode: Mode): string {
 }
 
 /** Two-tier header layout: group cells span their leaf columns via `span`. */
-export const LEDGER_GROUPS: { group: GroupKey; title: string; unit: string; span: number }[] = [
-  { group: 'pellet', title: 'อาหารเม็ด', unit: 'กก.', span: 2 },
-  { group: 'fresh', title: 'เหยื่อสด', unit: 'ลัง', span: 1 },
-  { group: 'death', title: 'ตาย', unit: 'ตัว', span: 1 },
-  { group: 'catch', title: 'ตกปลา', unit: 'ตัว', span: 1 },
+export const LEDGER_GROUPS: {
+  group: GroupKey;
+  /** i18next keys — resolved in the header component so a language switch
+   *  re-renders the labels (a module-scope string would freeze at first load). */
+  titleKey: string;
+  unitKey: string;
+  span: number;
+}[] = [
+  { group: 'pellet', titleKey: 'daily.pelletFeed', unitKey: 'unit.kg', span: 2 },
+  { group: 'fresh', titleKey: 'daily.freshFeed', unitKey: 'unit.crate', span: 1 },
+  { group: 'death', titleKey: 'daily.deathShort', unitKey: 'unit.fish', span: 1 },
+  { group: 'catch', titleKey: 'daily.catchShort', unitKey: 'unit.fish', span: 1 },
 ];
 
 /** Leaf columns in table order, with the sub-label shown under pellet. */
-export const LEDGER_LEAVES: { key: ColKey; group: GroupKey; leaf: string }[] = [
-  { key: 'pm', group: 'pellet', leaf: 'เช้า' },
-  { key: 'pe', group: 'pellet', leaf: 'เย็น' },
-  { key: 'fresh', group: 'fresh', leaf: '' },
-  { key: 'death', group: 'death', leaf: '' },
-  { key: 'cat', group: 'catch', leaf: '' },
+export const LEDGER_LEAVES: { key: ColKey; group: GroupKey; leafKey: string | null }[] = [
+  { key: 'pm', group: 'pellet', leafKey: 'daily.morning' },
+  { key: 'pe', group: 'pellet', leafKey: 'daily.evening' },
+  { key: 'fresh', group: 'fresh', leafKey: null },
+  { key: 'death', group: 'death', leafKey: null },
+  { key: 'cat', group: 'catch', leafKey: null },
 ];
 
 /** Format a ledger cell — integers bare, one decimal otherwise. Returns null
@@ -86,18 +94,18 @@ export type EventTone = { soft: string; ink: string; dot: string; label: string;
 export function eventTone(mode: PondActivityModel['mode'], t: Theme): EventTone {
   switch (mode) {
     case 'fill':
-      return { soft: t.fillSoft, ink: t.fillInk, dot: t.fill, label: 'เติมปลา', icon: 'plus' };
+      return { soft: t.fillSoft, ink: t.fillInk, dot: t.fill, label: i18n.t('activity.fill'), icon: 'plus' };
     case 'move':
-      return { soft: t.moveSoft, ink: t.moveInk, dot: t.move, label: 'ย้ายปลา', icon: 'swap' };
+      return { soft: t.moveSoft, ink: t.moveInk, dot: t.move, label: i18n.t('activity.move'), icon: 'swap' };
     default:
-      return { soft: t.sellSoft, ink: t.sellInk, dot: t.sell, label: 'ขายปลา', icon: 'tag' };
+      return { soft: t.sellSoft, ink: t.sellInk, dot: t.sell, label: i18n.t('activity.sell'), icon: 'tag' };
   }
 }
 
 /** One-line human summary for an activity threaded under its day. */
 export function activityText(a: PondActivityModel): string {
   if (a.mode === 'sell') {
-    const parts = [`${fmt.num(a.amount)} กก.`];
+    const parts = [`${fmt.num(a.amount)} ${i18n.t('unit.kg')}`];
     if (a.total) parts.push(fmt.baht(a.total));
     if (a.merchant) parts.push(a.merchant);
     return parts.join(' · ');
@@ -105,7 +113,8 @@ export function activityText(a: PondActivityModel): string {
   if (a.mode === 'move') {
     const dest = a.direction === 'out' ? a.toPondName : a.fromPondName;
     const arrow = a.direction === 'out' ? '→' : '←';
-    return `${fmt.num(a.amount)} ตัว${dest ? ` ${arrow} ${dest}` : ''}`;
+    const head = `${fmt.num(a.amount)} ${i18n.t('unit.fish')}`;
+    return `${head}${dest ? ` ${arrow} ${dest}` : ''}`;
   }
-  return `${fmt.num(a.amount)} ตัว`;
+  return `${fmt.num(a.amount)} ${i18n.t('unit.fish')}`;
 }

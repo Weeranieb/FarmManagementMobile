@@ -1,3 +1,16 @@
+/**
+ * Backend auth codes that all surface as HTTP 401, meaning the bare status is
+ * not enough to decide whether the *session* is over (see `client.ts`).
+ * Mirrors `backend/src/internal/errors/status.go`.
+ */
+export const AUTH_ERROR = {
+  /** Credentials rejected for this one request: wrong password at login, wrong
+   *  *current* password on change-password. Says nothing about the session. */
+  invalidCredentials: '500021',
+  tokenInvalid: '500022',
+  tokenExpired: '500023',
+} as const;
+
 export type ApiError = {
   code: string;
   message: string;

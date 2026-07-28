@@ -1,4 +1,5 @@
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -14,6 +15,7 @@ type Props = {
 
 export function FarmChipRow({ farmName, savedCount, total, onPress }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View
       style={{
@@ -28,7 +30,7 @@ export function FarmChipRow({ farmName, savedCount, total, onPress }: Props) {
       <Tappable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel="เลือกฟาร์ม"
+        accessibilityLabel={tx('daily.pickFarm')}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -94,7 +96,9 @@ export function FarmChipRow({ farmName, savedCount, total, onPress }: Props) {
           >
             {total}
           </Text>
-          <Text style={{ fontSize: 11, color: t.inkSoft, marginLeft: 4 }}>บ่อ</Text>
+          <Text style={{ fontSize: 11, color: t.inkSoft, marginLeft: 4 }}>
+            {tx('daily.pondCol')}
+          </Text>
         </View>
       </View>
     </View>

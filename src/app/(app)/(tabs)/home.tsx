@@ -5,7 +5,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeProvider';
 import { HomeScreen, type HomeVariant, type SecondaryActionId } from '@/screens/home';
 import { dailyLogRouteParams, type DailyLogTarget } from '@/screens/daily-log/route';
-import type { ActivityItem } from '@/screens/home/components/activity-row';
 import { space } from '@/theme/tokens';
 
 const BOTTOM_CLEARANCE = space[10] + space[4];
@@ -70,24 +69,12 @@ export default function HomeRoute() {
     [router],
   );
 
-  const onOpenActivity = useCallback(
-    (e: ActivityItem) => {
-      log('openActivity', { id: e.id, recordType: e.recordType, recordId: e.recordId });
-      // Phase 1 only has detail routes for fill/move/sell flows; daily-log
-      // tap routes to the daily-log screen for the relevant pond.
-      if (e.recordType === 'dailyLog') {
-        router.push('/(app)/daily-log');
-        return;
-      }
-      if (!e.recordType) return;
-      router.push(`/(app)/flows/${e.recordType}` as never);
-    },
-    [router],
-  );
-
   const onCreateFarm = useCallback(() => {
     log('create farm tapped');
-    router.push('/(app)/farm' as never);
+    // `/(app)/farm` has no index route — only `farm/[farmId]` — so this used to
+    // dead-end on the unmatched-route screen. Farm creation lives on the Farms
+    // tab; `newFarm=1` opens its create sheet on arrival.
+    router.navigate('/(app)/(tabs)/farms?newFarm=1' as never);
   }, [router]);
 
   const onSeeHistory = useCallback(() => {
@@ -121,7 +108,6 @@ export default function HomeRoute() {
         bottomClearance={BOTTOM_CLEARANCE}
         onOpenDailyLog={onOpenDailyLog}
         onOpenSecondaryAction={onOpenSecondaryAction}
-        onOpenActivity={onOpenActivity}
         onCreateFarm={onCreateFarm}
         onPressSavedToast={onPressSavedToast}
         onDismissSavedToast={onDismissSavedToast}

@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Card } from '@/components/ui';
@@ -10,6 +11,7 @@ import { thaiDate } from '@/locale/thaiDate';
 import { feedPaletteFor } from '@/screens/feed-collection/feedPalette';
 import { feedGlyphFor } from '@/screens/feed-collection/components/FeedIcons';
 import type { FeedKind, FeedPriceHistoryEntry } from '@/features/feed-collection';
+import i18n from '@/locale/i18n';
 
 type Props = {
   unit: string;
@@ -24,6 +26,7 @@ type Props = {
  */
 export function HeroPriceCard({ unit, kind, current, deltaPct }: Props) {
   const { t, mode } = useTheme();
+  const { t: tx } = useTranslation();
   const curDate = new Date(current.effectiveDate);
   const palette = feedPaletteFor(kind);
   const Glyph = feedGlyphFor(kind);
@@ -56,7 +59,7 @@ export function HeroPriceCard({ unit, kind, current, deltaPct }: Props) {
               textTransform: 'uppercase',
             }}
           >
-            ราคาปัจจุบัน
+            {tx('feedPrice.hero.current')}
           </Text>
           <Row gap={4} style={{ alignItems: 'baseline' }}>
             <Text
@@ -93,7 +96,7 @@ export function HeroPriceCard({ unit, kind, current, deltaPct }: Props) {
           <Text
             style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family, marginTop: 2 }}
           >
-            อัปเดตล่าสุด{' '}
+            {tx('feedPrice.hero.updated')}{' '}
             <Text style={{ fontFamily: type.familyNum }}>{thaiDate.short(curDate)}</Text>
           </Text>
         </View>
@@ -121,7 +124,7 @@ function describeDelta(
     return {
       bg: t.surfaceAlt,
       fg: t.inkSoft,
-      label: 'ไม่มีข้อมูลเทียบ',
+      label: i18n.t('feedPrice.hero.noCompare'),
       icon: null,
     };
   }
@@ -129,7 +132,7 @@ function describeDelta(
     return {
       bg: t.surfaceAlt,
       fg: t.inkSoft,
-      label: 'ไม่เปลี่ยนแปลง',
+      label: i18n.t('feedPrice.hero.noChange'),
       icon: <Icon.flat size={13} stroke={2} color={t.inkSoft} />,
     };
   }
@@ -139,7 +142,7 @@ function describeDelta(
     return {
       bg: t.dangerSoft,
       fg: ink,
-      label: `+${(deltaPct as number).toFixed(1)}% จากเดือนก่อน`,
+      label: i18n.t('feedPrice.hero.deltaUp', { pct: (deltaPct as number).toFixed(1) }),
       icon: <Icon.trendUp size={13} stroke={2} color={ink} />,
     };
   }
@@ -147,7 +150,7 @@ function describeDelta(
   return {
     bg: t.fillSoft,
     fg: t.fillInk,
-    label: `${(deltaPct as number).toFixed(1)}% จากเดือนก่อน`,
+    label: i18n.t('feedPrice.hero.deltaDown', { pct: (deltaPct as number).toFixed(1) }),
     icon: <Icon.trendDown size={13} stroke={2} color={t.fillInk} />,
   };
 }

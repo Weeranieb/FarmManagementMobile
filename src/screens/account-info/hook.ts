@@ -4,10 +4,12 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { changeMyPassword, getMe, updateMe, useAuthStore } from '@/features/auth';
 import type { UserResponse } from '@/features/auth';
-import { apiErrorMessage } from '@/shared/http';
+import { apiErrorMessage, AUTH_ERROR } from '@/shared/http';
 import { WRONG_CURRENT_PASSWORD } from './components/ChangePasswordSheet';
 
-const WRONG_CURRENT_PASSWORD_CODE = '500021';
+/** Shared with the http client, which must NOT treat this 401 as a dead
+ *  session — otherwise this inline error never gets shown. */
+const WRONG_CURRENT_PASSWORD_CODE = AUTH_ERROR.invalidCredentials;
 
 type FormState = {
   firstName: string;
@@ -176,6 +178,9 @@ export function useAccountInfoForm() {
     saving,
     dirty,
     canSave,
+    // Raw ISO — the view formats it in the active language. Null on accounts
+    // created before the backend tracked this.
+    passwordUpdatedAt: user?.passwordUpdatedAt ?? null,
     setField,
     handleSave,
     handleBack,

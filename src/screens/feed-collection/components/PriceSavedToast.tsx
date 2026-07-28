@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Text, View } from 'react-native';
 import { Icon } from '@/components/icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 
@@ -31,13 +32,15 @@ type Props = {
  * invisible before (see SavedToast).
  */
 export function PriceSavedToast({
-  title = 'บันทึกราคาแล้ว',
+  title,
   detail,
   duration = 2800,
   bottom = 24,
   onDismiss,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
+  const titleText = title ?? tx('feedCollection.priceSaved');
   const enter = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -103,7 +106,7 @@ export function PriceSavedToast({
               lineHeight: 16,
             }}
           >
-            {title}
+            {titleText}
           </Text>
           {detail ? (
             <Text

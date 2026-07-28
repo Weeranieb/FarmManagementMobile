@@ -1,4 +1,5 @@
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type, radii } from '@/theme/tokens';
 import { TopBar, Tappable } from '@/components/ui';
@@ -6,7 +7,7 @@ import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
 import { StatusBadge } from '@/components/domain/StatusPip';
 import { FishChips } from '@/components/domain/FishChips';
-import { fmt } from '@/utils/fmt';
+import { displayFarmName, displayPondName, fmt } from '@/utils/fmt';
 import { thaiDate } from '@/locale/thaiDate';
 import { today } from '@/shared/time';
 import type { PondModel } from '@/features/pond';
@@ -15,13 +16,9 @@ import { ActionPill } from './components/ActionPill';
 import { DailyFeedBody } from './components/DailyFeedBody';
 import { HistoryBody } from './components/HistoryBody';
 import { CycleBody } from './components/CycleBody';
+import { SheetPondActions } from './components/SheetPondActions';
+import { SheetPondEdit } from './components/SheetPondEdit';
 import type { PondDetailTab } from './hook';
-
-const LATEST_ACTIVITY_LABEL: Record<'fill' | 'move' | 'sell', string> = {
-  fill: 'เติม',
-  move: 'ย้าย',
-  sell: 'ขาย',
-};
 
 type Props = {
   pondId: number;
@@ -32,6 +29,17 @@ type Props = {
   tab: PondDetailTab;
   setTab: (t: PondDetailTab) => void;
   onPondOverflow: () => void;
+  canManage: boolean;
+  actionsOpen: boolean;
+  closeActions: () => void;
+  editOpen: boolean;
+  openEdit: () => void;
+  closeEdit: () => void;
+  submitEdit: (payload: { name: string; area?: number }) => void;
+  toggleStatus: () => void;
+  requestDelete: () => void;
+  hasHistory: boolean;
+  saving: boolean;
   refresh: () => Promise<void>;
   refreshing: boolean;
   onBack?: () => void;
@@ -50,6 +58,17 @@ export function PondDetailView({
   tab,
   setTab,
   onPondOverflow,
+  canManage,
+  actionsOpen,
+  closeActions,
+  editOpen,
+  openEdit,
+  closeEdit,
+  submitEdit,
+  toggleStatus,
+  requestDelete,
+  hasHistory,
+  saving,
   refresh,
   refreshing,
   onBack,
@@ -59,6 +78,7 @@ export function PondDetailView({
   showHeader = true,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
 
   if (isLoading) {
     return (
@@ -75,7 +95,7 @@ export function PondDetailView({
               textAlign: 'center',
             }}
           >
-            กำลังโหลดข้อมูลบ่อ…
+            {tx('pondDetail.loading')}
           </Text>
         </View>
       </View>
@@ -87,14 +107,16 @@ export function PondDetailView({
       <View style={{ flex: 1, backgroundColor: t.bg }}>
         {showHeader ? (
           <TopBar
-            title="ไม่พบบ่อ"
+            title={tx('pondDetail.notFoundTitle')}
             subtitle=""
             leading={onBack ? <BackBtn onBack={onBack} /> : null}
           />
         ) : null}
         <View style={{ padding: 24 }}>
           <Text style={{ fontSize: 15, color: t.inkSoft, fontFamily: type.family }}>
-            {isError ? 'โหลดข้อมูลบ่อไม่สำเร็จ — โปรดลองใหม่' : `ไม่มีบ่อหมายเลข ${pondId} ในระบบ`}
+            {isError
+              ? tx('pondDetail.loadFailed')
+              : tx('pondDetail.noSuchPond', { id: pondId })}
           </Text>
         </View>
       </View>
@@ -107,26 +129,30 @@ export function PondDetailView({
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       {showHeader ? (
         <TopBar
-          title={`บ่อ ${pond.name}`}
-          subtitle={farmSubtitle ? `ฟาร์ม ${farmSubtitle}` : ''}
+          title={displayPondName(pond.name)}
+          subtitle={farmSubtitle ? displayFarmName(farmSubtitle) : ''}
           leading={onBack ? <BackBtn onBack={onBack} /> : null}
           trailing={
-            <Tappable
-              onPress={onPondOverflow}
-              accessibilityRole="button"
-              accessibilityLabel="เมนูเพิ่มเติม"
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: radii.md,
-                borderWidth: 1,
-                borderColor: t.border,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Icon.more size={18} color={t.ink} />
-            </Tappable>
+            // Every action behind the menu is client-admin-only, so a worker
+            // gets no button rather than an empty sheet.
+            canManage ? (
+              <Tappable
+                onPress={onPondOverflow}
+                accessibilityRole="button"
+                accessibilityLabel={tx('common.more')}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: radii.md,
+                  borderWidth: 1,
+                  borderColor: t.border,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon.more size={18} color={t.ink} />
+              </Tappable>
+            ) : null
           }
         />
       ) : null}
@@ -151,20 +177,20 @@ export function PondDetailView({
             <ActionPill
               tone="fill"
               icon="plus"
-              label="เติมปลา"
+              label={tx('activity.fill')}
               onPress={() => onAction?.('fill')}
             />
             <ActionPill
               tone="move"
               icon="swap"
-              label="ย้ายปลา"
+              label={tx('activity.move')}
               disabled={isMaintenance}
               onPress={() => onAction?.('move')}
             />
             <ActionPill
               tone="sell"
               icon="tag"
-              label="ขายปลา"
+              label={tx('activity.sell')}
               disabled={isMaintenance}
               onPress={() => onAction?.('sell')}
             />
@@ -181,9 +207,9 @@ export function PondDetailView({
         >
           {(
             [
-              { id: 'feed', label: 'ข้อมูลรายวัน' },
-              { id: 'cycles', label: 'รอบเลี้ยง' },
-              { id: 'history', label: 'ประวัติกิจกรรม' },
+              { id: 'feed', label: tx('pondDetail.tab.feed') },
+              { id: 'cycles', label: tx('pondDetail.tab.cycles') },
+              { id: 'history', label: tx('pondDetail.tab.history') },
             ] as const
           ).map((opt) => {
             const sel = tab === opt.id;
@@ -228,6 +254,23 @@ export function PondDetailView({
           <CycleBody pondId={pond.id} />
         )}
       </ScrollView>
+
+      <SheetPondActions
+        visible={actionsOpen}
+        pond={pond}
+        hasHistory={hasHistory}
+        onClose={closeActions}
+        onEdit={openEdit}
+        onToggleStatus={toggleStatus}
+        onDelete={requestDelete}
+      />
+      <SheetPondEdit
+        visible={editOpen}
+        pond={pond}
+        saving={saving}
+        onClose={closeEdit}
+        onSubmit={submitEdit}
+      />
     </View>
   );
 }
@@ -258,6 +301,7 @@ function BackBtn({ onBack }: { onBack: () => void }) {
  */
 function PondHeader({ pond, isMaintenance }: { pond: PondModel; isMaintenance: boolean }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
 
   if (isMaintenance) {
     return (
@@ -268,16 +312,18 @@ function PondHeader({ pond, isMaintenance }: { pond: PondModel; isMaintenance: b
             <Text
               style={{ fontFamily: type.familySemi, fontSize: type.sizes.base, color: t.inkSoft }}
             >
-              บ่อนี้ปิดอยู่
+              {tx('pondDetail.closed')}
             </Text>
             {pond.latestActivityDate && pond.latestActivityType ? (
               <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family }}>
-                รอบล่าสุด: {LATEST_ACTIVITY_LABEL[pond.latestActivityType]}{' '}
+                {tx('pondDetail.lastCycle', {
+                  action: tx(`pond.actions.${pond.latestActivityType}`),
+                })}{' '}
                 {thaiDate.ago(new Date(pond.latestActivityDate), today)}
               </Text>
             ) : (
               <Text style={{ fontSize: type.sizes.sm, color: t.inkMute, fontFamily: type.family }}>
-                ยังไม่มีกิจกรรม
+                {tx('pondDetail.noActivity')}
               </Text>
             )}
           </Col>
@@ -295,7 +341,7 @@ function PondHeader({ pond, isMaintenance }: { pond: PondModel; isMaintenance: b
         </Row>
         {pond.startDate ? (
           <Text style={{ fontSize: type.sizes.xs, color: t.inkMute, fontFamily: type.family }}>
-            เริ่มรอบ {thaiDate.short(new Date(pond.startDate))}
+            {tx('pondDetail.cycleStart', { date: thaiDate.short(new Date(pond.startDate)) })}
           </Text>
         ) : null}
       </Row>
@@ -320,7 +366,7 @@ function PondHeader({ pond, isMaintenance }: { pond: PondModel; isMaintenance: b
                 marginLeft: 6,
               }}
             >
-              ตัว
+              {tx('unit.fish')}
             </Text>
           </View>
           <Text
@@ -331,7 +377,7 @@ function PondHeader({ pond, isMaintenance }: { pond: PondModel; isMaintenance: b
               marginTop: 2,
             }}
           >
-            ปลาในบ่อ
+            {tx('pondDetail.fishInPond')}
           </Text>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
@@ -347,7 +393,7 @@ function PondHeader({ pond, isMaintenance }: { pond: PondModel; isMaintenance: b
                 marginLeft: 4,
               }}
             >
-              วัน
+              {tx('unit.day')}
             </Text>
           </View>
           <Text
@@ -358,7 +404,7 @@ function PondHeader({ pond, isMaintenance }: { pond: PondModel; isMaintenance: b
               marginTop: 2,
             }}
           >
-            อายุรอบ
+            {tx('pondDetail.cycleAge')}
           </Text>
         </View>
       </Row>

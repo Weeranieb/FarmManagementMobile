@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type, type ThemePalette } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
@@ -40,13 +41,14 @@ export function FieldRow({
   children: React.ReactNode;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Col gap={space[2]} style={{ marginBottom: space[4] }}>
       <Row justify="space-between">
         <Text style={{ fontSize: type.sizes.sm, fontFamily: type.familySemi, color: t.ink }}>
           {label}
           {optional ? (
-            <Text style={{ color: t.inkMute, fontFamily: type.family }}> · ไม่บังคับ</Text>
+            <Text style={{ color: t.inkMute, fontFamily: type.family }}> {tx('flows.optional')}</Text>
           ) : null}
         </Text>
         {hint ? (
@@ -116,7 +118,7 @@ export function FishPicker({
 export function NoteField({
   value,
   onChange,
-  placeholder = 'เพิ่มโน้ต…',
+  placeholder,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -152,7 +154,7 @@ export function NoteField({
 export function PreviewCard({
   tone = 'fill',
   rows,
-  totalLabel = 'ต้นทุนรวม',
+  totalLabel,
   total = '฿0',
 }: {
   tone?: FlowTone;
@@ -259,8 +261,11 @@ export function CloseAfterActionToggle({
   pondName?: string;
 }) {
   const { t, mode, shadowXl } = useTheme();
+  const { t: tx } = useTranslation();
   const [detailOpen, setDetailOpen] = useState(false);
-  const helper = value ? activeHelper.replace('{pondName}', pondName || 'บ่อนี้') : inactiveHelper;
+  const helper = value
+    ? activeHelper.replace('{pondName}', pondName || tx('flows.move.thisPond'))
+    : inactiveHelper;
   const infoInk = value ? warnInk(mode, t) : t.inkSoft;
   return (
     <>
@@ -308,7 +313,7 @@ export function CloseAfterActionToggle({
                 >
                   {label}
                 </Text>
-                <Pill tone="warn">พักบ่อ</Pill>
+<Pill tone="warn">{tx('flows.resting')}</Pill>
               </Row>
               <Text
                 style={{
@@ -326,7 +331,7 @@ export function CloseAfterActionToggle({
         <Tappable
           onPress={() => setDetailOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel="ดูผลของการปิดบ่อ"
+          accessibilityLabel={tx('flows.seeCloseEffects')}
           hitSlop={10}
           style={{ padding: 2, alignSelf: 'flex-start' }}
         >
@@ -390,13 +395,13 @@ export function CloseAfterActionToggle({
                     color: t.ink,
                   }}
                 >
-                  ปิดบ่อแล้วมีผลอย่างไร
+                  {tx('flows.closeEffectsTitle')}
                 </Text>
                 <Tappable
                   onPress={() => setDetailOpen(false)}
                   hitSlop={10}
                   accessibilityRole="button"
-                  accessibilityLabel="ปิด"
+                  accessibilityLabel={tx('common.close')}
                   style={{ padding: 4 }}
                 >
                   <Icon.x size={20} color={t.inkMute} />
@@ -410,23 +415,23 @@ export function CloseAfterActionToggle({
                   lineHeight: 20,
                 }}
               >
-                การปิดบ่อจะจบรอบการเลี้ยงของบ่อนี้ทันที และมีผลกับบ่อดังนี้
+                {tx('flows.closeEffectsIntro')}
               </Text>
               <Col gap={14} style={{ marginTop: space[4] }}>
                 <CloseEffectRow
                   icon={<Icon.wrench size={20} color={t.inkSoft} />}
-                  title="บ่อเปลี่ยนเป็น “พักบ่อ”"
-                  body="ถือว่าจบรอบการเลี้ยงปัจจุบันแล้ว"
+                  title={tx('flows.pondBecomesResting')}
+                  body={tx('flows.closeMeans')}
                 />
                 <CloseEffectRow
                   icon={<Icon.lock size={20} color={t.inkSoft} />}
-                  title="แก้บันทึกประจำวันไม่ได้"
-                  body="จะบันทึกหรือแก้ไขข้อมูลของบ่อนี้ เช่น อาหารที่ให้ หรือจำนวนตาย ไม่ได้อีก"
+                  title={tx('flows.noDailyEdit')}
+                  body={tx('flows.closeNoDaily')}
                 />
                 <CloseEffectRow
                   icon={<Icon.cycle size={20} color={t.inkSoft} />}
-                  title="ใช้ต่อได้เมื่อเริ่มรอบใหม่"
-                  body="ถ้าจะกลับมาใช้บ่อนี้ ต้องเริ่มรอบใหม่ก่อน"
+                  title={tx('flows.reusableNewCycle')}
+                  body={tx('flows.closeRestart')}
                 />
               </Col>
             </ScrollView>
@@ -479,11 +484,12 @@ function CloseEffectRow({
 
 export function FlowBackBtn({ onPress, step }: { onPress: () => void; step: 1 | 2 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Tappable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={step === 1 ? 'ปิด' : 'ย้อนกลับ'}
+      accessibilityLabel={step === 1 ? tx('common.close') : tx('common.back')}
       style={{
         width: 40,
         height: 40,

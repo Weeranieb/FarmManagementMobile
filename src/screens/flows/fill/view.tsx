@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Btn, Input, Pill, TopBar } from '@/components/ui';
@@ -105,6 +106,7 @@ function FillStep1(props: Props) {
     goBack,
   } = props;
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const fieldsReady = pond != null;
 
   // Canonical species order — kaphong is the business default and always
@@ -135,16 +137,16 @@ function FillStep1(props: Props) {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <TopBar
-        title={isStartCycle ? 'เริ่มรอบใหม่' : 'เติมปลา'}
+        title={isStartCycle ? tx('flows.startNewCycle') : tx('flows.fill.title')}
         subtitle={
           fromFab && !pond
-            ? 'เลือกฟาร์มและบ่อ แล้วกรอกรายละเอียด'
+            ? tx('flows.fill.pickFarmPond')
             : pond
               ? `${displayPondName(pond.name)}${pond.farmName ? ` · ${displayFarmName(pond.farmName)}` : ''}`
               : undefined
         }
         leading={<FlowBackBtn step={1} onPress={goBack} />}
-        trailing={<Pill tone="fill">ขั้นที่ 1/2</Pill>}
+        trailing={<Pill tone="fill">{tx('flows.step1')}</Pill>}
       />
 
       <ScrollView
@@ -193,7 +195,7 @@ function FillStep1(props: Props) {
                   lineHeight: 19,
                 }}
               >
-                บ่อนี้กำลังปิดอยู่ — การเติมจะเริ่มรอบใหม่โดยอัตโนมัติ
+                {tx('flows.fill.closedPondNotice')}
               </Text>
             </View>
           </View>
@@ -203,48 +205,48 @@ function FillStep1(props: Props) {
         <View style={{ padding: 20 }}>
           <DimWrap
             ready={fieldsReady}
-            hint={fromFab ? 'เลือกฟาร์มและบ่อก่อน เพื่อกรอกรายละเอียด' : undefined}
+            hint={fromFab ? tx('flows.fill.pickFarmPondFirst') : undefined}
           >
-            <FieldRow label="ชนิดปลา">
+            <FieldRow label={tx('flows.fishType')}>
               <FishPicker types={fishTypes} selected={fishType} onChange={setFishType} />
             </FieldRow>
 
-            <FieldRow label="จำนวน">
+            <FieldRow label={tx('flows.count')}>
               <Input
                 big
                 keyboardType="number-pad"
-                suffix="ตัว"
+                suffix={tx('unit.fish')}
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="0"
               />
             </FieldRow>
 
-            <FieldRow label="น้ำหนักเฉลี่ยต่อตัว">
+            <FieldRow label={tx('flows.avgWeightPer')}>
               <Input
                 keyboardType="decimal-pad"
-                suffix="กก./ตัว"
+                suffix={tx('flows.kgPerFish')}
                 value={avgWeightKg}
                 onChangeText={setAvgWeightKg}
                 placeholder="0.05"
               />
             </FieldRow>
 
-            <FieldRow label="ราคาต่อกก.">
+            <FieldRow label={tx('flows.pricePerKg')}>
               <Input
                 keyboardType="decimal-pad"
-                suffix="฿/กก."
+                suffix={tx('flows.bahtPerKg')}
                 value={pricePerUnit}
                 onChangeText={setPricePerUnit}
                 placeholder="0"
               />
             </FieldRow>
 
-            <FieldRow label="วันที่">
+            <FieldRow label={tx('daily.dateCol')}>
               <DateField value={date} onChange={setDate} />
             </FieldRow>
 
-            <FieldRow label="ค่าใช้จ่ายเพิ่มเติม" optional>
+            <FieldRow label={tx('flows.extraCosts')} optional>
               <AdditionalCostsEditor
                 tone="fill"
                 rows={additionalCosts}
@@ -252,7 +254,7 @@ function FillStep1(props: Props) {
               />
             </FieldRow>
 
-            <FieldRow label="โน้ต">
+            <FieldRow label={tx('flows.notes')}>
               <NoteField value={remark} onChange={setRemark} />
             </FieldRow>
           </DimWrap>
@@ -265,10 +267,10 @@ function FillStep1(props: Props) {
                 <PreviewCard
                   tone="fill"
                   rows={[
-                    ['ต้นทุนปลา', fmt.baht(fishCost)],
-                    ['ค่าใช้จ่ายเพิ่มเติม', fmt.baht(extraTotal)],
+                    [tx('flows.fishCost'), fmt.baht(fishCost)],
+                    [tx('flows.extraCosts'), fmt.baht(extraTotal)],
                   ]}
-                  totalLabel="รวมทั้งหมด"
+                  totalLabel={tx('flows.sumAll')}
                   total={fmt.baht(grandTotal)}
                 />
                 <StockImpactRow
@@ -288,7 +290,7 @@ function FillStep1(props: Props) {
               onPress={() => setStep(2)}
               disabled={!fieldsReady || !amount || !avgWeightKg || parseFloat(avgWeightKg) <= 0}
             >
-              ตรวจสอบและบันทึก
+              {tx('flows.reviewSave')}
             </Btn>
           </Col>
         </View>
@@ -318,6 +320,7 @@ function FillStep2(props: Props) {
     goBack,
   } = props;
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   if (!pond) return null;
   const amountNum = parseInt(amount || '0', 10);
   const priceNum = parseFloat(pricePerUnit || '0');
@@ -328,10 +331,10 @@ function FillStep2(props: Props) {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <TopBar
-        title="ตรวจสอบและยืนยัน"
-        subtitle={`เติมปลา · ${pondLabel}`}
+        title={tx('flows.reviewConfirm')}
+        subtitle={tx('flows.fill.titleWith', { pond: pondLabel })}
         leading={<FlowBackBtn step={2} onPress={goBack} />}
-        trailing={<Pill tone="fill">ขั้นที่ 2/2</Pill>}
+        trailing={<Pill tone="fill">{tx('flows.step2')}</Pill>}
       />
 
       <ScrollView
@@ -365,7 +368,7 @@ function FillStep2(props: Props) {
           >
             <Icon.plus size={14} color="#ffffff" stroke={2.4} />
             <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: type.familyBold }}>
-              เติมปลา
+              {tx('flows.fill.title')}
             </Text>
           </View>
           <Text
@@ -377,7 +380,7 @@ function FillStep2(props: Props) {
               letterSpacing: -1,
             }}
           >
-            +{fmt.num(amountNum)} ตัว
+            {tx('flows.plusFish', { count: fmt.num(amountNum) })}
           </Text>
           <Text
             style={{
@@ -388,45 +391,56 @@ function FillStep2(props: Props) {
               fontFamily: type.family,
             }}
           >
-            {fishLabel} · ราคา {fmt.baht(priceNum)}/กก.
-            {isStartCycle ? ' · เริ่มรอบใหม่' : ''}
+            {tx('flows.fishAtPrice', { fish: fishLabel, price: fmt.baht(priceNum) })}
+            {isStartCycle ? ` ${tx('flows.startNewCycleDot')}` : ''}
           </Text>
         </View>
 
-        <ReviewSection title="ข้อมูลทั่วไป">
-          <ReviewRow l="บ่อปลายทาง" v={farmLabel ? `${pondLabel} · ${farmLabel}` : pondLabel} />
-          <ReviewRow l="วันที่บันทึก" v={thaiDate.long(date)} last />
+        <ReviewSection title={tx('flows.general')}>
+          <ReviewRow
+            l={tx('flows.move.toPond')}
+            v={farmLabel ? `${pondLabel} · ${farmLabel}` : pondLabel}
+          />
+          <ReviewRow l={tx('flows.recordDate')} v={thaiDate.long(date)} last />
         </ReviewSection>
 
-        <ReviewSection title="รายละเอียดปลา">
-          <ReviewRow l="พันธุ์ปลา" v={fishLabel} />
-          <ReviewRow l="จำนวน" v={`${fmt.num(amountNum)} ตัว`} />
+        <ReviewSection title={tx('flows.fishDetails')}>
+          <ReviewRow l={tx('flows.species')} v={fishLabel} />
+          <ReviewRow l={tx('flows.count')} v={tx('flows.countFishN', { count: fmt.num(amountNum) })} />
           {avgWeightKg ? (
             <>
-              <ReviewRow l="น้ำหนักเฉลี่ย" v={`${avgWeightKg} กก./ตัว`} />
-              <ReviewRow l="น้ำหนักรวม" v={fmt.kg(totalWeightKg)} />
+              <ReviewRow
+                l={tx('flows.avgWeight')}
+                v={tx('flows.kgPerFishN', { value: avgWeightKg })}
+              />
+              <ReviewRow l={tx('flows.totalWeight')} v={fmt.kg(totalWeightKg)} />
             </>
           ) : null}
-          <ReviewRow l="ราคาต่อกก." v={`${fmt.bahtPrecise(priceNum)}/กก.`} />
-          <ReviewRow l="ต้นทุนปลาเริ่มต้น" v={fmt.baht(fishCost)} last />
+          <ReviewRow
+            l={tx('flows.pricePerKg')}
+            v={tx('flows.perKgValue', { value: fmt.bahtPrecise(priceNum) })}
+          />
+          <ReviewRow l={tx('flows.fishCostStart')} v={fmt.baht(fishCost)} last />
         </ReviewSection>
 
-        <ReviewSection title={`ค่าใช้จ่ายเพิ่มเติม (${countNonEmpty(additionalCosts)} รายการ)`}>
+        <ReviewSection
+          title={tx('flows.extraCostsCount', { count: countNonEmpty(additionalCosts) })}
+        >
           <AdditionalCostsList rows={additionalCosts} />
         </ReviewSection>
 
-        <GrandTotalBlock tone="fill" label="ยอดรวมทั้งหมด" value={fmt.baht(grandTotal)} />
+        <GrandTotalBlock tone="fill" label={tx('flows.grandTotal')} value={fmt.baht(grandTotal)} />
 
-        <ReviewSection title="ผลกระทบต่อปริมาณปลา">
+        <ReviewSection title={tx('flows.stockImpact')}>
           <Row gap={10} style={{ paddingVertical: 14 }}>
-            <ImpactCell label="ก่อน" v={fmt.num(stockBefore)} />
+            <ImpactCell label={tx('flows.before')} v={fmt.num(stockBefore)} />
             <Icon.arrow size={18} color={t.inkSoft} />
-            <ImpactCell label="หลัง" v={fmt.num(stockAfter)} accent={t.fill} />
-            <ImpactCell label="เพิ่ม" v={`+${fmt.num(delta)}`} accent={t.fill} />
+            <ImpactCell label={tx('flows.after')} v={fmt.num(stockAfter)} accent={t.fill} />
+            <ImpactCell label={tx('flows.addLabel')} v={`+${fmt.num(delta)}`} accent={t.fill} />
           </Row>
           {isStartCycle ? (
             <View style={{ paddingHorizontal: 0, paddingBottom: 14 }}>
-              <ClosePondBadge msg={`${pondLabel} จะเริ่มรอบใหม่หลังลงปลาเสร็จ`} />
+              <ClosePondBadge msg={tx('flows.fill.newCycleAfter', { pond: pondLabel })} />
             </View>
           ) : null}
         </ReviewSection>
@@ -442,7 +456,7 @@ function FillStep2(props: Props) {
           onPress={handleConfirm}
           disabled={isPending}
         >
-          {isPending ? 'กำลังบันทึก…' : 'ยืนยันและลงปลา'}
+          {isPending ? tx('common.saving') : tx('flows.fill.confirm')}
         </Btn>
       </BottomBar>
     </View>
@@ -465,6 +479,7 @@ function StockImpactRow({
   accent: string;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View
       style={{
@@ -474,9 +489,9 @@ function StockImpactRow({
         paddingHorizontal: 4,
       }}
     >
-      <StockCell label="ก่อน" v={fmt.num(before)} />
+      <StockCell label={tx('flows.before')} v={fmt.num(before)} />
       <Icon.arrow size={14} color={t.inkSoft} />
-      <StockCell label="หลัง" v={fmt.num(after)} accent={accent} />
+      <StockCell label={tx('flows.after')} v={fmt.num(after)} accent={accent} />
       <Text
         style={{
           marginLeft: 'auto',

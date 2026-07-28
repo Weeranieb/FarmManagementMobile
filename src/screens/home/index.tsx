@@ -1,7 +1,6 @@
 import { useHomeScreen, type HomeVariant } from './hook';
 import { HomeView } from './view';
 import type { SecondaryActionId } from './components/secondary-action-row';
-import type { ActivityItem } from './components/activity-row';
 import type { PendingPond } from './constants';
 import type { DailyLogTarget } from '@/screens/daily-log/route';
 
@@ -17,7 +16,6 @@ type Props = {
    *  toast (e.g. once it has been dismissed). */
   showSavedToast?: boolean;
   onOpenDailyLog?: (target?: DailyLogTarget) => void;
-  onOpenActivity?: (e: ActivityItem) => void;
   onOpenSecondaryAction?: (id: SecondaryActionId) => void;
   onCreateFarm?: () => void;
   /** Tap the floating banner after a save. */
@@ -35,7 +33,6 @@ export function HomeScreen({
   justSavedCount = 3,
   showSavedToast,
   onOpenDailyLog,
-  onOpenActivity,
   onOpenSecondaryAction,
   onCreateFarm,
   onPressSavedToast,
@@ -50,7 +47,6 @@ export function HomeScreen({
       justSavedCount={justSavedCount}
       showSavedToast={showSavedToast}
       onOpenDailyLog={onOpenDailyLog}
-      onOpenActivity={onOpenActivity}
       onOpenSecondaryAction={onOpenSecondaryAction}
       onCreateFarm={onCreateFarm}
       onPressSavedToast={onPressSavedToast}

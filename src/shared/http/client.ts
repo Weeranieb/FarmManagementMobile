@@ -11,7 +11,7 @@ import { Platform } from 'react-native';
 // depend on the auth feature's public barrel (which would create a cycle when
 // the auth service imports from this module).
 import { useAuthStore } from '@/features/auth/store';
-import type { ApiError } from './errors';
+import { AUTH_ERROR, type ApiError } from './errors';
 
 type QueryParams = Record<string, string | number | boolean | undefined | null>;
 
@@ -148,12 +148,25 @@ async function apiFetch<TResponse>(path: string, options: FetchOptions = {}): Pr
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  if (res.status === 401) {
-    useAuthStore.getState().clear();
-  }
-
   if (!res.ok) {
-    throw await parseError(res);
+    const err = await parseError(res);
+
+    // A 401 only means "your session is over" when we actually sent a token AND
+    // the backend rejected that token. Three different codes come back as 401,
+    // and `500021` is a credential rejection scoped to this one request — the
+    // wrong password at login, or the wrong *current* password on
+    // change-password. Signing the user out for a typo in a password field is
+    // absurd, and it used to swallow the inline field error the change-password
+    // sheet raises for exactly that code.
+    if (
+      res.status === 401 &&
+      token != null &&
+      err.code !== AUTH_ERROR.invalidCredentials
+    ) {
+      void useAuthStore.getState().expireSession();
+    }
+
+    throw err;
   }
 
   if (res.status === 204) return undefined as TResponse;

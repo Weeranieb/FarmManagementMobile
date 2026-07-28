@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, ScrollView, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { Tappable } from '@/components/ui';
 import { thaiDate } from '@/locale/thaiDate';
-import { fmt, FISH_TH } from '@/utils/fmt';
+import { displayFarmName, displayPondName, fmt, FISH_TH } from '@/utils/fmt';
 import { Numpad } from '@/screens/daily-log/components/Numpad';
 import { SaveBar } from '@/screens/daily-log/components/SaveBar';
 import { MonthYearPickerSheet } from '@/screens/daily-log/components/MonthYearPickerSheet';
@@ -36,6 +37,7 @@ const NUMPAD_REVEAL_MARGIN = 1.2 * ROW_H;
 
 export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBack?: () => void }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const insets = useSafeAreaInsets();
   const {
     pond,
@@ -135,7 +137,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
     const intent = leave;
     if (!intent) return;
     if (invalidCount > 0) {
-      setLeaveError('มีค่าที่เกินกำหนด แก้ไขก่อนจึงจะบันทึกได้');
+      setLeaveError(tx('pondLedger.invalidBlocks'));
       return;
     }
     const result = await save();
@@ -143,9 +145,9 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
       setLeave(null);
       doLeave(intent);
     } else {
-      setLeaveError(result.error ?? 'บันทึกไม่สำเร็จ — โปรดลองใหม่');
+      setLeaveError(result.error ?? tx('pondLedger.saveFailed'));
     }
-  }, [leave, invalidCount, save, doLeave]);
+  }, [leave, invalidCount, save, doLeave, tx]);
 
   const onLeaveDismiss = useCallback(() => {
     setLeave(null);
@@ -153,7 +155,11 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
   }, []);
 
   const fishType = pond?.fishTypes?.[0] ? (FISH_TH[pond.fishTypes[0]] ?? pond.fishTypes[0]) : '';
-  const subtitle = [pond?.farmName, fishType, pond ? `${fmt.num(pond.totalFish)} ตัว` : '']
+  const subtitle = [
+    pond?.farmName ? displayFarmName(pond.farmName) : '',
+    fishType,
+    pond ? `${fmt.num(pond.totalFish)} ${tx('unit.fish')}` : '',
+  ]
     .filter(Boolean)
     .join(' · ');
 
@@ -231,14 +237,18 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
           }}
         >
           {onBack ? (
-            <IconBtn onPress={() => requestLeave({ kind: 'back' })} icon="back" label="ย้อนกลับ" />
+            <IconBtn
+              onPress={() => requestLeave({ kind: 'back' })}
+              icon="back"
+              label={tx('common.back')}
+            />
           ) : null}
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text
               numberOfLines={1}
               style={{ fontFamily: type.familyBold, fontSize: 18, lineHeight: 24, color: t.ink }}
             >
-              {pond ? `บ่อ ${pond.name}` : 'บ่อ'}
+              {displayPondName(pond?.name)}
             </Text>
             {subtitle ? (
               <Text
@@ -261,14 +271,16 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
             <IconBtn
               onPress={() => requestLeave({ kind: 'prev' })}
               icon="chevL"
-              label="เดือนก่อน"
+              label={tx('pondLedger.prevMonth')}
               size={34}
               disabled={!canGoPrev}
             />
             <Tappable
               onPress={() => setPickerOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel={`เลือกเดือน · ปี · ${thaiDate.monthYear(monthDate)}`}
+              accessibilityLabel={tx('pondLedger.pickMonthA11y', {
+                month: thaiDate.monthYear(monthDate),
+              })}
               style={{
                 flex: 1,
                 height: 34,
@@ -288,7 +300,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
             <IconBtn
               onPress={() => requestLeave({ kind: 'next' })}
               icon="chevR"
-              label="เดือนถัดไป"
+              label={tx('pondLedger.nextMonth')}
               size={34}
               disabled={isCurrentMonth}
             />
@@ -307,9 +319,9 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
 
       {/* rows */}
       {isLoading ? (
-        <Centered text="กำลังโหลดตาราง…" />
+        <Centered text={tx('pondLedger.loading')} />
       ) : isError ? (
-        <Centered text="โหลดข้อมูลไม่สำเร็จ — โปรดลองใหม่" />
+        <Centered text={tx('pondLedger.loadFailed')} />
       ) : (
         <ScrollView
           ref={scrollRef}
@@ -440,7 +452,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
       <UnsavedChangesDialog
         visible={leave !== null}
         dirtyCount={dirtyDays.length}
-        unit="วัน"
+        unit={tx('unit.day')}
         source={leave?.kind === 'back' ? 'back' : 'month'}
         error={leaveError}
         onDismiss={onLeaveDismiss}

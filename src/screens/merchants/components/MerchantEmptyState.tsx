@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -13,6 +14,7 @@ type Props = {
  *  everyone else. No sad centered icon + "no data". */
 export function MerchantEmptyState({ isAdmin, onAdd }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
 
   return (
     <View style={{ paddingTop: 48, paddingHorizontal: 32, paddingBottom: 24, alignItems: 'center', gap: 14 }}>
@@ -63,7 +65,7 @@ export function MerchantEmptyState({ isAdmin, onAdd }: Props) {
 
       <View style={{ alignItems: 'center', gap: 6, maxWidth: 290 }}>
         <Text style={{ fontSize: 18, fontFamily: type.familyBold, color: t.ink, lineHeight: 26, textAlign: 'center' }}>
-          ยังไม่มีผู้ขาย
+          {tx('merchants.empty.title')}
         </Text>
         <Text
           style={{
@@ -75,8 +77,8 @@ export function MerchantEmptyState({ isAdmin, onAdd }: Props) {
           }}
         >
           {isAdmin
-            ? 'เพิ่มรายชื่อผู้ซื้อ / ตลาดที่ฟาร์มขายปลาให้ — จะเลือกใช้ได้ทันทีตอนบันทึกการขาย'
-            : 'ผู้ดูแลฟาร์มยังไม่ได้เพิ่มรายชื่อผู้ขาย — เมื่อมีรายการแล้วจะแสดงที่นี่'}
+            ? tx('merchants.empty.adminHelp')
+            : tx('merchants.empty.workerHelp')}
         </Text>
       </View>
 
@@ -97,7 +99,7 @@ export function MerchantEmptyState({ isAdmin, onAdd }: Props) {
         >
           <Icon.plus size={18} color="#fff" stroke={2.2} />
           <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-            เพิ่มผู้ขายคนแรก
+            {tx('merchants.addFirst')}
           </Text>
         </Tappable>
       ) : null}

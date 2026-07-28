@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
+import { useTranslation } from 'react-i18next';
 import { DAY_W, LEDGER_GROUPS, LEDGER_LEAVES, groupTone } from '../ui';
 
 const GROUP_H = 28;
@@ -19,6 +20,7 @@ const GROUP_H = 28;
  */
 export const LedgerTableHeader = memo(function LedgerTableHeader() {
   const { t, mode } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View
       style={{
@@ -70,12 +72,12 @@ export const LedgerTableHeader = memo(function LedgerTableHeader() {
                 }}
               >
                 <Text style={{ fontFamily: type.familyBold, fontSize: 12, lineHeight: 18, color: tone.ink }}>
-                  {g.title}
+                  {tx(g.titleKey)}
                 </Text>
                 <Text
                   style={{ fontFamily: type.familyMedium, fontSize: 10, lineHeight: 16, color: tone.ink, opacity: 0.75 }}
                 >
-                  {g.unit}
+                  {tx(g.unitKey)}
                 </Text>
               </View>
             );
@@ -87,7 +89,7 @@ export const LedgerTableHeader = memo(function LedgerTableHeader() {
       <View style={{ flexDirection: 'row', backgroundColor: t.surface }}>
         <View style={{ width: DAY_W, alignItems: 'center', justifyContent: 'center', paddingVertical: 4 }}>
           <Text style={{ fontFamily: type.familyBold, fontSize: 10.5, lineHeight: 15, color: t.inkSoft }}>
-            วันที่
+            {tx('daily.dateCol')}
           </Text>
         </View>
         {LEDGER_LEAVES.map((l) => (
@@ -103,7 +105,7 @@ export const LedgerTableHeader = memo(function LedgerTableHeader() {
             }}
           >
             <Text style={{ fontFamily: type.familyMedium, fontSize: 11, lineHeight: 15, color: t.inkMute }}>
-              {l.leaf}
+              {l.leafKey ? tx(l.leafKey) : ''}
             </Text>
           </View>
         ))}

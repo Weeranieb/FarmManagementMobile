@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { Card, Pill, Tappable } from '@/components/ui';
@@ -25,6 +26,7 @@ type Props = {
 // ~40% the height — so 4–6 items are visible at once instead of ~2.
 export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const updated = new Date(feed.updatedAt);
   const Glyph = feedGlyphFor(feed.kind);
   const palette = feedPaletteFor(feed.kind);
@@ -129,7 +131,7 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
                 </Row>
               ) : (
                 <Text style={{ fontSize: type.sizes.base, color: t.inkMute, fontFamily: type.familySemi }}>
-                  ยังไม่มีราคา
+                  {tx('feedCollection.noPrice')}
                 </Text>
               )}
               <Text
@@ -150,7 +152,7 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
                 onPress={onChart}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel="ดูราคาย้อนหลัง"
+                accessibilityLabel={tx('feedCollection.priceHistoryA11y')}
                 style={{ flexShrink: 0 }}
               >
                 {/* Layout lives on this inner View: the Pressable style-function
@@ -161,7 +163,7 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
                     numberOfLines={1}
                     style={{ fontSize: 11.5, fontFamily: type.familySemi, color: t.brand }}
                   >
-                    ราคาย้อนหลัง
+                    {tx('feedCollection.priceHistory')}
                   </Text>
                   <Icon.chevR size={13} color={t.brand} />
                 </View>
@@ -176,7 +178,7 @@ export function FeedCard({ feed, isAdmin, onMore, onChart }: Props) {
             onPress={onMore}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="ตัวเลือก"
+            accessibilityLabel={tx('feedCollection.options')}
             style={{
               width: 28,
               height: 44,

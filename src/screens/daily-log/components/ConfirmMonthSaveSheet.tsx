@@ -1,5 +1,6 @@
 import { Modal, Pressable, View, Text, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -53,6 +54,7 @@ export function ConfirmMonthSaveSheet({
   onConfirm,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   // Sheet has no fixed height (content-driven) — slide from the full screen
   // height so it always starts off-screen regardless of content size.
   const { height: screenH } = useWindowDimensions();
@@ -123,21 +125,21 @@ export function ConfirmMonthSaveSheet({
               <Text
                 style={{ fontSize: 17, fontFamily: type.familyBold, color: t.ink, lineHeight: 22 }}
               >
-                บันทึกข้อมูลเดือน{monthLabel(summary.month)}
+                {tx('daily.confirm.title', { month: monthLabel(summary.month) })}
               </Text>
               <Text style={{ fontSize: 12.5, color: t.inkSoft, marginTop: 2, lineHeight: 17 }}>
-                แก้ไข{' '}
+                {tx('daily.confirm.edited')}{' '}
                 <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>
                   {summary.daysEdited}
                 </Text>{' '}
-                วัน
+                {tx('unit.day')}
                 {showPondCount ? (
                   <>
                     {' '}·{' '}
                     <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>
                       {summary.pondCount}
                     </Text>{' '}
-                    บ่อ
+                    {tx('daily.pondCol')}
                   </>
                 ) : null}
               </Text>
@@ -154,7 +156,7 @@ export function ConfirmMonthSaveSheet({
                 justifyContent: 'center',
               }}
               accessibilityRole="button"
-              accessibilityLabel="ปิด"
+              accessibilityLabel={tx('common.close')}
             >
               <Icon.x size={14} color={t.inkSoft} />
             </Tappable>
@@ -196,7 +198,8 @@ export function ConfirmMonthSaveSheet({
                       <Text
                         style={{ fontSize: 11.5, color: t.inkMute, fontFamily: type.familyNum }}
                       >
-                        {'  '}({fmtTh(cell.days)} วัน)
+                        {'  '}
+                        {tx('daily.daysUnit', { count: fmtTh(cell.days) })}
                       </Text>
                     ) : null}
                   </Text>
@@ -230,7 +233,7 @@ export function ConfirmMonthSaveSheet({
             >
               <Icon.alert size={14} color={t.warn} />
               <Text style={{ fontSize: 11.5, color: t.warn, lineHeight: 17, flex: 1 }}>
-                ออฟไลน์อยู่ — ข้อมูลจะถูกเก็บไว้ในเครื่องและอัปโหลดเมื่อกลับมาออนไลน์
+                {tx('daily.confirm.offline')}
               </Text>
             </View>
           ) : null}
@@ -250,7 +253,7 @@ export function ConfirmMonthSaveSheet({
               }}
             >
               <Text style={{ fontFamily: type.familyBold, fontSize: 14, color: t.inkSoft }}>
-                ยกเลิก
+                {tx('common.cancel')}
               </Text>
             </Tappable>
             <Tappable
@@ -269,7 +272,7 @@ export function ConfirmMonthSaveSheet({
             >
               <Icon.check size={16} color="#fff" />
               <Text style={{ color: '#fff', fontSize: 15, fontFamily: type.familyBold }}>
-                บันทึก {fmtTh(summary.daysEdited)} วัน
+                {tx('daily.confirm.submit', { count: fmtTh(summary.daysEdited) })}
               </Text>
             </Tappable>
           </View>

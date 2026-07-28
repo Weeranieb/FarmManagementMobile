@@ -5,6 +5,7 @@
 // `window.FeedTiles`. OKLCH converted to sRGB hex for native rendering.
 
 import type { FeedKind } from '@/features/feed-collection';
+import i18n from '@/locale/i18n';
 
 export type FeedPalette = {
   /** Tile background — primary type color (flat fallback). */
@@ -54,7 +55,16 @@ export function feedPaletteFor(kind: FeedKind): FeedPalette {
   return FEED_PALETTE_BY_KIND[kind];
 }
 
-export const FEED_TYPE_LABEL_TH = { pellet: 'เม็ด', fresh: 'สด' } as const;
+/** Localized feed-kind label. Read through i18next so a language switch takes
+ *  effect; the `[kind]` call sites stay unchanged. */
+export const FEED_TYPE_LABEL_TH: Record<'pellet' | 'fresh', string> = {
+  get pellet() {
+    return i18n.t('feed.kindPellet');
+  },
+  get fresh() {
+    return i18n.t('feed.kindFresh');
+  },
+};
 
 /** Pill tone per feed type — pellet uses the existing warn (orange) tone,
  *  fresh leans on brand (teal) until a dedicated fresh-tone pill ships. */
@@ -66,7 +76,14 @@ export const FEED_PILL_TONE_BY_KIND = { pellet: 'warn', fresh: 'brand' } as cons
  * everywhere. NOTE: daily pellet feeding is still logged by weight (กก.) — that
  * unit lives in the daily-log config, and cost is derived via `pricePerKg`.
  */
-export const FEED_UNIT_BY_KIND = { pellet: 'ถุง', fresh: 'ลัง' } as const;
+export const FEED_UNIT_BY_KIND: Record<'pellet' | 'fresh', string> = {
+  get pellet() {
+    return i18n.t('unit.bag');
+  },
+  get fresh() {
+    return i18n.t('unit.crate');
+  },
+};
 
 /**
  * Sensible default pack size, in กก., when a feed has none recorded yet — a

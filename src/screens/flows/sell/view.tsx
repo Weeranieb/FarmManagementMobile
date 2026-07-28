@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Btn, Input, Pill, Tappable, TopBar } from '@/components/ui';
@@ -123,6 +124,7 @@ function SellStep1({
   goBack,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const fieldsReady = pond != null;
 
   const { scrollRef, scrollToAnchor } = useAutoAdvance();
@@ -153,16 +155,16 @@ function SellStep1({
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <TopBar
-        title="ขายปลา"
+        title={tx('flows.sell.title')}
         subtitle={
           fromFab && !pond
-            ? 'เลือกฟาร์มและบ่อ แล้วกรอกรายละเอียด'
+            ? tx('flows.sell.pickFarmPond')
             : pond
               ? `${displayPondName(pond.name)}${pond.farmName ? ` · ${displayFarmName(pond.farmName)}` : ''}`
               : undefined
         }
         leading={<FlowBackBtn step={1} onPress={goBack} />}
-        trailing={<Pill tone="sell">ขั้นที่ 1/2</Pill>}
+        trailing={<Pill tone="sell">{tx('flows.step1')}</Pill>}
       />
 
       <ScrollView
@@ -191,11 +193,11 @@ function SellStep1({
         <View style={{ padding: 20 }}>
           <DimWrap
             ready={fieldsReady}
-            hint={fromFab ? 'เลือกฟาร์มและบ่อก่อนเพื่อบันทึกการขาย' : undefined}
+            hint={fromFab ? tx('flows.sell.pickFarmPondFirst') : undefined}
           >
             {pond ? <SourcePondCard pond={pond} /> : null}
 
-            <FieldRow label="วันที่ขาย *">
+            <FieldRow label={tx('flows.sell.sellDateReq')}>
               <DateField value={date} onChange={setDate} />
             </FieldRow>
 
@@ -214,14 +216,14 @@ function SellStep1({
               }}
             />
 
-            <FieldRow label="ผู้ซื้อ / ตลาด *">
+            <FieldRow label={tx('flows.sell.buyerReq')}>
               <MerchantField
                 merchant={merchants.find((m) => m.id === merchantId) ?? null}
                 onOpen={() => setSheet('merchant')}
               />
             </FieldRow>
 
-            <FieldRow label="ต้นทุนเพิ่มเติม" optional>
+            <FieldRow label={tx('flows.extraCost')} optional>
               <AdditionalCostsEditor
                 tone="sell"
                 rows={additionalCosts}
@@ -232,19 +234,19 @@ function SellStep1({
             <CloseAfterActionToggle
               value={markToClose}
               onChange={setMarkToClose}
-              label="ปิด/จบบ่อหลังขาย"
-              activeHelper="จะเปลี่ยนสถานะบ่อเป็นพักบ่อหลังดำเนินการนี้เสร็จ แสดงว่าจบรอบแล้ว"
-              inactiveHelper="เปิดบ่อต่อหลังขาย — ไม่ปิดรอบ"
+              label={tx('flows.sell.closeAfter')}
+              activeHelper={tx('flows.closeStatus')}
+              inactiveHelper={tx('flows.sell.keepOpenSub')}
               pondName={pond ? displayPondName(pond.name) : ''}
             />
 
-            <FieldRow label="โน้ต">
+            <FieldRow label={tx('flows.notes')}>
               <NoteField value={remark} onChange={setRemark} />
             </FieldRow>
 
             {fieldsReady && sourceStock > 0 ? (
               <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-                มีปลาในบ่อ {fmt.num(sourceStock)} ตัว
+                {tx('flows.sell.stockInPond', { count: fmt.num(sourceStock) })}
               </Text>
             ) : null}
           </DimWrap>
@@ -260,7 +262,7 @@ function SellStep1({
               onPress={() => setStep(2)}
               disabled={!canSubmit}
             >
-              ถัดไป
+              {tx('daily.next')}
             </Btn>
           </Col>
         </View>
@@ -311,10 +313,10 @@ function SellStep1({
             closeSheet();
           } catch (err) {
             Alert.alert(
-              'เพิ่มผู้ซื้อไม่สำเร็จ',
+              tx('flows.sell.addBuyerFailed'),
               apiErrorStatus(err) === 409
-                ? 'เบอร์ติดต่อนี้มีผู้ซื้ออยู่แล้ว — ลองใช้เบอร์อื่น'
-                : apiErrorMessage(err, 'บันทึกไม่สำเร็จ'),
+                ? tx('flows.sell.duplicateContact')
+                : apiErrorMessage(err, tx('flows.saveFailed')),
             );
           }
         }}
@@ -343,6 +345,7 @@ function SellStep2({
   goBack,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   if (!pond) return null;
   const pondLabel = displayPondName(pond.name);
   const farmLabel = pond.farmName ? displayFarmName(pond.farmName) : '';
@@ -353,10 +356,10 @@ function SellStep2({
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <TopBar
-        title="ตรวจสอบและยืนยัน"
-        subtitle={`ขายปลา · ${pondLabel}`}
+        title={tx('flows.reviewConfirm')}
+        subtitle={tx('flows.sell.titleWith', { pond: pondLabel })}
         leading={<FlowBackBtn step={2} onPress={goBack} />}
-        trailing={<Pill tone="sell">ขั้นที่ 2/2</Pill>}
+        trailing={<Pill tone="sell">{tx('flows.step2')}</Pill>}
       />
       <ScrollView
         delaysContentTouches={false}
@@ -389,7 +392,7 @@ function SellStep2({
           >
             <Icon.tag size={14} color="#ffffff" stroke={2.4} />
             <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: type.familyBold }}>
-              ขายปลา
+              {tx('flows.sell.title')}
             </Text>
           </View>
           <Text
@@ -412,22 +415,29 @@ function SellStep2({
               fontFamily: type.family,
             }}
           >
-            รายรับก่อนหักค่าใช้จ่าย
+            {tx('flows.sell.grossBefore')}
           </Text>
         </View>
 
-        <ReviewSection title="ข้อมูลทั่วไป">
-          <ReviewRow l="บ่อที่ขาย" v={farmLabel ? `${pondLabel} · ${farmLabel}` : pondLabel} />
-          <ReviewRow l="วันที่ขาย" v={thaiDate.long(date)} />
-          <ReviewRow l="ผู้ซื้อ / ตลาด" v={merchant?.name ?? '—'} />
+        <ReviewSection title={tx('flows.general')}>
           <ReviewRow
-            l="หลังขาย"
-            v={markToClose ? `ปิดบ่อ ${pondLabel}` : 'เปิดบ่อต่อ'}
+            l={tx('flows.sell.pondSold')}
+            v={farmLabel ? `${pondLabel} · ${farmLabel}` : pondLabel}
+          />
+          <ReviewRow l={tx('flows.sell.sellDate')} v={thaiDate.long(date)} />
+          <ReviewRow l={tx('flows.sell.buyer')} v={merchant?.name ?? '—'} />
+          <ReviewRow
+            l={tx('flows.sell.afterSale')}
+            v={
+              markToClose
+                ? tx('flows.closePondNamed', { pond: pondLabel })
+                : tx('flows.sell.keepOpen')
+            }
             last
           />
         </ReviewSection>
 
-        <ReviewSection title={`รายการขาย (${visibleRows.length} รายการ)`}>
+        <ReviewSection title={tx('flows.sell.linesCount', { count: visibleRows.length })}>
           {rows.map((r, i) => {
             const sub = subtotals[i] ?? 0;
             return (
@@ -446,8 +456,14 @@ function SellStep2({
                     </Text>
                     <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
                       {fmt.kg(parseFloat(r.weightKg || '0'))} ·{' '}
-                      {fmt.baht(parseFloat(r.pricePerKg || '0'))}/กก.
-                      {r.fishCount ? ` · ${fmt.num(parseInt(r.fishCount, 10))} ตัว` : ''}
+                      {tx('flows.sell.perKgLine', {
+                        price: fmt.baht(parseFloat(r.pricePerKg || '0')),
+                      })}
+                      {r.fishCount
+                        ? tx('flows.sell.fishCountLine', {
+                            count: fmt.num(parseInt(r.fishCount, 10)),
+                          })
+                        : ''}
                     </Text>
                   </Col>
                   <Text
@@ -465,24 +481,30 @@ function SellStep2({
           })}
         </ReviewSection>
 
-        <ReviewSection title="สรุปรายรับ">
-          <ReviewRow l="รายรับรวม" v={fmt.baht(grossRevenue)} />
+        <ReviewSection title={tx('flows.sell.revenueSummary')}>
+          <ReviewRow l={tx('flows.sell.grossRevenue')} v={fmt.baht(grossRevenue)} />
           {extraTotal > 0 ? (
-            <ReviewRow l="ค่าใช้จ่ายเพิ่มเติม" v={`-${fmt.baht(extraTotal)}`} />
+            <ReviewRow l={tx('flows.extraCosts')} v={`-${fmt.baht(extraTotal)}`} />
           ) : null}
-          <ReviewRow l="รายรับสุทธิ" v={fmt.baht(netRevenue)} last />
+          <ReviewRow l={tx('flows.sell.netRevenue')} v={fmt.baht(netRevenue)} last />
         </ReviewSection>
 
         {extraTotal > 0 ? (
-          <ReviewSection title={`ค่าใช้จ่ายเพิ่มเติม (${countNonEmpty(additionalCosts)} รายการ)`}>
+          <ReviewSection
+            title={tx('flows.extraCostsCount', { count: countNonEmpty(additionalCosts) })}
+          >
             <AdditionalCostsList rows={additionalCosts} signed="-" />
           </ReviewSection>
         ) : null}
 
-        <GrandTotalBlock tone="sell" label="รายได้สุทธิ" value={fmt.baht(netRevenue)} />
+        <GrandTotalBlock
+          tone="sell"
+          label={tx('flows.sell.netIncome')}
+          value={fmt.baht(netRevenue)}
+        />
 
         {remark ? (
-          <ReviewSection title="โน้ต">
+          <ReviewSection title={tx('flows.notes')}>
             <Text
               style={{
                 paddingVertical: 12,
@@ -506,7 +528,7 @@ function SellStep2({
           onPress={handleConfirm}
           disabled={isPending}
         >
-          {isPending ? 'กำลังบันทึก…' : 'ยืนยันการขาย'}
+          {isPending ? tx('common.saving') : tx('flows.sell.confirm')}
         </Btn>
       </BottomBar>
     </View>
@@ -519,6 +541,7 @@ function SellStep2({
 // count + inline "ตัว" · species pill, all on a sell-tinted card.
 function SourcePondCard({ pond }: { pond: PondModel }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const fishTypes = pond.fishTypes
     .map((f) => FISH_TH[f] ?? f)
     .filter(Boolean)
@@ -558,7 +581,7 @@ function SourcePondCard({ pond }: { pond: PondModel }) {
             fontFamily: type.familySemi,
           }}
         >
-          จำนวนปลาปัจจุบัน
+          {tx('flows.sell.currentStock')}
         </Text>
         <Text
           style={{
@@ -578,7 +601,7 @@ function SourcePondCard({ pond }: { pond: PondModel }) {
             }}
           >
             {' '}
-            ตัว
+            {tx('unit.fish')}
           </Text>
         </Text>
       </Col>
@@ -590,7 +613,7 @@ function SourcePondCard({ pond }: { pond: PondModel }) {
             fontFamily: type.familySemi,
           }}
         >
-          พันธุ์ปลาในบ่อ
+          {tx('flows.sell.speciesInPond')}
         </Text>
         <Pill tone="sell">{fishTypes || '—'}</Pill>
       </Col>
@@ -622,11 +645,12 @@ function SellRowsEditor({
   onOpenGrade: (rowId: string) => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ marginTop: 2, marginBottom: 14 }}>
       <Row gap={8} justify="space-between" align="center" style={{ marginBottom: 8 }}>
         <Text style={{ fontSize: 13, fontFamily: type.familySemi, color: t.ink }}>
-          สายพันธุ์ที่ขาย
+          {tx('flows.sell.speciesSold')}
           <Text style={{ color: t.danger }}> *</Text>
         </Text>
         <Tappable
@@ -641,7 +665,7 @@ function SellRowsEditor({
           <Row gap={4} align="center">
             <Icon.plus size={14} color={t.sellInk} stroke={2.4} />
             <Text style={{ fontSize: 13, color: t.sellInk, fontFamily: type.familySemi }}>
-              เพิ่มแถวขนาด
+              {tx('flows.sell.addSizeRow')}
             </Text>
           </Row>
         </Tappable>
@@ -674,7 +698,7 @@ function SellRowsEditor({
       >
         <Row justify="space-between" align="baseline">
           <Text style={{ fontSize: 13, color: t.sellInk, fontFamily: type.familySemi }}>
-            รายรับรวม
+            {tx('flows.sell.grossRevenue')}
           </Text>
           <Text
             style={{
@@ -723,6 +747,7 @@ function SellRowEditor({
   onOpenGrade: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const grade = row.gradeId == null ? null : sizeGrades.find((g) => g.id === row.gradeId) ?? null;
   return (
     <View
@@ -761,7 +786,7 @@ function SellRowEditor({
                   fontSize: 13,
                 }}
               >
-                {grade ? grade.name : 'เลือกไซส์'}
+                {grade ? grade.name : tx('flows.sell.pickSize')}
               </Text>
               <Icon.chevR size={12} color={t.sellInk} />
             </View>
@@ -788,10 +813,10 @@ function SellRowEditor({
 
       <Row gap={8} align="flex-start" style={{ marginBottom: 8 }}>
         <View style={{ flex: 1 }}>
-          <FieldLabel required>น้ำหนัก</FieldLabel>
+          <FieldLabel required>{tx('flows.weight')}</FieldLabel>
           <Input
             keyboardType="decimal-pad"
-            suffix="กก."
+            suffix={tx('unit.kg')}
             value={row.weightKg}
             onChangeText={(v) => onChange({ weightKg: v })}
             placeholder="0.0"
@@ -799,10 +824,10 @@ function SellRowEditor({
           />
         </View>
         <View style={{ flex: 1 }}>
-          <FieldLabel required>ราคาต่อกก.</FieldLabel>
+          <FieldLabel required>{tx('flows.pricePerKg')}</FieldLabel>
           <Input
             keyboardType="decimal-pad"
-            suffix="฿/กก."
+            suffix={tx('flows.bahtPerKg')}
             value={row.pricePerKg}
             onChangeText={(v) => onChange({ pricePerKg: v })}
             placeholder="0"
@@ -812,10 +837,10 @@ function SellRowEditor({
       </Row>
 
       <View style={{ marginBottom: 10 }}>
-        <FieldLabel required>จำนวนตัว</FieldLabel>
+        <FieldLabel required>{tx('flows.countFish')}</FieldLabel>
         <Input
           keyboardType="number-pad"
-          suffix="ตัว"
+          suffix={tx('unit.fish')}
           value={row.fishCount}
           onChangeText={(v) => onChange({ fishCount: v })}
           placeholder="0"
@@ -833,7 +858,7 @@ function SellRowEditor({
         }}
       >
         <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.familySemi }}>
-          ยอดย่อย
+          {tx('flows.sell.subtotal')}
         </Text>
         <Text
           style={{
@@ -887,6 +912,7 @@ function MerchantField({
   onOpen: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Tappable
       onPress={onOpen}
@@ -924,7 +950,7 @@ function MerchantField({
         }}
         numberOfLines={1}
       >
-        {merchant ? merchant.name : 'เลือกผู้ซื้อ / ตลาด'}
+        {merchant ? merchant.name : tx('flows.sell.pickBuyer')}
       </Text>
       <Icon.chevR size={16} color={t.inkSoft} />
     </Tappable>

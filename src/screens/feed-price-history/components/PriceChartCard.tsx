@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { LayoutChangeEvent, Pressable, Text, View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Card, Tappable } from '@/components/ui';
@@ -31,6 +32,7 @@ type Props = {
 
 export function PriceChartCard({ data, kind, isEmpty, isSingle, isAdmin, onLogPrice }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const [tip, setTip] = useState<number | null>(null);
   const [canvasW, setCanvasW] = useState(CHART_W);
   const palette = feedPaletteFor(kind);
@@ -55,10 +57,10 @@ export function PriceChartCard({ data, kind, isEmpty, isSingle, isAdmin, onLogPr
           }}
         >
           <Text style={{ fontSize: 13, fontFamily: type.familySemi, color: t.ink }}>
-            ราคาตามเวลา
+            {tx('feedPrice.chart.title')}
           </Text>
           <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familyNum }}>
-            {data.length} จุด
+            {tx('feedPrice.stats.points', { count: data.length })}
           </Text>
         </View>
 
@@ -91,6 +93,7 @@ function SingleEntryChartCard({
   onAdd: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Card padded={false}>
       <View
@@ -120,7 +123,7 @@ function SingleEntryChartCard({
           <Text
             style={{ fontSize: 15, fontFamily: type.familyBold, color: t.ink, textAlign: 'center' }}
           >
-            มีราคาเดียวในระบบ
+            {tx('feedPrice.chart.singleTitle')}
           </Text>
           <Text
             style={{
@@ -131,7 +134,7 @@ function SingleEntryChartCard({
               textAlign: 'center',
             }}
           >
-            กราฟจะปรากฏเมื่อมีอย่างน้อยสองรายการ — รายการเดียวนี้ยังแก้ไขได้ที่ด้านล่าง
+            {tx('feedPrice.chart.singleHelp')}
           </Text>
         </View>
         {isAdmin ? (
@@ -151,7 +154,7 @@ function SingleEntryChartCard({
           >
             <Icon.plus size={18} stroke={2.2} color="#fff" />
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 14 }}>
-              เพิ่มราคา
+              {tx('feedPrice.addPrice')}
             </Text>
           </Tappable>
         ) : null}
@@ -170,6 +173,7 @@ function EmptyChartCard({
   onLogPrice: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <Card padded={false}>
       <View
@@ -199,7 +203,7 @@ function EmptyChartCard({
           <Text
             style={{ fontSize: 16, fontFamily: type.familyBold, color: t.ink, textAlign: 'center' }}
           >
-            ยังไม่มีประวัติราคา
+            {tx('feedPrice.noHistory')}
           </Text>
           <Text
             style={{
@@ -210,7 +214,7 @@ function EmptyChartCard({
               textAlign: 'center',
             }}
           >
-            บันทึกราคาใหม่เพื่อเริ่มเก็บประวัติ — ค่าเฉลี่ย ค่าสูงสุด/ต่ำสุด จะคำนวณให้อัตโนมัติ
+            {tx('feedPrice.noHistoryHelp')}
           </Text>
         </View>
         {isAdmin ? (
@@ -230,7 +234,7 @@ function EmptyChartCard({
           >
             <Icon.plus size={18} stroke={2.2} color="#fff" />
             <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 14 }}>
-              บันทึกราคาใหม่
+              {tx('feedPrice.logNewPrice')}
             </Text>
           </Tappable>
         ) : null}
@@ -472,6 +476,7 @@ function TapLayer({
   onPick: (i: number) => void;
   height: number;
 }) {
+  const { t: tx } = useTranslation();
   if (data.length === 0) return null;
   const first = data[0]!;
   const last = data[data.length - 1]!;
@@ -495,7 +500,7 @@ function TapLayer({
           <Pressable
             key={`hit-${i}`}
             accessibilityRole="button"
-            accessibilityLabel={`จุดที่ ${i + 1}`}
+            accessibilityLabel={tx('feedPrice.chart.pointA11y', { n: i + 1 })}
             onPress={() => onPick(i)}
             style={{
               position: 'absolute',

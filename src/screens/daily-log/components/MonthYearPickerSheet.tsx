@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -63,6 +64,7 @@ export function MonthYearPickerSheet({
   onConfirm,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   // Sheet has no fixed height (content-driven) — slide from the full screen
   // height so it always starts off-screen regardless of content size.
   const { height: screenH } = useWindowDimensions();
@@ -122,7 +124,7 @@ export function MonthYearPickerSheet({
             onPress={onClose}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             accessibilityRole="button"
-            accessibilityLabel="ปิด"
+            accessibilityLabel={tx('common.close')}
           />
 
           <Animated.View
@@ -177,7 +179,7 @@ export function MonthYearPickerSheet({
                     letterSpacing: 0.1,
                   }}
                 >
-                  เลือกเดือน · ปี
+                  {tx('daily.picker.title')}
                 </Text>
                 <Text
                   style={{
@@ -186,9 +188,11 @@ export function MonthYearPickerSheet({
                     marginTop: 2,
                   }}
                 >
-                  เลือกวันในเดือนใหม่จาก
-                  <Text style={{ color: t.inkSoft, fontFamily: type.familyBold }}>{'แถบวัน'}</Text>
-                  ด้านบน
+                  {tx('daily.picker.help1')}{' '}
+                  <Text style={{ color: t.inkSoft, fontFamily: type.familyBold }}>
+                    {tx('daily.dayStrip')}
+                  </Text>
+                  {tx('daily.picker.help2')}
                 </Text>
               </View>
               <Tappable
@@ -205,7 +209,7 @@ export function MonthYearPickerSheet({
                   backgroundColor: VIBRANT_BRAND[50],
                 }}
                 accessibilityRole="button"
-                accessibilityLabel="เดือนนี้"
+                accessibilityLabel={tx('daily.thisMonth')}
               >
                 <Icon.sun size={12} color={VIBRANT_BRAND[700]} stroke={2.4} />
                 <Text
@@ -215,7 +219,7 @@ export function MonthYearPickerSheet({
                     color: VIBRANT_BRAND[700],
                   }}
                 >
-                  เดือนนี้
+                  {tx('daily.thisMonth')}
                 </Text>
               </Tappable>
             </View>
@@ -302,7 +306,7 @@ export function MonthYearPickerSheet({
                     color: t.inkSoft,
                   }}
                 >
-                  ยกเลิก
+                  {tx('common.cancel')}
                 </Text>
               </Tappable>
 
@@ -326,7 +330,9 @@ export function MonthYearPickerSheet({
                   elevation: 4,
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={`เลือก ${thMonthAbbr(selected.m)} ${selected.y + 543}`}
+                accessibilityLabel={tx('daily.selectItem', {
+                  name: `${thMonthAbbr(selected.m)} ${selected.y + 543}`,
+                })}
               >
                 <Icon.check size={16} color="#fff" />
                 <Text
@@ -336,7 +342,7 @@ export function MonthYearPickerSheet({
                     color: '#fff',
                   }}
                 >
-                  เลือก{' '}
+                  {tx('daily.picker.confirmSel')}{' '}
                   <Text style={{ fontFamily: type.familyNumBold }}>
                     {thMonthAbbr(selected.m)} {selected.y + 543}
                   </Text>
@@ -362,6 +368,7 @@ function YearNavRow({
   nextDisabled: boolean;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View
       style={{
@@ -385,7 +392,7 @@ function YearNavRow({
           backgroundColor: t.surfaceAlt,
         }}
         accessibilityRole="button"
-        accessibilityLabel="ปีก่อนหน้า"
+        accessibilityLabel={tx('daily.prevYear')}
       >
         <Icon.chevL size={14} color={t.inkSoft} />
       </Tappable>
@@ -413,7 +420,7 @@ function YearNavRow({
             includeFontPadding: false,
           }}
         >
-          <Text style={{ color: t.inkSoft }}>{'ปี '}</Text>
+          <Text style={{ color: t.inkSoft }}>{tx('daily.yearLabel')} </Text>
           <Text style={{ fontFamily: type.familyNumBold, letterSpacing: 0.5 }}>{beYear}</Text>
         </Text>
       </View>
@@ -432,7 +439,7 @@ function YearNavRow({
           opacity: nextDisabled ? 0.4 : 1,
         }}
         accessibilityRole="button"
-        accessibilityLabel="ปีถัดไป"
+        accessibilityLabel={tx('daily.nextYear')}
         accessibilityState={{ disabled: nextDisabled }}
       >
         <Icon.chevR size={14} color={nextDisabled ? t.borderStrong : t.inkSoft} />
@@ -536,6 +543,7 @@ function MarkGlyph({
   outOfRange: boolean;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   if (outOfRange || !mark) return null;
 
   if (mark === 'closed') {
@@ -559,7 +567,7 @@ function MarkGlyph({
             color: isSelected ? '#ffd887' : t.warn,
           }}
         >
-          มีค้าง
+          {tx('daily.hasDrafts')}
         </Text>
       </View>
     );

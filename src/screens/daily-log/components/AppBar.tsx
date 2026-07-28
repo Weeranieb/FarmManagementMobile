@@ -1,6 +1,7 @@
 import { StyleSheet, View, Text } from 'react-native';
 import { Icon } from '@/components/icons';
 import { Tappable } from '@/components/ui';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 
@@ -21,6 +22,7 @@ const TITLE_INSET = 56;
 
 export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
 
   const eyebrowH = lerp(14, 0, clamp01(scrollT / 0.625));
   const eyebrowOp = lerp(1, 0, clamp01(scrollT / 0.45));
@@ -65,7 +67,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
             fontFamily: type.familyBold,
           }}
         >
-          Daily log · วันนี้
+          {tx('daily.appbarSub')}
         </Text>
       </View>
 
@@ -90,7 +92,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
           }}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="ย้อนกลับ"
+          accessibilityLabel={tx('common.back')}
         >
           <Icon.back size={20} color={t.inkSoft} />
         </Tappable>
@@ -114,7 +116,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
               fontSize: 16,
             }}
           >
-            บันทึกข้อมูลรายวัน
+            {tx('daily.appbarTitle')}
           </Text>
 
           {dateOp > 0.02 ? (
@@ -165,7 +167,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
               backgroundColor: t.warnSoft,
             }}
             accessibilityRole="button"
-            accessibilityLabel={`ยังไม่บันทึก ${dirtyCount}`}
+            accessibilityLabel={tx('daily.notLogged', { count: dirtyCount })}
           >
             <View
               style={{
@@ -182,7 +184,7 @@ export function AppBar({ scrollT, dirtyCount, dateLabel, onBack, onPillPress }: 
                 color: t.warn,
               }}
             >
-              ยังไม่บันทึก
+              {tx('daily.notLoggedShort')}
             </Text>
             <Text
               style={{

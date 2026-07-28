@@ -1,5 +1,6 @@
 import { Modal, Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -21,24 +22,27 @@ type Props = {
   onSaveAndExit: () => void;
 };
 
+/** i18next keys for "if you …" — resolved in the component. */
 const SOURCE_COPY: Record<Source, string> = {
-  month: 'หากเปลี่ยนเดือน',
-  date: 'หากเปลี่ยนวัน',
-  back: 'หากออกจากหน้านี้',
-  farm: 'หากเปลี่ยนฟาร์ม',
+  month: 'daily.leave.onChangeMonth',
+  date: 'daily.leave.onChangeDay',
+  back: 'daily.leave.onLeave',
+  farm: 'daily.leave.onChangeFarm',
 };
 
 export function UnsavedChangesDialog({
   visible,
   dirtyCount,
   source,
-  unit = 'บ่อ',
+  unit,
   error,
   onDismiss,
   onDiscard,
   onSaveAndExit,
 }: Props) {
   const { t, shadowLg } = useTheme();
+  const { t: tx } = useTranslation();
+  const unitText = unit ?? tx('daily.pondCol');
 
   return (
     <Modal
@@ -64,7 +68,7 @@ export function UnsavedChangesDialog({
             onPress={onDismiss}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             accessibilityRole="button"
-            accessibilityLabel="ปิด"
+            accessibilityLabel={tx('common.close')}
           />
 
           <Animated.View
@@ -117,7 +121,7 @@ export function UnsavedChangesDialog({
                     lineHeight: 22,
                   }}
                 >
-                  ยังไม่ได้บันทึกข้อมูล
+                  {tx('daily.unsaved.title')}
                 </Text>
                 <Text
                   style={{
@@ -127,9 +131,12 @@ export function UnsavedChangesDialog({
                     lineHeight: 19,
                   }}
                 >
-                  คุณมีข้อมูล{' '}
+                  {tx('daily.unsaved.body1')}{' '}
                   <Text style={{ fontFamily: type.familyNumBold, color: t.ink }}>{dirtyCount}</Text>{' '}
-                  {unit}ที่ยังไม่ได้บันทึก {SOURCE_COPY[source]} ข้อมูลจะหายไป
+                  {tx('daily.unsaved.body2', {
+                    unit: unitText,
+                    when: tx(SOURCE_COPY[source]),
+                  })}
                 </Text>
               </View>
             </View>
@@ -197,7 +204,7 @@ export function UnsavedChangesDialog({
                     fontFamily: type.familyBold,
                   }}
                 >
-                  ออกโดยไม่บันทึก
+                  {tx('daily.unsaved.leaveNoSave')}
                 </Text>
               </Tappable>
 
@@ -222,8 +229,9 @@ export function UnsavedChangesDialog({
                     fontFamily: type.familyBold,
                   }}
                 >
-                  บันทึก <Text style={{ fontFamily: type.familyNumBold }}>{dirtyCount}</Text> {unit}
-                  แล้วออก
+                  {tx('daily.unsaved.saveThenLeave')}{' '}
+                  <Text style={{ fontFamily: type.familyNumBold }}>{dirtyCount}</Text> {unitText}{' '}
+                  {tx('daily.unsaved.thenLeave')}
                 </Text>
               </Tappable>
 
@@ -247,7 +255,7 @@ export function UnsavedChangesDialog({
                     fontFamily: type.familyBold,
                   }}
                 >
-                  ยกเลิก
+                  {tx('common.cancel')}
                 </Text>
               </Tappable>
             </View>

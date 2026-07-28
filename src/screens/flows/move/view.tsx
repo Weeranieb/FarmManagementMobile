@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Btn, Input, Pill, TopBar } from '@/components/ui';
@@ -123,6 +124,7 @@ export function MoveView({
   goBack,
 }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const fieldsReady = fromPond != null && toPond != null && fromPond.id !== toPond.id;
 
   const { scrollRef, scrollToAnchor } = useAutoAdvance();
@@ -154,10 +156,10 @@ export function MoveView({
     return (
       <View style={{ flex: 1, backgroundColor: t.bg }}>
         <TopBar
-          title="ตรวจสอบและยืนยัน"
-          subtitle={`ย้ายปลา · ${fromLabel} → ${toLabel}`}
+          title={tx('flows.reviewConfirm')}
+          subtitle={tx('flows.move.titleWith', { pond: `${fromLabel} → ${toLabel}` })}
           leading={<FlowBackBtn step={2} onPress={goBack} />}
-          trailing={<Pill tone="move">ขั้นที่ 2/2</Pill>}
+          trailing={<Pill tone="move">{tx('flows.step2')}</Pill>}
         />
         <ScrollView
           delaysContentTouches={false}
@@ -190,7 +192,7 @@ export function MoveView({
             >
               <Icon.swap size={14} color="#ffffff" stroke={2.4} />
               <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: type.familyBold }}>
-                ย้ายปลา
+                {tx('flows.move.title')}
               </Text>
             </View>
             <Text
@@ -202,7 +204,7 @@ export function MoveView({
                 letterSpacing: -0.6,
               }}
             >
-              {fmt.num(amountNum)} ตัว
+              {tx('flows.countFishN', { count: fmt.num(amountNum) })}
             </Text>
             <Row gap={8} style={{ marginTop: 4 }}>
               <Text
@@ -229,42 +231,56 @@ export function MoveView({
             </Row>
           </View>
 
-          <ReviewSection title="ข้อมูลทั่วไป">
+          <ReviewSection title={tx('flows.general')}>
             <ReviewRow
-              l="บ่อต้นทาง"
+              l={tx('flows.move.fromPond')}
               v={fromFarmLabel ? `${fromLabel} · ${fromFarmLabel}` : fromLabel}
             />
             <ReviewRow
-              l="บ่อปลายทาง"
+              l={tx('flows.move.toPond')}
               v={toFarmLabel ? `${toLabel} · ${toFarmLabel}` : toLabel}
             />
-            <ReviewRow l="วันที่บันทึก" v={thaiDate.long(date)} />
+            <ReviewRow l={tx('flows.recordDate')} v={thaiDate.long(date)} />
             <ReviewRow
-              l="หลังย้าย"
-              v={markToClose ? `ปิดบ่อ ${fromLabel}` : 'เปิดบ่อต้นทางต่อ'}
+              l={tx('flows.move.afterMove')}
+              v={
+                markToClose
+                  ? tx('flows.closePondNamed', { pond: fromLabel })
+                  : tx('flows.move.keepSourceOpen')
+              }
               last
             />
           </ReviewSection>
 
-          <ReviewSection title="รายละเอียดปลา">
-            <ReviewRow l="พันธุ์ปลา" v={fishLabel} />
-            <ReviewRow l="จำนวน" v={`${fmt.num(amountNum)} ตัว`} />
+          <ReviewSection title={tx('flows.fishDetails')}>
+            <ReviewRow l={tx('flows.species')} v={fishLabel} />
+            <ReviewRow l={tx('flows.count')} v={tx('flows.countFishN', { count: fmt.num(amountNum) })} />
             {avgWeightKg ? (
               <>
-                <ReviewRow l="น้ำหนักเฉลี่ย" v={`${avgWeightKg} กก./ตัว`} />
-                <ReviewRow l="น้ำหนักรวม" v={fmt.kg(totalWeightKg)} />
+                <ReviewRow
+                  l={tx('flows.avgWeight')}
+                  v={tx('flows.kgPerFishN', { value: avgWeightKg })}
+                />
+                <ReviewRow l={tx('flows.totalWeight')} v={fmt.kg(totalWeightKg)} />
               </>
             ) : null}
-            <ReviewRow l="ราคาต่อกก." v={`${fmt.bahtPrecise(parseFloat(pricePerUnit || '0'))}/กก.`} />
-            <ReviewRow l="มูลค่าปลา" v={fmt.baht(fishCost)} last />
+            <ReviewRow
+              l={tx('flows.pricePerKg')}
+              v={tx('flows.perKgValue', {
+                value: fmt.bahtPrecise(parseFloat(pricePerUnit || '0')),
+              })}
+            />
+            <ReviewRow l={tx('flows.sell.fishValue')} v={fmt.baht(fishCost)} last />
           </ReviewSection>
 
-          <ReviewSection title={`ค่าใช้จ่ายเพิ่มเติม (${countNonEmpty(additionalCosts)} รายการ)`}>
+          <ReviewSection
+            title={tx('flows.extraCostsCount', { count: countNonEmpty(additionalCosts) })}
+          >
             <AdditionalCostsList rows={additionalCosts} />
           </ReviewSection>
 
           {remark ? (
-            <ReviewSection title="โน้ต">
+            <ReviewSection title={tx('flows.notes')}>
               <Text
                 style={{
                   paddingVertical: 12,
@@ -293,17 +309,21 @@ export function MoveView({
             destTotalCost={destTotalCost}
           />
 
-          <ReviewSection title="ผลกระทบต่อปริมาณปลา">
+          <ReviewSection title={tx('flows.stockImpact')}>
             <Col gap={10} style={{ paddingVertical: 14 }}>
               <Col gap={6}>
                 <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familySemi }}>
-                  บ่อต้นทาง · {fromLabel}
+                  {tx('flows.move.fromPondWith', { pond: fromLabel })}
                 </Text>
                 <Row gap={10}>
-                  <ImpactCell label="ก่อน" v={fmt.num(fromPond.totalFish)} />
+                  <ImpactCell label={tx('flows.before')} v={fmt.num(fromPond.totalFish)} />
                   <Icon.arrow size={16} color={t.inkSoft} />
-                  <ImpactCell label="หลัง" v={fmt.num(after.from)} accent={t.move} />
-                  <ImpactCell label="ลด" v={`-${fmt.num(amountNum)}`} accent={t.danger} />
+                  <ImpactCell label={tx('flows.after')} v={fmt.num(after.from)} accent={t.move} />
+                  <ImpactCell
+                    label={tx('flows.move.reduce')}
+                    v={`-${fmt.num(amountNum)}`}
+                    accent={t.danger}
+                  />
                 </Row>
               </Col>
               {toPond ? (
@@ -311,13 +331,17 @@ export function MoveView({
                   <Text
                     style={{ fontSize: 11, color: t.inkMute, fontFamily: type.familySemi }}
                   >
-                    บ่อปลายทาง · {toLabel}
+                    {tx('flows.move.toPondWith', { pond: toLabel })}
                   </Text>
                   <Row gap={10}>
-                    <ImpactCell label="ก่อน" v={fmt.num(toPond.totalFish)} />
+                    <ImpactCell label={tx('flows.before')} v={fmt.num(toPond.totalFish)} />
                     <Icon.arrow size={16} color={t.inkSoft} />
-                    <ImpactCell label="หลัง" v={fmt.num(after.to)} accent={t.move} />
-                    <ImpactCell label="เพิ่ม" v={`+${fmt.num(amountNum)}`} accent={t.fill} />
+                    <ImpactCell label={tx('flows.after')} v={fmt.num(after.to)} accent={t.move} />
+                    <ImpactCell
+                      label={tx('flows.addLabel')}
+                      v={`+${fmt.num(amountNum)}`}
+                      accent={t.fill}
+                    />
                   </Row>
                 </Col>
               ) : null}
@@ -334,7 +358,7 @@ export function MoveView({
             onPress={handleConfirm}
             disabled={isPending}
           >
-            {isPending ? 'กำลังบันทึก…' : 'ยืนยันและย้าย'}
+            {isPending ? tx('common.saving') : tx('flows.move.confirm')}
           </Btn>
         </BottomBar>
       </View>
@@ -344,10 +368,10 @@ export function MoveView({
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <TopBar
-        title="ย้ายปลา"
+        title={tx('flows.move.title')}
         subtitle={
           fromFab && !fieldsReady
-            ? 'เลือกฟาร์มและบ่อ แล้วกรอกรายละเอียด'
+            ? tx('flows.fill.pickFarmPond')
             : fromPond
               ? toPond && toPond.id !== fromPond.id
                 ? `${displayPondName(fromPond.name)} → ${displayPondName(toPond.name)}`
@@ -355,7 +379,7 @@ export function MoveView({
               : undefined
         }
         leading={<FlowBackBtn step={1} onPress={goBack} />}
-        trailing={<Pill tone="move">ขั้นที่ 1/2</Pill>}
+        trailing={<Pill tone="move">{tx('flows.step1')}</Pill>}
       />
 
       <ScrollView
@@ -393,19 +417,19 @@ export function MoveView({
             ready={fieldsReady}
             hint={
               fromFab
-                ? 'เลือกฟาร์มและบ่อ แล้วกรอกจำนวนที่ย้าย'
-                : 'เลือกบ่อปลายทาง แล้วกรอกจำนวนที่ย้าย'
+                ? tx('flows.move.pickFarmPondAmount')
+                : tx('flows.move.pickDestThenAmount')
             }
           >
-            <FieldRow label="พันธุ์ปลา">
+            <FieldRow label={tx('flows.species')}>
               <FishPicker types={fishTypeOptions} selected={fishType} onChange={setFishType} tone="move" />
             </FieldRow>
 
-            <FieldRow label="จำนวนที่ย้าย">
+            <FieldRow label={tx('flows.move.amount')}>
               <Input
                 big
                 keyboardType="number-pad"
-                suffix="ตัว"
+                suffix={tx('unit.fish')}
                 value={amount}
                 onChangeText={setAmount}
                 placeholder="0"
@@ -430,36 +454,36 @@ export function MoveView({
                     fontFamily: type.family,
                   }}
                 >
-                  มีปลาในบ่อต้นทาง {fmt.num(fromPond.totalFish)} ตัว
+                  {tx('flows.move.sourceStock', { count: fmt.num(fromPond.totalFish) })}
                 </Text>
               ) : null}
             </FieldRow>
 
-            <FieldRow label="น้ำหนักเฉลี่ยต่อตัว">
+            <FieldRow label={tx('flows.avgWeightPer')}>
               <Input
                 keyboardType="decimal-pad"
-                suffix="กก./ตัว"
+                suffix={tx('flows.kgPerFish')}
                 value={avgWeightKg}
                 onChangeText={setAvgWeightKg}
                 placeholder="0.05"
               />
             </FieldRow>
 
-            <FieldRow label="ราคาต่อกก.">
+            <FieldRow label={tx('flows.pricePerKg')}>
               <Input
                 keyboardType="decimal-pad"
-                suffix="฿/กก."
+                suffix={tx('flows.bahtPerKg')}
                 value={pricePerUnit}
                 onChangeText={setPricePerUnit}
                 placeholder="0"
               />
             </FieldRow>
 
-            <FieldRow label="วันที่">
+            <FieldRow label={tx('daily.dateCol')}>
               <DateField value={date} onChange={setDate} />
             </FieldRow>
 
-            <FieldRow label="ค่าใช้จ่ายเพิ่มเติม" optional>
+            <FieldRow label={tx('flows.extraCosts')} optional>
               <AdditionalCostsEditor
                 tone="move"
                 rows={additionalCosts}
@@ -467,16 +491,16 @@ export function MoveView({
               />
             </FieldRow>
 
-            <FieldRow label="โน้ต">
+            <FieldRow label={tx('flows.notes')}>
               <NoteField value={remark} onChange={setRemark} />
             </FieldRow>
 
             <CloseAfterActionToggle
               value={markToClose}
               onChange={setMarkToClose}
-              label="ปิดบ่อต้นทางหลังย้าย"
-              activeHelper="{pondName} จะถูกพักรอบ จนกว่าจะเริ่มรอบใหม่"
-              inactiveHelper="เปิดบ่อต้นทางต่อ — ไม่ปิดรอบ"
+              label={tx('flows.move.closeSource')}
+              activeHelper={tx('flows.move.restingHelper')}
+              inactiveHelper={tx('flows.move.keepSourceSub')}
               pondName={fromPond ? displayPondName(fromPond.name) : ''}
             />
 
@@ -489,7 +513,9 @@ export function MoveView({
                       ? `${displayPondName(toPond.name)} · ${fmt.num(toPond.totalFish)} → ${fmt.num(after.to)}`
                       : '—'
                   }
-                  amountText={`${fmt.num(parseInt(amount || '0', 10))} ตัว`}
+                  amountText={tx('flows.countFishN', {
+                    count: fmt.num(parseInt(amount || '0', 10)),
+                  })}
                   fishValue={fmt.baht(fishCost)}
                   extraText={fmt.baht(extraTotal)}
                 />
@@ -515,7 +541,7 @@ export function MoveView({
                 amountError != null
               }
             >
-              ถัดไป
+              {tx('daily.next')}
             </Btn>
           </Col>
         </View>
@@ -542,6 +568,7 @@ function MoveStep1Preview({
   extraText: string;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View
       style={{
@@ -553,11 +580,11 @@ function MoveStep1Preview({
       }}
     >
       <Col gap={6}>
-        <PreviewRow label="จาก" value={fromText} />
-        <PreviewRow label="ไป" value={toText} />
-        <PreviewRow label="จำนวนย้าย" value={amountText} />
-        <PreviewRow label="มูลค่าปลา" value={fishValue} bold />
-        <PreviewRow label="ค่าใช้จ่ายเพิ่มเติม" value={extraText} bold />
+        <PreviewRow label={tx('flows.from')} value={fromText} />
+        <PreviewRow label={tx('flows.to')} value={toText} />
+        <PreviewRow label={tx('flows.move.amountShort')} value={amountText} />
+        <PreviewRow label={tx('flows.sell.fishValue')} value={fishValue} bold />
+        <PreviewRow label={tx('flows.extraCosts')} value={extraText} bold />
       </Col>
     </View>
   );
@@ -626,6 +653,7 @@ function MoveCostSplitPanel({
   destTotalCost: number;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
     <View style={{ marginTop: 18, gap: 12 }}>
       <Text
@@ -637,34 +665,34 @@ function MoveCostSplitPanel({
           textTransform: 'uppercase',
         }}
       >
-        ผลทางบัญชี
+        {tx('flows.move.accountingTitle')}
       </Text>
       <Text style={{ fontSize: 12, color: t.inkMute, fontFamily: type.family }}>
-        บ่อต้นทางบันทึกเป็นการขายปลา · บ่อปลายทางบันทึกเป็นการรับซื้อปลา
-        {extraTotal > 0 ? ' · ค่าใช้จ่ายเพิ่มเติมหารครึ่งระหว่างสองบ่อ' : ''}
+        {tx('flows.move.accountingBody')}
+        {extraTotal > 0 ? ` ${tx('flows.sharedCostNote')}` : ''}
       </Text>
 
       <PerspectiveCard
         tone="sell"
-        title={`บ่อต้นทาง · ${fromLabel}`}
-        subtitle="ขายปลาออก"
+        title={tx('flows.move.fromPondWith', { pond: fromLabel })}
+        subtitle={tx('flows.sell.sellOut')}
         rows={[
-          ['มูลค่าปลา (รายได้)', `+${fmt.baht(sourceFishRevenue)}`],
-          ['ค่าใช้จ่ายร่วม (ครึ่ง)', `-${fmt.baht(sourceAdditionalCost)}`],
+          [tx('flows.sell.fishValueRevenue'), `+${fmt.baht(sourceFishRevenue)}`],
+          [tx('flows.sharedCostHalf'), `-${fmt.baht(sourceAdditionalCost)}`],
         ]}
-        totalLabel="ผลรวม (กระทบ P&L)"
+        totalLabel={tx('flows.sumPnl')}
         totalValue={`${sourceNetEffect >= 0 ? '+' : ''}${fmt.baht(sourceNetEffect)}`}
       />
 
       <PerspectiveCard
         tone="fill"
-        title={`บ่อปลายทาง · ${toLabel}`}
-        subtitle="รับปลาเข้า"
+        title={tx('flows.move.toPondWith', { pond: toLabel })}
+        subtitle={tx('flows.move.receive')}
         rows={[
-          ['มูลค่าปลา (ต้นทุน)', fmt.baht(destFishCost)],
-          ['ค่าใช้จ่ายร่วม (ครึ่ง)', fmt.baht(destAdditionalCost)],
+          [tx('flows.fill.fishValueCost'), fmt.baht(destFishCost)],
+          [tx('flows.sharedCostHalf'), fmt.baht(destAdditionalCost)],
         ]}
-        totalLabel="ต้นทุนรวม"
+        totalLabel={tx('flows.totalCost')}
         totalValue={fmt.baht(destTotalCost)}
       />
 
@@ -682,11 +710,13 @@ function MoveCostSplitPanel({
         <Row justify="space-between" align="baseline">
           <Col gap={2} style={{ flex: 1, minWidth: 0 }}>
             <Text style={{ fontSize: 13, color: t.ink, fontFamily: type.familySemi }}>
-              มูลค่าการย้ายรวม
+              {tx('flows.move.totalValue')}
             </Text>
             <Text style={{ fontSize: 11, color: t.inkMute, fontFamily: type.family }}>
-              มูลค่าปลา {fmt.baht(fishValue)}
-              {extraTotal > 0 ? ` + ค่าใช้จ่ายเพิ่มเติม ${fmt.baht(extraTotal)}` : ''}
+              {tx('flows.move.valueBreakdown', { value: fmt.baht(fishValue) })}
+              {extraTotal > 0
+                ? ` ${tx('flows.extraCostsPlus', { amount: fmt.baht(extraTotal) })}`
+                : ''}
             </Text>
           </Col>
           <Text style={{ fontFamily: type.familyNumBold, fontSize: 18, color: t.ink }}>

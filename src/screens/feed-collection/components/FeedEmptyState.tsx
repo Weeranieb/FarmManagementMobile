@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Tappable } from '@/components/ui';
@@ -13,6 +14,7 @@ type Props = {
 
 export function FeedEmptyState({ isAdmin, onAdd }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const pellet = feedPaletteFor('pellet');
   const fresh = feedPaletteFor('fresh');
 
@@ -88,7 +90,7 @@ export function FeedEmptyState({ isAdmin, onAdd }: Props) {
             textAlign: 'center',
           }}
         >
-          ยังไม่มีอาหารในคลัง
+          {tx('feedCollection.empty.title')}
         </Text>
         <Text
           style={{
@@ -100,8 +102,8 @@ export function FeedEmptyState({ isAdmin, onAdd }: Props) {
           }}
         >
           {isAdmin
-            ? 'เพิ่มสูตรอาหารที่ฟาร์มของคุณใช้ — ราคาและประวัติจะถูกอ้างอิงในการบันทึกประจำวันโดยอัตโนมัติ'
-            : 'ผู้ดูแลฟาร์มยังไม่ได้เพิ่มรายการอาหาร — เมื่อมีรายการแล้วจะแสดงที่นี่'}
+            ? tx('feedCollection.empty.adminHelp')
+            : tx('feedCollection.empty.workerHelp')}
         </Text>
       </View>
       {isAdmin ? (
@@ -121,7 +123,7 @@ export function FeedEmptyState({ isAdmin, onAdd }: Props) {
         >
           <Icon.plus size={18} color="#fff" stroke={2.2} />
           <Text style={{ color: '#fff', fontFamily: type.familyBold, fontSize: 15 }}>
-            เพิ่มอาหารรายการแรก
+            {tx('feedCollection.addFirst')}
           </Text>
         </Tappable>
       ) : null}

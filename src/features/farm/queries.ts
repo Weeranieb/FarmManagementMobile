@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useIsAuthenticated } from '@/features/auth';
-import { listFarms } from './service';
+import { createFarm, listFarms } from './service';
 import { adaptFarm, type FarmModel } from './adapters';
+import type { CreateFarmRequest } from './types';
 
 export const farmKeys = {
   all: () => ['farms'] as const,
@@ -10,6 +11,16 @@ export const farmKeys = {
 export function useFarms() {
   const enabled = useIsAuthenticated();
   return useQuery({ queryKey: farmKeys.all(), queryFn: listFarms, enabled });
+}
+
+export function useCreateFarm() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateFarmRequest) => createFarm(body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: farmKeys.all() });
+    },
+  });
 }
 
 export function useFarmsData(): {

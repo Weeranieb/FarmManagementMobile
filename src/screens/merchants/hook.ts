@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { isClientAdmin, useAuthStore } from '@/features/auth';
+import i18n from '@/locale/i18n';
 import {
   merchantKeys,
   useCreateMerchant,
@@ -15,9 +16,9 @@ import { useSearchQuery } from '@/hooks/useSearchQuery';
 import type { MerchantFormPayload } from './components/SheetMerchantForm';
 
 /** Backend returns 409 when the contact number already exists for this client. */
-const DUPLICATE_CONTACT_MSG = 'เบอร์ติดต่อนี้มีผู้ขายอยู่แล้ว — ลองใช้เบอร์อื่น หรือแก้ไขรายชื่อเดิม';
+const duplicateContactMsg = () => i18n.t('merchants.duplicateContact');
 function saveErrorMessage(err: unknown, fallback: string): string {
-  return apiErrorStatus(err) === 409 ? DUPLICATE_CONTACT_MSG : apiErrorMessage(err, fallback);
+  return apiErrorStatus(err) === 409 ? duplicateContactMsg() : apiErrorMessage(err, fallback);
 }
 
 export type MerchantSheetMode = 'actions' | 'add' | 'edit' | null;
@@ -114,10 +115,13 @@ export function useMerchantsScreen(): MerchantsScreenState {
         {
           onSuccess: () => {
             closeSheet();
-            showSaved('เพิ่มผู้ขายแล้ว', payload.name);
+            showSaved(i18n.t('merchants.added'), payload.name);
           },
           onError: (err) =>
-            Alert.alert('เพิ่มผู้ขายไม่สำเร็จ', saveErrorMessage(err, 'บันทึกไม่สำเร็จ')),
+            Alert.alert(
+              i18n.t('merchants.addFailed'),
+              saveErrorMessage(err, i18n.t('merchants.saveFailed')),
+            ),
         },
       );
     },
@@ -137,10 +141,13 @@ export function useMerchantsScreen(): MerchantsScreenState {
         {
           onSuccess: () => {
             closeSheet();
-            showSaved('บันทึกการแก้ไขแล้ว', payload.name);
+            showSaved(i18n.t('merchants.editSaved'), payload.name);
           },
           onError: (err) =>
-            Alert.alert('บันทึกการแก้ไขไม่สำเร็จ', saveErrorMessage(err, 'บันทึกไม่สำเร็จ')),
+            Alert.alert(
+              i18n.t('merchants.editFailed'),
+              saveErrorMessage(err, i18n.t('merchants.saveFailed')),
+            ),
         },
       );
     },
@@ -151,20 +158,24 @@ export function useMerchantsScreen(): MerchantsScreenState {
     const target = activeMerchant;
     if (!target) return;
     Alert.alert(
-      'ลบผู้ขาย',
-      `ต้องการลบ "${target.name}" ออกจากรายชื่อหรือไม่? การขายที่บันทึกไว้แล้วจะไม่ถูกลบ`,
+      i18n.t('merchants.delete'),
+      i18n.t('merchants.deleteConfirm', { name: target.name }),
       [
-        { text: 'ยกเลิก', style: 'cancel' },
+        { text: i18n.t('common.cancel'), style: 'cancel' },
         {
-          text: 'ลบ',
+          text: i18n.t('common.delete'),
           style: 'destructive',
           onPress: () =>
             deleteMutation.mutate(target.id, {
               onSuccess: () => {
                 closeSheet();
-                showSaved('ลบผู้ขายแล้ว', target.name);
+                showSaved(i18n.t('merchants.deleted'), target.name);
               },
-              onError: (err) => Alert.alert('ลบไม่สำเร็จ', apiErrorMessage(err, 'ลบไม่สำเร็จ')),
+              onError: (err) =>
+                Alert.alert(
+                  i18n.t('merchants.deleteFailed'),
+                  apiErrorMessage(err, i18n.t('merchants.deleteFailed')),
+                ),
             }),
         },
       ],

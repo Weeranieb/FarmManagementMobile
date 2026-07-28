@@ -1,4 +1,5 @@
 import { ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -26,12 +27,13 @@ export function SizeGradeSheet({
   onClose: () => void;
 }) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   return (
-    <SheetShell visible={visible} onClose={onClose} title="เลือกไซส์ปลา" heightPct={0.72}>
+    <SheetShell visible={visible} onClose={onClose} title={tx('flows.sell.pickFishSize')} heightPct={0.72}>
       {grades.length === 0 ? (
         <View style={{ paddingVertical: 24, alignItems: 'center' }}>
           <Text style={{ fontSize: 13, color: t.inkMute, fontFamily: type.family }}>
-            กำลังโหลดรายการไซส์…
+            {tx('flows.sell.loadingSizes')}
           </Text>
         </View>
       ) : (

@@ -7,6 +7,8 @@ import { FILTERS, type FilterId } from '../constants';
 type Props = {
   filter: FilterId;
   counts: Record<FilterId, number>;
+  /** Counts cover only the pages loaded so far. */
+  partial?: boolean;
   disabled?: boolean;
   onChange: (id: FilterId) => void;
 };
@@ -15,9 +17,12 @@ type Props = {
  * Type-filter chip row — a pure client-side Array.filter over rows the screen
  * already holds (Home Redesign § ④: no search/analytics Phase 1 can't back).
  * Chips for kinds with zero rows are disabled rather than hidden so the set
- * stays spatially stable while filtering.
+ * stays spatially stable while filtering — but only once every page has loaded.
+ * While `partial` is true a count of 0 means "none in what we have", not "none
+ * exist", so the chip stays tappable and the screen pulls more pages to find
+ * out. Disabling it there would make whole kinds unreachable.
  */
-export function FilterChips({ filter, counts, disabled = false, onChange }: Props) {
+export function FilterChips({ filter, counts, partial = false, disabled = false, onChange }: Props) {
   const { t } = useTheme();
   return (
     <View style={{ borderBottomWidth: 1, borderBottomColor: t.border }}>
@@ -35,7 +40,7 @@ export function FilterChips({ filter, counts, disabled = false, onChange }: Prop
         {FILTERS.map((f) => {
           const sel = f.id === filter;
           const n = counts[f.id] ?? 0;
-          const off = disabled || (f.id !== 'all' && n === 0);
+          const off = disabled || (!partial && f.id !== 'all' && n === 0);
           return (
             // Chrome lives on the wrapper View — function styles (and some
             // static ones) on Pressable get mangled by react-native-css-interop.
@@ -83,6 +88,7 @@ export function FilterChips({ filter, counts, disabled = false, onChange }: Prop
                   }}
                 >
                   {n}
+                  {partial ? '+' : ''}
                 </Text>
               </Tappable>
             </View>

@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
@@ -30,6 +31,7 @@ export function SheetFeedActions({
   onDelete,
 }: Props) {
   const { t, mode, shadow } = useTheme();
+  const { t: tx } = useTranslation();
   const danger = dangerInk(mode, t);
 
   if (!feed) {
@@ -72,7 +74,9 @@ export function SheetFeedActions({
             >
               {feed.name}
             </Text>
-            <Pill tone={tone}>{`อาหาร${FEED_TYPE_LABEL_TH[feed.kind]}`}</Pill>
+            <Pill tone={tone}>
+              {tx('feed.feedKind', { kind: FEED_TYPE_LABEL_TH[feed.kind] })}
+            </Pill>
           </View>
         </Row>
 
@@ -112,7 +116,7 @@ export function SheetFeedActions({
               <Text
                 style={{ fontSize: type.sizes.md, fontFamily: type.familyBold, color: toneInk }}
               >
-                อัปเดตราคา
+                {tx('feedCollection.actions.updatePrice')}
               </Text>
               {feed.price != null ? (
                 <Text
@@ -124,7 +128,7 @@ export function SheetFeedActions({
                     marginTop: 2,
                   }}
                 >
-                  ล่าสุด{' '}
+                  {tx('feedCollection.actions.latest')}{' '}
                   <Text style={{ fontFamily: type.familyNumSemi }}>{fmt.baht(feed.price)}</Text>/
                   {feed.unit} · <Text style={{ fontFamily: type.familyNum }}>{updatedLabel}</Text>
                 </Text>
@@ -137,7 +141,7 @@ export function SheetFeedActions({
                     marginTop: 2,
                   }}
                 >
-                  ยังไม่มีราคา — ตั้งราคาแรก
+                  {tx('feedCollection.actions.noPriceYet')}
                 </Text>
               )}
             </View>
@@ -148,8 +152,8 @@ export function SheetFeedActions({
         {/* Secondary — quieter, no card fill. */}
         <ActionRow
           icon={<Icon.edit size={18} color={t.inkSoft} />}
-          label="แก้ไขรายละเอียด"
-          sub="ชื่อ · ประเภท · FCR"
+          label={tx('feedCollection.actions.editDetails')}
+          sub={tx('feedCollection.actions.editSub')}
           onPress={onEdit}
         />
 
@@ -158,8 +162,8 @@ export function SheetFeedActions({
         <ActionRow
           icon={<Icon.trash size={18} color={danger} />}
           iconBg={t.dangerSoft}
-          label="ลบรายการ"
-          sub="ใช้กับการบันทึกในอนาคตเท่านั้น"
+          label={tx('feedCollection.actions.deleteItem')}
+          sub={tx('feedCollection.actions.deleteSub')}
           labelColor={danger}
           showChevron={false}
           onPress={onDelete}

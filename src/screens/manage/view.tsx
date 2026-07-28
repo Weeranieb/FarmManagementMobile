@@ -5,7 +5,6 @@ import { radii, space, type } from '@/theme/tokens';
 import { Card, TopBar } from '@/components/ui';
 import { Icon } from '@/components/icons';
 import { Row, Col } from '@/components/layout/Row';
-import { ListRow } from '@/screens/profile/components/ListRow';
 import { thaiDate } from '@/locale/thaiDate';
 
 type GlyphComponent = React.ComponentType<{ size?: number; color?: string; stroke?: number }>;
@@ -19,6 +18,8 @@ type Props = {
   merchantCount: number;
   merchantLatestUpdate: Date | null;
   openMerchants: () => void;
+  workerCount: number;
+  openWorkers: () => void;
 };
 
 function SectionLabel({ children }: { children: string }) {
@@ -39,8 +40,8 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
-/** A live management tool — elevated to a card with real weight so the
- *  actionable items stand apart from the muted "coming soon" list below. */
+/** A live management tool. Every tool on this screen is now real — the
+ *  "coming soon" group that used to sit below is gone. */
 function ToolCard({
   Glyph,
   label,
@@ -102,6 +103,8 @@ export function ManageView({
   merchantCount,
   merchantLatestUpdate,
   openMerchants,
+  workerCount,
+  openWorkers,
 }: Props) {
   const { t: tx } = useTranslation();
   const { t } = useTheme();
@@ -144,6 +147,10 @@ export function ManageView({
     noDate: 'manage.merchantSubNoDate',
     empty: 'manage.merchantSubEmpty',
   });
+  // No "updated" date for staff: users.updated_at moves on any profile edit the
+  // person makes themselves, which says nothing about the roster.
+  const workerSub =
+    workerCount === 0 ? tx('manage.workerSubEmpty') : tx('manage.workerSub', { count: workerCount });
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
@@ -165,21 +172,12 @@ export function ManageView({
             sub={merchantSub}
             onPress={openMerchants}
           />
-        </View>
-
-        {/* Coming-soon tools — grouped under their own header so the "เร็วๆ นี้"
-            state is stated once. */}
-        <SectionLabel>{tx('manage.comingSoonLabel')}</SectionLabel>
-        <View style={{ paddingHorizontal: space[5] }}>
-          <Card padded={false}>
-            <ListRow
-              icon="worker"
-              label={tx('manage.rowWorkers')}
-              sub={tx('manage.rowWorkersSub')}
-              disabled
-              last
-            />
-          </Card>
+          <ToolCard
+            Glyph={Icon.worker}
+            label={tx('manage.rowWorkers')}
+            sub={workerSub}
+            onPress={openWorkers}
+          />
         </View>
 
         <View style={{ paddingHorizontal: space[6], paddingTop: space[4], paddingBottom: space[3] }}>

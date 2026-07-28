@@ -1,4 +1,5 @@
 import { Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { Card, Tappable } from '@/components/ui';
@@ -17,6 +18,7 @@ type Props = {
  *  · contact (or a muted "no contact yet"). Kebab opens the actions sheet. */
 export function MerchantCard({ merchant, isAdmin, onMore }: Props) {
   const { t } = useTheme();
+  const { t: tx } = useTranslation();
   const initial = merchant.name.trim().slice(0, 1) || '?';
   const hasContact = Boolean(merchant.contactNumber);
   const hasLocation = Boolean(merchant.location);
@@ -78,7 +80,7 @@ export function MerchantCard({ merchant, isAdmin, onMore }: Props) {
             </Row>
           ) : (
             <Text style={{ fontSize: 12.5, color: t.inkMute, fontFamily: type.family }}>
-              ยังไม่มีข้อมูลติดต่อ
+              {tx('merchants.noContact')}
             </Text>
           )}
         </View>
@@ -89,7 +91,7 @@ export function MerchantCard({ merchant, isAdmin, onMore }: Props) {
             onPress={onMore}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="ตัวเลือก"
+            accessibilityLabel={tx('merchants.options')}
             style={{
               width: 28,
               height: 44,
