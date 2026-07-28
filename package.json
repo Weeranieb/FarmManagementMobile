@@ -23,6 +23,8 @@
     "android:open": "open -a 'Android Studio' android",
     "tokens:gen": "node --import tsx scripts/oklch-to-hex.ts",
     "lint": "expo lint",
+    "typecheck": "tsc --noEmit",
+    "check:locales": "node scripts/check-locales.mjs",
     "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
