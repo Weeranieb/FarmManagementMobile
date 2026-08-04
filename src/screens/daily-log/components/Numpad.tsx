@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, View, Text, useWindowDimensions } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   interpolateColor,
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { useFeedCollectionsData } from '@/features/feed-collection';
@@ -93,6 +96,11 @@ function parseValue(buf: string): number | '' {
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+// Swipe-to-dismiss tuning: pull the sheet down past DRAG_DISMISS_PX, or flick
+// it faster than DRAG_DISMISS_VELOCITY (px/s), and release to close it.
+const DRAG_DISMISS_PX = 90;
+const DRAG_DISMISS_VELOCITY = 800;
 
 function NumKey({
   label,
@@ -238,7 +246,46 @@ export function Numpad({
   // The sheet is content-driven (auto height) — slide it in from the full
   // screen height so it always starts fully off-screen regardless of content.
   const { height: screenH } = useWindowDimensions();
-  const sheetAnim = useSheetSlideIn(screenH);
+  const reduceMotion = useReducedMotion();
+  // Live swipe-down offset, composed on top of the entrance slide. Dragging the
+  // grabber/header pushes the sheet down; releasing past the threshold dismisses
+  // it, otherwise it springs back to rest.
+  const dragY = useSharedValue(0);
+  const sheetAnim = useSheetSlideIn(screenH, true, dragY);
+
+  // Swiping the sheet away keeps what was typed — commit the in-progress amount
+  // (like tapping another cell does) instead of discarding it. Read through a
+  // ref so the gesture object stays stable while buf / feed pick change per key.
+  const commitAndCloseRef = useRef<() => void>(() => {});
+  commitAndCloseRef.current = () => {
+    onCommit(parsed, supportsFeedType ? selectedFeedId : null);
+  };
+  const dismissBySwipe = useCallback(() => commitAndCloseRef.current(), []);
+
+  const swipeToDismiss = useMemo(
+    () =>
+      Gesture.Pan()
+        // Only vertical drags drive the sheet; a still tap passes through to the
+        // grabber/header controls (e.g. the feed-type chip).
+        .activeOffsetY([-12, 12])
+        .onChange((e) => {
+          // Downward pull only — clamp at rest so the sheet can't lift above it.
+          dragY.value = Math.max(0, dragY.value + e.changeY);
+        })
+        .onEnd((e) => {
+          if (dragY.value > DRAG_DISMISS_PX || e.velocityY > DRAG_DISMISS_VELOCITY) {
+            // Finish the slide-out, then commit-and-close on the JS thread (the
+            // host unmounts the sheet on its next render).
+            dragY.value = withTiming(screenH, { duration: 160 });
+            runOnJS(dismissBySwipe)();
+          } else {
+            dragY.value = reduceMotion
+              ? withTiming(0, { duration: 0 })
+              : withSpring(0, { damping: 22, stiffness: 260, mass: 0.6 });
+          }
+        }),
+    [dragY, screenH, reduceMotion, dismissBySwipe],
+  );
 
   // The keypad is no longer a Modal, so it doesn't get Android back handling for
   // free. While it's up, hardware-back cancels the keypad (and is consumed, so
@@ -306,143 +353,154 @@ export function Numpad({
           sheetAnim,
         ]}
       >
-        {/* grabber */}
-        <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 2 }}>
-          <View style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: t.border }} />
-        </View>
+        {/* Drag zone — the grabber + header band. Restricted to the top chrome
+              (not the keypad) so keys stay pure taps; a downward drag here pulls
+              the sheet with the finger and dismisses it on release. */}
+        <GestureDetector gesture={swipeToDismiss}>
+          <View>
+            {/* grabber */}
+            <View style={{ alignItems: 'center', paddingTop: 6, paddingBottom: 2 }}>
+              <View
+                style={{ width: 36, height: 4, borderRadius: 999, backgroundColor: t.border }}
+              />
+            </View>
 
-        {/* header — one compact band: group icon + identity label & hero
+            {/* header — one compact band: group icon + identity label & hero
               value stacked (left), feed-type selector (right). Single row keeps
               the sheet short; the identity label sits above the value so a long
               feed name in the chip never collides with them. */}
-        <View
-          style={{
-            paddingHorizontal: 16,
-            paddingTop: 4,
-            paddingBottom: 8,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <View
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 9,
-              backgroundColor: g.tint,
-              borderWidth: 1,
-              borderColor: g.edge,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <GroupIcon group={group} size={14} color={g.ink} />
-          </View>
-
-          {/* identity label + typed value + prior-entry hint */}
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text
-              numberOfLines={1}
+            <View
               style={{
-                fontSize: 12,
-                fontFamily: type.familyBold,
-                color: t.inkSoft,
-                letterSpacing: 0.2,
-              }}
-            >
-              {tx('daily.cellHeader', { pond: pondId, slot: slotLabel })}
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 1 }}>
-              <Text
-                style={{
-                  fontSize: 28,
-                  lineHeight: 32,
-                  fontFamily: type.familyNumBold,
-                  color: isInvalid ? CELL_HIGHLIGHT.errorInk : t.ink,
-                  letterSpacing: -0.5,
-                }}
-              >
-                {displayValue}
-              </Text>
-              <Text style={{ fontSize: 13, color: t.inkSoft, fontFamily: type.familySemi }}>
-                {g.unit}
-              </Text>
-            </View>
-          </View>
-
-          {/* feed-type selector */}
-          {supportsFeedType && cur ? (
-            <Tappable
-              onPress={() => setPickerOpen(true)}
-              style={{
-                justifyContent: 'center',
-                paddingVertical: 6,
-                paddingLeft: 11,
-                paddingRight: 10,
-                borderRadius: 13,
-                backgroundColor: t.surface,
-                borderWidth: 1,
-                borderColor: t.border,
+                paddingHorizontal: 16,
+                paddingTop: 4,
+                paddingBottom: 8,
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 9,
-                maxWidth: 168,
-                shadowColor: '#0f172a',
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 2 },
-                elevation: 4,
+                gap: 10,
               }}
-              accessibilityRole="button"
-              accessibilityLabel={tx('daily.feedPicker.title')}
             >
-              {/* Brand color dot with halo */}
               <View
                 style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: 999,
-                  backgroundColor: chipDot.dot,
-                  borderWidth: 3,
-                  borderColor: chipDot.tintA,
+                  width: 30,
+                  height: 30,
+                  borderRadius: 9,
+                  backgroundColor: g.tint,
+                  borderWidth: 1,
+                  borderColor: g.edge,
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-              />
-              <View style={{ minWidth: 0, flexShrink: 1 }}>
-                {/* Eyebrow shows the feed category, but drop it when it would
-                      just repeat the feed name (e.g. fresh feed named "เหยื่อสด")
-                      so the chip isn't "เหยื่อสด / เหยื่อสด". */}
-                {cur.name !== g.title ? (
-                  <Text
-                    style={{
-                      fontSize: 9,
-                      fontFamily: type.familyBold,
-                      color: t.inkMute,
-                      letterSpacing: 0.55,
-                      textTransform: 'uppercase',
-                      lineHeight: 13,
-                    }}
-                  >
-                    {g.title}
-                  </Text>
-                ) : null}
+              >
+                <GroupIcon group={group} size={14} color={g.ink} />
+              </View>
+
+              {/* identity label + typed value + prior-entry hint */}
+              <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
                   numberOfLines={1}
                   style={{
-                    marginTop: cur.name !== g.title ? 1 : 0,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontFamily: type.familyBold,
-                    color: t.ink,
-                    lineHeight: 17,
+                    color: t.inkSoft,
+                    letterSpacing: 0.2,
                   }}
                 >
-                  {cur.name}
+                  {tx('daily.cellHeader', { pond: pondId, slot: slotLabel })}
                 </Text>
+                <View
+                  style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 1 }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 28,
+                      lineHeight: 32,
+                      fontFamily: type.familyNumBold,
+                      color: isInvalid ? CELL_HIGHLIGHT.errorInk : t.ink,
+                      letterSpacing: -0.5,
+                    }}
+                  >
+                    {displayValue}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: t.inkSoft, fontFamily: type.familySemi }}>
+                    {g.unit}
+                  </Text>
+                </View>
               </View>
-              <Icon.arrowDown size={12} color={t.inkMute} />
-            </Tappable>
-          ) : null}
-        </View>
+
+              {/* feed-type selector */}
+              {supportsFeedType && cur ? (
+                <Tappable
+                  onPress={() => setPickerOpen(true)}
+                  style={{
+                    justifyContent: 'center',
+                    paddingVertical: 6,
+                    paddingLeft: 11,
+                    paddingRight: 10,
+                    borderRadius: 13,
+                    backgroundColor: t.surface,
+                    borderWidth: 1,
+                    borderColor: t.border,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 9,
+                    maxWidth: 168,
+                    shadowColor: '#0f172a',
+                    shadowOpacity: 0.1,
+                    shadowRadius: 8,
+                    shadowOffset: { width: 0, height: 2 },
+                    elevation: 4,
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={tx('daily.feedPicker.title')}
+                >
+                  {/* Brand color dot with halo */}
+                  <View
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 999,
+                      backgroundColor: chipDot.dot,
+                      borderWidth: 3,
+                      borderColor: chipDot.tintA,
+                    }}
+                  />
+                  <View style={{ minWidth: 0, flexShrink: 1 }}>
+                    {/* Eyebrow shows the feed category, but drop it when it would
+                      just repeat the feed name (e.g. fresh feed named "เหยื่อสด")
+                      so the chip isn't "เหยื่อสด / เหยื่อสด". */}
+                    {cur.name !== g.title ? (
+                      <Text
+                        style={{
+                          fontSize: 9,
+                          fontFamily: type.familyBold,
+                          color: t.inkMute,
+                          letterSpacing: 0.55,
+                          textTransform: 'uppercase',
+                          lineHeight: 13,
+                        }}
+                      >
+                        {g.title}
+                      </Text>
+                    ) : null}
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        marginTop: cur.name !== g.title ? 1 : 0,
+                        fontSize: 13,
+                        fontFamily: type.familyBold,
+                        color: t.ink,
+                        lineHeight: 17,
+                      }}
+                    >
+                      {cur.name}
+                    </Text>
+                  </View>
+                  <Icon.arrowDown size={12} color={t.inkMute} />
+                </Tappable>
+              ) : null}
+            </View>
+          </View>
+        </GestureDetector>
 
         {/* Inline validation hint — Daily Log v7 frame AA. Replaces the
          *  default "เดิม X · D MMM" hint once the buffer exceeds the

@@ -1,5 +1,10 @@
 import { useEffect } from 'react';
-import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 
 /**
  * Slide a bottom sheet up via a manual `translateY` transform that rests at 0.
@@ -15,11 +20,18 @@ import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reani
  * (pass the measured height when known, otherwise a value larger than the
  * sheet). Pass `visible: false` to park the sheet off-screen again (no exit
  * animation) — used by long-lived Modal shells that stay mounted.
+ *
+ * Pass a `dragY` shared value to add a live drag offset on top of the entrance
+ * transform — a caller wiring swipe-to-dismiss (the numpad) can push the sheet
+ * down past its resting spot without owning the entrance animation itself.
+ * Omit it and the sheet behaves exactly as before.
  */
-export function useSheetSlideIn(distance: number, visible = true) {
+export function useSheetSlideIn(distance: number, visible = true, dragY?: SharedValue<number>) {
   const ty = useSharedValue(distance);
   useEffect(() => {
     ty.value = visible ? withTiming(0, { duration: 240 }) : distance;
   }, [ty, visible, distance]);
-  return useAnimatedStyle(() => ({ transform: [{ translateY: ty.value }] }));
+  return useAnimatedStyle(() => ({
+    transform: [{ translateY: ty.value + (dragY ? dragY.value : 0) }],
+  }));
 }
