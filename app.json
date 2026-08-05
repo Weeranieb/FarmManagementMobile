@@ -42,7 +42,12 @@
         {
           "backgroundColor": "#fbfaf7",
           "image": "./assets/splash-icon.png",
-          "imageWidth": 280
+          "imageWidth": 280,
+          "android": {
+            "backgroundColor": "#fbfaf7",
+            "image": "./assets/splash-icon-android.png",
+            "imageWidth": 288
+          }
         }
       ],
       "expo-localization"
