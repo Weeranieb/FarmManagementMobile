@@ -402,6 +402,7 @@ function SellStep2({
               fontSize: 32,
               color: t.sellInk,
               letterSpacing: -0.8,
+              lineHeight: 36,
             }}
           >
             {fmt.baht(grossRevenue)}
@@ -589,6 +590,7 @@ function SourcePondCard({ pond }: { pond: PondModel }) {
             fontSize: 26,
             color: t.sellInk,
             letterSpacing: -0.5,
+            lineHeight: 30,
           }}
         >
           {fmt.num(pond.totalFish)}
