@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Platform,
   Text,
   TextInput,
   View,
@@ -88,6 +89,11 @@ export function FormInput({
               color: rest.editable === false ? t.inkMute : t.ink,
               fontFamily: monospace ? type.familyNum : type.family,
               padding: 0,
+              // Latin (familyNum) has usWinAscent 95 units above its hhea
+              // ascent, so Android's font padding pushes the value off the box
+              // centre — visible on the monospace fields. Matches ui/Input.tsx.
+              textAlignVertical: 'center',
+              ...Platform.select({ android: { includeFontPadding: false } }),
             },
             style,
           ]}

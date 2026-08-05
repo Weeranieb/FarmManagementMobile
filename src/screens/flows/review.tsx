@@ -198,6 +198,9 @@ export function GrandTotalBlock({
           fontSize: 28,
           color: t[k.ink],
           letterSpacing: -0.5,
+          // Pin the line box: Android's font padding for familyNum is
+          // asymmetric, so large numerals drift without an explicit lineHeight.
+          lineHeight: 32,
         }}
       >
         {value}
