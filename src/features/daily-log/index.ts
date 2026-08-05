@@ -16,7 +16,7 @@ export {
   addMonthsStr,
   daysInMonthFromStr,
   num,
-  pelletKg,
+  pelletBags,
   monthStatsFromEntries,
   type MonthStats,
 } from './month';

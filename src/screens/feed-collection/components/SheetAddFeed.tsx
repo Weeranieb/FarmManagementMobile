@@ -9,25 +9,18 @@ import { Row } from '@/components/layout/Row';
 import { toIsoDate } from '@/shared/time';
 import { SheetShell } from '@/components/sheet';
 import type { FeedCollectionModel, FeedKind } from '@/features/feed-collection';
-import {
-  FEED_DEFAULT_PACK_KG,
-  FEED_UNIT_BY_KIND,
-  deriveFeedPrices,
-  feedPaletteFor,
-} from '../feedPalette';
+import { FEED_UNIT_BY_KIND, feedPaletteFor } from '../feedPalette';
 import { DateField } from '@/components/date-selector';
 import { feedGlyphFor } from './FeedIcons';
 import { FInput } from './FInput';
-import { fmt } from '@/utils/fmt';
 
 export type AddFeedSubmitPayload = {
   name: string;
   kind: FeedKind;
   unit: string;
+  /** Price per pack — ฿/ถุง for pellet, ฿/ลัง for fresh. */
   price: number;
-  pricePerKg: number | null;
   fcr: number | null;
-  packSizeKg: number | null;
   supplier: string | null;
   /** ISO date (YYYY-MM-DD). */
   effectiveDate: string;
@@ -42,20 +35,12 @@ type Props = {
   onSubmit?: (payload: AddFeedSubmitPayload) => void;
 };
 
-/** Pack size to seed the field with. Every feed has one now (pack_size_kg is
- *  NOT NULL); when adding, pre-fill the type default (pellet 20 / fresh 30 กก.). */
-function packSeed(editing: FeedCollectionModel | null | undefined): string {
-  if (editing?.packSizeKg != null) return String(editing.packSizeKg);
-  return String(FEED_DEFAULT_PACK_KG[editing?.kind ?? 'pellet']);
-}
-
 export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubmit }: Props) {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
   const [name, setName] = useState(editing?.name ?? '');
   const [kind, setKind] = useState<FeedKind>(editing?.kind ?? 'pellet');
   const [fcr, setFcr] = useState(editing?.fcr != null ? editing.fcr.toFixed(2) : '');
-  const [packSizeKg, setPackSizeKg] = useState(packSeed(editing));
   const [price, setPrice] = useState(String(editing?.price ?? ''));
   const [supplier, setSupplier] = useState(editing?.supplier ?? '');
   const [effectiveDate, setEffectiveDate] = useState<Date>(
@@ -65,14 +50,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
   const [submitted, setSubmitted] = useState(false);
   const isEdit = editing != null;
   const unit = FEED_UNIT_BY_KIND[kind];
-  const numericPackSizeKg = packSizeKg.trim() !== '' ? Number(packSizeKg) : null;
-  const hasPackSize =
-    numericPackSizeKg != null && Number.isFinite(numericPackSizeKg) && numericPackSizeKg > 0;
   const numericPriceInput = Number(price);
-  const derived =
-    Number.isFinite(numericPriceInput) && price.trim() !== ''
-      ? deriveFeedPrices(numericPriceInput, hasPackSize ? numericPackSizeKg : null)
-      : null;
 
   // ── validation ──────────────────────────────────────────────────────
   // Name + a positive price are required; optional numerics must be > 0 when
@@ -88,12 +66,8 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
       : !isPositive(price)
         ? tx('feedCollection.form.priceGtZero')
         : null;
-  const packError =
-    packSizeKg.trim() !== '' && !isPositive(packSizeKg)
-      ? tx('feedCollection.form.packGtZero')
-      : null;
   const fcrError = fcr.trim() !== '' && !isPositive(fcr) ? tx('feedCollection.form.fcrGtZero') : null;
-  const hasErrors = Boolean(nameError || priceError || packError || fcrError);
+  const hasErrors = Boolean(nameError || priceError || fcrError);
 
   // The sheet stays mounted inside a Modal, so the useState seeds above run
   // only once and never re-apply. Re-seed the form on every open so edit
@@ -104,7 +78,6 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
       setName(editing?.name ?? '');
       setKind(editing?.kind ?? 'pellet');
       setFcr(editing?.fcr != null ? editing.fcr.toFixed(2) : '');
-      setPackSizeKg(packSeed(editing));
       setPrice(String(editing?.price ?? ''));
       setSupplier(editing?.supplier ?? '');
       setEffectiveDate(editing?.updatedAt ? new Date(editing.updatedAt) : new Date());
@@ -119,19 +92,12 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
       return;
     }
     const numericFcr = fcr.trim() !== '' ? Number(fcr) : null;
-    const finalPackSizeKg = hasPackSize ? numericPackSizeKg : null;
-    const priceDerived = deriveFeedPrices(
-      Number.isFinite(numericPriceInput) ? numericPriceInput : 0,
-      finalPackSizeKg,
-    );
     onSubmit?.({
       name: name.trim(),
       kind,
       unit,
-      price: priceDerived.price,
-      pricePerKg: priceDerived.pricePerKg,
+      price: Number.isFinite(numericPriceInput) ? numericPriceInput : 0,
       fcr: numericFcr != null && Number.isFinite(numericFcr) ? numericFcr : null,
-      packSizeKg: finalPackSizeKg,
       supplier: supplier.trim() !== '' ? supplier.trim() : null,
       effectiveDate: toIsoDate(effectiveDate),
     });
@@ -139,9 +105,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
     // saving state can show until then — don't close optimistically here.
   };
 
-  const priceLabel = hasPackSize
-    ? tx('feedCollection.form.priceStartPerUnit', { unit })
-    : tx('feedCollection.form.priceStart');
+  const priceLabel = tx('feedCollection.form.priceStart');
   const priceSuffix = `฿/${unit}`;
 
   return (
@@ -216,15 +180,7 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
                 ),
               };
             })}
-            onChange={(v) => {
-              const next = v as FeedKind;
-              // When adding, keep pack size tracking the type default until the
-              // user overrides it (pellet 20 ↔ fresh 30 กก.).
-              if (!isEdit && (packSizeKg.trim() === '' || packSizeKg === String(FEED_DEFAULT_PACK_KG[kind]))) {
-                setPackSizeKg(String(FEED_DEFAULT_PACK_KG[next]));
-              }
-              setKind(next);
-            }}
+            onChange={(v) => setKind(v as FeedKind)}
           />
         </Field>
 
@@ -248,44 +204,20 @@ export function SheetAddFeed({ visible, editing, saving = false, onClose, onSubm
           </View>
         </Row>
 
-        <Row gap={10} align="flex-start">
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Field
-              label={tx('feedCollection.form.packLabel')}
-              error={submitted ? packError : undefined}
-            >
-              <FInput
-                value={packSizeKg}
-                onChangeText={setPackSizeKg}
-                placeholder={kind === 'pellet' ? '20' : '30'}
-                numeric
-                keyboardType="decimal-pad"
-                suffix={tx('unit.kg')}
-                invalid={submitted && !!packError}
-              />
-            </Field>
-          </View>
-          {/* Price is set only on add — an existing feed's price is managed from
-              the price-history screen (อัปเดตราคา), so edit stays details-only. */}
-          {!isEdit ? (
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Field label={priceLabel} required error={submitted ? priceError : undefined}>
-                <FInput
-                  value={price}
-                  onChangeText={setPrice}
-                  placeholder="640"
-                  numeric
-                  keyboardType="decimal-pad"
-                  suffix={priceSuffix}
-                  invalid={submitted && !!priceError}
-                />
-              </Field>
-            </View>
-          ) : null}
-        </Row>
-
-        {!isEdit && hasPackSize && derived?.pricePerKg != null ? (
-          <ComputedPriceHint unit={tx('unit.kg')} price={derived.pricePerKg} />
+        {/* Price is set only on add — an existing feed's price is managed from
+            the price-history screen (อัปเดตราคา), so edit stays details-only. */}
+        {!isEdit ? (
+          <Field label={priceLabel} required error={submitted ? priceError : undefined}>
+            <FInput
+              value={price}
+              onChangeText={setPrice}
+              placeholder="640"
+              numeric
+              keyboardType="decimal-pad"
+              suffix={priceSuffix}
+              invalid={submitted && !!priceError}
+            />
+          </Field>
         ) : null}
 
         {!isEdit ? (
@@ -421,25 +353,6 @@ function Field({
         </Text>
       ) : null}
     </View>
-  );
-}
-
-/** Live-computed tracking-unit price, shown once pack size lets us convert
- *  the buy-in input the user just typed. */
-function ComputedPriceHint({ unit, price }: { unit: string; price: number }) {
-  const { t } = useTheme();
-  return (
-    <Text
-      style={{
-        fontSize: 12.5,
-        color: t.inkMute,
-        fontFamily: type.familySemi,
-        marginTop: -6,
-        marginBottom: 14,
-      }}
-    >
-      = {fmt.bahtPrecise(price)}/{unit}
-    </Text>
   );
 }
 

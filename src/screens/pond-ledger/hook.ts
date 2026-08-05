@@ -149,7 +149,7 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
     });
     return {
       ...acc,
-      feedKg: acc.pm + acc.pe,
+      feedBags: acc.pm + acc.pe,
       loggedDays: loggedDays.size,
     };
   }, [loggedDays, valuesForDay]);

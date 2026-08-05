@@ -3,7 +3,8 @@
 // month keys and totals the same way.
 //
 // Wire/query month is CE `YYYY-MM`; พ.ศ. is display-only (applied via thaiDate).
-// เหยื่อสด is measured in ลัง (crates), never kg — keep it out of kg feed totals.
+// Both feeds are counted in their own pack unit — อาหารเม็ด in ถุง (bags),
+// เหยื่อสด in ลัง (crates); neither is measured in kg.
 
 import type { DailyLogEntry } from './types';
 import { toMonthKey } from '@/shared/time';
@@ -36,13 +37,13 @@ export function num(x: unknown): number {
   return Number.isFinite(v) ? v : 0;
 }
 
-/** Pellet total for a day in kg (morning + evening). */
-export function pelletKg(e: DailyLogEntry): number {
+/** Pellet total for a day in bags (ถุง) — morning + evening. */
+export function pelletBags(e: DailyLogEntry): number {
   return num(e.pelletMorning) + num(e.pelletEvening);
 }
 
 export type MonthStats = {
-  /** อาหารเม็ด — kg, morning + evening across the month. */
+  /** อาหารเม็ด — ถุง (bags), morning + evening across the month. */
   pellet: number;
   /** เหยื่อสด — ลัง across the month. */
   fresh: number;

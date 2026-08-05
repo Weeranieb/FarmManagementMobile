@@ -29,6 +29,9 @@ export const fmt = {
   num: (n: number | null | undefined): string => (n ?? 0).toLocaleString('en-US'),
   kg: (n: number | string): string =>
     `${Number(n).toLocaleString('en-US', { maximumFractionDigits: 1 })} ${i18n.t('unit.kg')}`,
+  /** Pellet feed total in bags (ถุง) — one decimal, e.g. "1.5 ถุง". */
+  bags: (n: number | string): string =>
+    `${Number(n).toLocaleString('en-US', { maximumFractionDigits: 1 })} ${i18n.t('unit.bag')}`,
   baht: (n: number | string): string => `฿${Math.round(Number(n)).toLocaleString('en-US')}`,
   bahtPrecise: (n: number | string): string =>
     `฿${Number(n).toLocaleString('en-US', {
