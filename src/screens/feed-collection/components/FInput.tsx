@@ -1,4 +1,4 @@
-import { Text, TextInput, View } from 'react-native';
+import { Platform, Text, TextInput, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, type } from '@/theme/tokens';
 
@@ -75,6 +75,11 @@ export function FInput({
           fontSize: hero ? type.sizes.xxl : 15.5,
           letterSpacing: hero ? -0.4 : 0,
           paddingVertical: 0,
+          // Without these the value sits high in the box: Android's font padding
+          // reserves asymmetric descent space, and digits have no descender to
+          // fill it. Matches components/ui/Input.tsx.
+          textAlignVertical: 'center',
+          ...Platform.select({ android: { includeFontPadding: false } }),
         }}
       />
       {suffix ? (
@@ -83,6 +88,9 @@ export function FInput({
             fontSize: hero ? 15 : 13,
             color: t.inkSoft,
             fontFamily: type.familyNum,
+            // Drop the same font padding so the suffix stays optically aligned
+            // with the value now that the value no longer carries it.
+            ...Platform.select({ android: { includeFontPadding: false } }),
           }}
         >
           {suffix}
