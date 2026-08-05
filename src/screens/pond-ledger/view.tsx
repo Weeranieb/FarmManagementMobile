@@ -309,7 +309,7 @@ export function PondLedgerView({ state, onBack }: { state: PondLedgerState; onBa
           <MonthStatStrip
             loggedDays={totals.loggedDays}
             denom={denom}
-            feedKg={totals.feedKg}
+            feedBags={totals.feedBags}
             death={totals.death}
           />
         </View>

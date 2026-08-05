@@ -29,12 +29,6 @@ describe('adaptFeedCollection', () => {
     expect(adaptFeedCollection(feedItem({ fcr: 0 })).fcr).toBe(0);
   });
 
-  it('applies the same rules to pack size', () => {
-    expect(adaptFeedCollection(feedItem()).packSizeKg).toBeNull();
-    expect(adaptFeedCollection(feedItem({ packSizeKg: '20' as never })).packSizeKg).toBe(20);
-    expect(adaptFeedCollection(feedItem({ packSizeKg: 0 })).packSizeKg).toBe(0);
-  });
-
   it('keeps price null until a price history exists', () => {
     expect(adaptFeedCollection(feedItem()).price).toBeNull();
     expect(adaptFeedCollection(feedItem({ latestPrice: 27.5 })).price).toBe(27.5);
@@ -90,10 +84,8 @@ describe('adaptFeedPriceHistory', () => {
     );
   });
 
-  it('coerces string prices and keeps a missing per-kg price null', () => {
+  it('coerces string prices to numbers', () => {
     const e = adaptFeedPriceHistory(entry({ price: '480.5' as never }));
     expect(e.price).toBe(480.5);
-    expect(e.pricePerKg).toBeNull();
-    expect(adaptFeedPriceHistory(entry({ pricePerKg: '24.03' as never })).pricePerKg).toBe(24.03);
   });
 });

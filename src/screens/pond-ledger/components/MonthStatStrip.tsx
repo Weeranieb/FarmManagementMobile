@@ -7,12 +7,12 @@ import { fmtCell } from '../ui';
 type Props = {
   loggedDays: number;
   denom: number;
-  feedKg: number;
+  feedBags: number;
   death: number;
 };
 
-/** Centered month roll-up under the month nav: logged days / feed kg / deaths. */
-export function MonthStatStrip({ loggedDays, denom, feedKg, death }: Props) {
+/** Centered month roll-up under the month nav: logged days / feed bags / deaths. */
+export function MonthStatStrip({ loggedDays, denom, feedBags, death }: Props) {
   const { t: tx } = useTranslation();
   const { t } = useTheme();
   return (
@@ -34,8 +34,8 @@ export function MonthStatStrip({ loggedDays, denom, feedKg, death }: Props) {
       />
       <MiniStat
         label={tx('pondLedger.stat.feedTotal')}
-        value={fmtCell(feedKg) ?? '0'}
-        unit={tx('unit.kg')}
+        value={fmtCell(feedBags) ?? '0'}
+        unit={tx('unit.bag')}
         dot={t.move}
       />
       <MiniStat

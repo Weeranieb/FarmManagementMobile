@@ -62,7 +62,7 @@ export const LEDGER_GROUPS: {
   unitKey: string;
   span: number;
 }[] = [
-  { group: 'pellet', titleKey: 'daily.pelletFeed', unitKey: 'unit.kg', span: 2 },
+  { group: 'pellet', titleKey: 'daily.pelletFeed', unitKey: 'unit.bag', span: 2 },
   { group: 'fresh', titleKey: 'daily.freshFeed', unitKey: 'unit.crate', span: 1 },
   { group: 'death', titleKey: 'daily.deathShort', unitKey: 'unit.fish', span: 1 },
   { group: 'catch', titleKey: 'daily.catchShort', unitKey: 'unit.fish', span: 1 },

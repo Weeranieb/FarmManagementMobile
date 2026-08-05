@@ -12,9 +12,10 @@ export type DailyLogEntry = {
   // response has no `omitempty`, so it comes back as `null` for days it was
   // never set on. Requests may send a number (0 = none) or omit it.
   touristCatchCount: number | null;
-  // Per-entry unit price (฿/kg) the backend resolved from the feed collection
-  // for the entry's date. `omitempty` server-side → undefined when the feed
-  // type has no collection / price configured. Used to derive feed cost.
+  // Per-entry per-pack unit price the backend resolved from the feed collection
+  // for the entry's date — ฿/ลัง for fresh, ฿/ถุง for pellet, matching how each
+  // is logged. `omitempty` server-side → undefined when the feed type has no
+  // collection / price configured. Used to derive feed cost.
   freshUnitPrice?: number;
   pelletUnitPrice?: number;
 };
@@ -28,7 +29,8 @@ export type DailyLogResponse = {
   freshFeedCollectionName: string;
   pelletFeedCollectionId?: number;
   pelletFeedCollectionName: string;
-  // Display units for each feed type (e.g. "กก."). Omitted by older responses.
+  // Display units for each feed type (fresh "ลัง", pellet "ถุง"). Omitted by
+  // older responses.
   freshUnit?: string;
   pelletUnit?: string;
   entries: DailyLogEntry[];

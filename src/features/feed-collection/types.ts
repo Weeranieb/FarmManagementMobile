@@ -11,8 +11,6 @@ export type FeedCollectionResponse = {
   unit: string;
   feedType: FeedKind | string;
   fcr?: number | null;
-  /** kg content of one purchase pack (bag for pellet, crate for fresh) — user-entered, no fixed default. */
-  packSizeKg?: number | null;
   /** Optional supplier / source (ผู้ขาย / แหล่งที่มา), e.g. "CP Foods". */
   supplier?: string | null;
   createdAt: string;
@@ -34,9 +32,8 @@ export type FeedCollectionListResponse = {
 };
 
 export type CreateFeedPriceHistoryItemRequest = {
+  /** Price per pack — ฿/ถุง for pellet, ฿/ลัง for fresh. */
   price: number;
-  /** Price per kg — typed directly for fresh, derived from pack price for pellet. */
-  pricePerKg?: number | null;
   /** ISO 8601 timestamp. */
   priceUpdatedDate: string;
 };
@@ -46,7 +43,6 @@ export type CreateFeedCollectionRequest = {
   unit: string;
   feedType: FeedKind;
   fcr?: number | null;
-  packSizeKg?: number | null;
   supplier?: string | null;
   /** Required for super-admin without a clientId in the JWT. */
   clientId?: number;
@@ -59,14 +55,12 @@ export type UpdateFeedCollectionRequest = {
   unit: string;
   feedType: FeedKind;
   fcr?: number | null;
-  packSizeKg?: number | null;
   supplier?: string | null;
 };
 
 export type CreateFeedPriceHistoryRequest = {
   feedCollectionId: number;
   price: number;
-  pricePerKg?: number | null;
   /** ISO 8601 timestamp. */
   priceUpdatedDate: string;
 };
@@ -75,7 +69,6 @@ export type UpdateFeedPriceHistoryRequest = {
   id: number;
   feedCollectionId: number;
   price: number;
-  pricePerKg?: number | null;
   /** ISO 8601 timestamp. */
   priceUpdatedDate: string;
 };
@@ -84,7 +77,6 @@ export type FeedPriceHistoryResponse = {
   id: number;
   feedCollectionId: number;
   price: number;
-  pricePerKg?: number | null;
   priceUpdatedDate: string;
   createdAt: string;
   createdBy: string;

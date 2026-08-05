@@ -107,7 +107,10 @@ export const GROUP_LIGHT: Record<GroupKey, GroupMeta> = {
     get title() {
       return i18n.t('daily.pelletFeed');
     },
-    unit: 'kg',
+    // Pellet is logged by bag (ถุง), same as fresh is by crate (ลัง) — not by kg.
+    get unit() {
+      return i18n.t('unit.bag');
+    },
     tint: '#eef4ff',
     edge: '#d9e6fb',
     ink: '#1f4cb0',

@@ -34,25 +34,26 @@ function lateDaysFor(entries: readonly DailyLogEntry[], day: number): number {
 }
 
 /**
- * Feed cost for one day's entry = Σ (feed kg × that feed's unit price).
- * `priced` is false when the entry recorded a feed quantity we have no unit
- * price for — the caller then reports the day's cost as unknown ("—") rather
- * than a silently-understated ฿ figure.
+ * Feed cost for one day's entry = Σ (feed quantity × that feed's unit price),
+ * each feed in its own pack unit — fresh in ลัง, pellet in ถุง — against the
+ * matching per-pack price the backend resolved. `priced` is false when the entry
+ * recorded a feed quantity we have no unit price for — the caller then reports
+ * the day's cost as unknown ("—") rather than a silently-understated ฿ figure.
  */
 function dayFeedCost(e: DailyLogEntry): { cost: number; priced: boolean } {
-  const freshKg = Number(e.fresh) || 0;
-  const pelletKg = (Number(e.pelletMorning) || 0) + (Number(e.pelletEvening) || 0);
+  const freshCrates = Number(e.fresh) || 0;
+  const pelletBags = (Number(e.pelletMorning) || 0) + (Number(e.pelletEvening) || 0);
   const freshPrice = e.freshUnitPrice != null ? Number(e.freshUnitPrice) : NaN;
   const pelletPrice = e.pelletUnitPrice != null ? Number(e.pelletUnitPrice) : NaN;
 
   let cost = 0;
   let priced = true;
-  if (freshKg > 0) {
-    if (Number.isFinite(freshPrice)) cost += freshKg * freshPrice;
+  if (freshCrates > 0) {
+    if (Number.isFinite(freshPrice)) cost += freshCrates * freshPrice;
     else priced = false;
   }
-  if (pelletKg > 0) {
-    if (Number.isFinite(pelletPrice)) cost += pelletKg * pelletPrice;
+  if (pelletBags > 0) {
+    if (Number.isFinite(pelletPrice)) cost += pelletBags * pelletPrice;
     else priced = false;
   }
   return { cost, priced };

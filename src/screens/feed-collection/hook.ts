@@ -28,9 +28,7 @@ export type AddFeedFormPayload = {
   kind: FeedKind;
   unit: string;
   price: number;
-  pricePerKg: number | null;
   fcr: number | null;
-  packSizeKg: number | null;
   supplier: string | null;
   /** ISO date (YYYY-MM-DD). */
   effectiveDate: string;
@@ -39,7 +37,6 @@ export type AddFeedFormPayload = {
 export type UpdatePriceFormPayload = {
   id: number;
   price: number;
-  pricePerKg: number | null;
   /** ISO date (YYYY-MM-DD). */
   effectiveDate: string;
 };
@@ -73,11 +70,7 @@ export type FeedCollectionState = {
   handleEdit: (payload: AddFeedFormPayload) => void;
   handleUpdatePrice: (payload: UpdatePriceFormPayload) => void;
   /** Update-price date collision: overwrite the colliding entry's price (its date stays). */
-  handleOverwritePrice: (payload: {
-    entryId: number;
-    price: number;
-    pricePerKg: number | null;
-  }) => void;
+  handleOverwritePrice: (payload: { entryId: number; price: number }) => void;
   handleOpenHistory: (feed: FeedCollectionModel) => void;
 
   /** Success confirmation shown after a price save. `null` when hidden; `key`
@@ -162,12 +155,10 @@ export function useFeedCollectionScreen(): FeedCollectionState {
         unit: payload.unit,
         feedType: payload.kind,
         fcr: payload.fcr,
-        packSizeKg: payload.packSizeKg,
         supplier: payload.supplier,
         feedPriceHistories: [
           {
             price: payload.price,
-            pricePerKg: payload.pricePerKg,
             priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
           },
         ],
@@ -188,7 +179,6 @@ export function useFeedCollectionScreen(): FeedCollectionState {
         unit: payload.unit,
         feedType: payload.kind,
         fcr: payload.fcr,
-        packSizeKg: payload.packSizeKg,
         supplier: payload.supplier,
       };
       // Edit is details-only — price is managed from the price-history screen
@@ -212,7 +202,6 @@ export function useFeedCollectionScreen(): FeedCollectionState {
         {
           feedCollectionId: payload.id,
           price: payload.price,
-          pricePerKg: payload.pricePerKg,
           priceUpdatedDate: toNoonUtcIso(payload.effectiveDate),
         },
         {
@@ -227,7 +216,7 @@ export function useFeedCollectionScreen(): FeedCollectionState {
   );
 
   const handleOverwritePrice = useCallback(
-    (payload: { entryId: number; price: number; pricePerKg: number | null }) => {
+    (payload: { entryId: number; price: number }) => {
       if (!activeFeed) return;
       // Keep the colliding entry's own date — only its price changes.
       const target = activeFeedPriceHistory.find((e) => e.id === payload.entryId);
@@ -238,7 +227,6 @@ export function useFeedCollectionScreen(): FeedCollectionState {
           id: target.id,
           feedCollectionId: activeFeed.id,
           price: payload.price,
-          pricePerKg: payload.pricePerKg,
           priceUpdatedDate: toNoonUtcIso(target.effectiveDate),
         },
         {

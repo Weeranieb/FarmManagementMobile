@@ -15,7 +15,7 @@ import {
   monthStrToStartDate,
   daysInMonthFromStr,
   monthStatsFromEntries,
-  pelletKg,
+  pelletBags,
   num,
   type DailyLogEntry,
 } from '@/features/daily-log';
@@ -176,7 +176,7 @@ function MonthLedgerCard({
         <Row gap={20} style={{ marginTop: 12 }}>
           <DetailStat
             label={tx('pondDetail.daily.feedTotal')}
-            value={fmt.kg(pellet)}
+            value={fmt.bags(pellet)}
             dot={t.move}
           />
           <DetailStat
@@ -195,7 +195,7 @@ function MonthLedgerCard({
                 </Text>
                 <Text style={{ fontFamily: type.familyNum, fontSize: 12, color: t.inkSoft }}>
                   {tx('pondDetail.daily.rowSummary', {
-                    pellet: numText(pelletKg(e)),
+                    pellet: numText(pelletBags(e)),
                     fresh: numText(num(e.fresh)),
                     death: num(e.deathFishCount),
                   })}

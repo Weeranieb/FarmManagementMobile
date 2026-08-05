@@ -72,9 +72,8 @@ export const FEED_PILL_TONE_BY_KIND = { pellet: 'warn', fresh: 'brand' } as cons
 
 /**
  * Price/selling unit, locked per feed type — pellet by bag (ถุง), fresh by
- * crate (ลัง). This is the unit a feed's price is quoted in and shown against
- * everywhere. NOTE: daily pellet feeding is still logged by weight (กก.) — that
- * unit lives in the daily-log config, and cost is derived via `pricePerKg`.
+ * crate (ลัง). This is the unit a feed's price is quoted in, logged in, and
+ * shown against everywhere; cost is simply quantity × this per-pack price.
  */
 export const FEED_UNIT_BY_KIND: Record<'pellet' | 'fresh', string> = {
   get pellet() {
@@ -84,27 +83,3 @@ export const FEED_UNIT_BY_KIND: Record<'pellet' | 'fresh', string> = {
     return i18n.t('unit.crate');
   },
 };
-
-/**
- * Sensible default pack size, in กก., when a feed has none recorded yet — a
- * standard pellet bag holds ~20 กก., a fresh crate ~30 กก. Pre-filled (and
- * editable) in the price sheet so the per-กก. conversion works out of the box.
- */
-export const FEED_DEFAULT_PACK_KG: Record<FeedKind, number> = { pellet: 20, fresh: 30 };
-
-/**
- * Splits the price the user types — the price of one whole pack (฿/ถุง for
- * pellet, ฿/ลัง for fresh, which is now the canonical `price` both feed types
- * store) — into that pack `price` plus a `pricePerKg` kept alongside it for the
- * weight-fed cost calc and cross-feed comparison. Without a known pack size,
- * `pricePerKg` can't be derived and is left null.
- */
-export function deriveFeedPrices(
-  input: number,
-  packSizeKg: number | null,
-): { price: number; pricePerKg: number | null } {
-  if (packSizeKg == null || !Number.isFinite(packSizeKg) || packSizeKg <= 0) {
-    return { price: input, pricePerKg: null };
-  }
-  return { price: input, pricePerKg: input / packSizeKg };
-}
