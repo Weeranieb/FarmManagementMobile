@@ -9,6 +9,18 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.20](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.19...v0.2.20) (2026-08-05)
+
+
+### Features
+
+* log pellet daily feed by bag (ถุง) instead of kg ([#55](https://github.com/Weeranieb/FarmManagementMobile/issues/55)) ([15d9a5f](https://github.com/Weeranieb/FarmManagementMobile/commit/15d9a5f710d7f2fe00d1f6fd6733f19a907974c2))
+
+
+### Bug Fixes
+
+* **android:** center familyNum numerals clipped high by font padding ([#53](https://github.com/Weeranieb/FarmManagementMobile/issues/53)) ([710c426](https://github.com/Weeranieb/FarmManagementMobile/commit/710c426f75c55ca934ad42eaaff08dc13da0b0ae))
+
 ## [0.2.19](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.18...v0.2.19) (2026-07-28)
 
 
