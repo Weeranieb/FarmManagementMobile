@@ -13,7 +13,8 @@ import { useFishSizeGradesData } from '@/features/size-grade';
 import { useAuthStore } from '@/features/auth';
 import { apiErrorMessage } from '@/shared/http';
 import { toIsoDate } from '@/shared/time';
-import { additionalCostsTotal, toWireCosts, type CostRow } from '../additional-costs';
+import { toWireCosts, type CostRow } from '../additional-costs';
+import { additionalCostsTotal, sellTotals } from '../money';
 import i18n from '@/locale/i18n';
 
 /**
@@ -50,12 +51,6 @@ function rowIsSubmittable(r: SellRow): boolean {
     parseFloat(r.pricePerKg) > 0 &&
     parseInt(r.fishCount, 10) > 0
   );
-}
-
-function rowSubtotal(r: SellRow): number {
-  const w = parseFloat(r.weightKg) || 0;
-  const p = parseFloat(r.pricePerKg) || 0;
-  return Math.round(w * p);
 }
 
 /** Passed to `onClose` when — and only when — a sale was actually saved. */
@@ -133,15 +128,17 @@ export function useSellFlow(
   const updateRow = (id: string, patch: Partial<SellRow>) =>
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
-  // Per-row subtotals and the grand revenue. Memoized so the review screen
-  // can show a stable list without recomputing on every parent re-render.
-  const subtotals = useMemo(() => rows.map(rowSubtotal), [rows]);
-  const grossRevenue = useMemo(() => subtotals.reduce((s, v) => s + v, 0), [subtotals]);
   const extraTotal = useMemo(
     () => Math.round(additionalCostsTotal(additionalCosts)),
     [additionalCosts],
   );
-  const netRevenue = useMemo(() => grossRevenue - extraTotal, [grossRevenue, extraTotal]);
+  // Per-row subtotals and the gross/net revenue — see `../money`. Memoized so
+  // the review screen can show a stable list without recomputing on every
+  // parent re-render.
+  const { subtotals, grossRevenue, netRevenue } = useMemo(
+    () => sellTotals(rows, extraTotal),
+    [rows, extraTotal],
+  );
 
   // Fish count sanity check: the user-entered ตัว totals must not exceed
   // the source pond's stock. Sums whatever has been typed so far (including

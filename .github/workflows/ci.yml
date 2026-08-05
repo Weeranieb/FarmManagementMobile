@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Typecheck · Lint · Locales · Bundle
+    name: Typecheck · Lint · Locales · Test · Bundle
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +43,10 @@ jobs:
       - name: Locale parity
         if: ${{ !cancelled() }}
         run: npm run check:locales
+
+      - name: Test
+        if: ${{ !cancelled() }}
+        run: npm test -- --ci
 
       # Resolves and bundles the whole app through Metro (~15s). Catches what
       # typecheck cannot: a missing runtime-only file, an unresolvable import,

@@ -229,11 +229,19 @@ export function DailyLogView({
 
   const handleCellTap = useCallback(
     (pondKey: string, col: (typeof COLS)[number]['key']) => {
+      const cur = activeCellRef.current;
+      // Second tap on the already-open cell toggles the keypad shut, keeping the
+      // typed amount (same commit path as advancing to another cell) so the
+      // value mirrored live into the cell doesn't vanish on close.
+      if (cur && cur.pondKey === pondKey && cur.col === col) {
+        commitLiveEdit(cur);
+        setActiveCell(null);
+        return;
+      }
       // Tapping another cell while one is being edited commits the outgoing cell
       // first, then opens the tapped one. The in-progress value lives only in
       // `liveValue` (which resets on switch), so without this commit the typed
       // digits would be lost.
-      const cur = activeCellRef.current;
       if (cur && (cur.pondKey !== pondKey || cur.col !== col)) {
         commitLiveEdit(cur);
       }

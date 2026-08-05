@@ -8,6 +8,7 @@
 // is just the chip menu, so there are no phantom blank rows.
 
 import type { AdditionalCostItem } from '@/features/pond';
+import { additionalCostsTotal } from './money';
 import { Platform, Text, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -52,10 +53,10 @@ function toneColors(t: ThemePalette, tone: Tone) {
   return { solid: t[k.solid], ink: t[k.ink], soft: t[k.soft] };
 }
 
-/** Sum the numeric `amount` of every row. Ignores empties / non-numerics. */
-export function additionalCostsTotal(rows: CostRow[]): number {
-  return rows.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
-}
+/** Re-exported from `./money`, where it now lives alongside the rest of the
+ *  flow arithmetic and its tests. Kept exported here because every call site
+ *  already imports it from this module. */
+export { additionalCostsTotal };
 
 /** A single blank row — kept for callers that still reference it. */
 export const EMPTY_COST_ROW: CostRow = { category: '', amount: '' };
