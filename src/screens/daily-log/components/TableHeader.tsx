@@ -4,11 +4,11 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import {
   CELL_PAD_H,
-  COLS,
   GROUP_LIGHT,
   HEADER_BAND_H,
   HEADER_LEAF_H,
   NAME_W,
+  type ColSpec,
   type GroupKey,
 } from '../constants';
 
@@ -116,15 +116,15 @@ function LeafCell({ kind, text }: { kind: 'label' | 'unit'; text: string }) {
 }
 
 /**
- * Collapse `COLS` into runs of consecutive columns sharing a group, so the
- * header is derived from the column list rather than restated alongside it.
- * Add or drop a column in `COLS` and the bands, their flex weights, and the
- * leaf row all follow — no second place to edit, and no way for the header to
+ * Collapse the column list into runs of consecutive columns sharing a group, so
+ * the header is derived from that list rather than restated alongside it. Add
+ * or drop a column — including a per-client one like ตกปลา — and the bands,
+ * their flex weights and the leaf row all follow, with no way for the header to
  * disagree with the row about how many cells there are.
  */
-function groupRuns(): { group: GroupKey; span: number }[] {
+function groupRuns(cols: readonly ColSpec[]): { group: GroupKey; span: number }[] {
   const runs: { group: GroupKey; span: number }[] = [];
-  for (const c of COLS) {
+  for (const c of cols) {
     const last = runs[runs.length - 1];
     if (last && last.group === c.group) last.span += 1;
     else runs.push({ group: c.group, span: 1 });
@@ -132,10 +132,15 @@ function groupRuns(): { group: GroupKey; span: number }[] {
   return runs;
 }
 
-export function TableHeader() {
+type Props = {
+  /** Visible columns for this client — see `UseDailyLogV6['cols']`. */
+  cols: readonly ColSpec[];
+};
+
+export function TableHeader({ cols }: Props) {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
-  const runs = groupRuns();
+  const runs = groupRuns(cols);
 
   return (
     <View
@@ -199,7 +204,7 @@ export function TableHeader() {
         {/* A column inside a multi-column group needs its discriminator
             (เช้า / เย็น); a group's only column already said its name in the
             band above, so it shows the unit instead. */}
-        {COLS.map((c) => (
+        {cols.map((c) => (
           <LeafCell
             key={c.key}
             kind={c.leaf ? 'label' : 'unit'}

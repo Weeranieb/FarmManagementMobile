@@ -2,7 +2,8 @@ import { View, Text } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
-import { DAY_W, LEDGER_LEAVES, colWash, fmtCell } from '../ui';
+import { DAY_W, colWash, fmtCell, visibleLedgerLeaves } from '../ui';
+import { useTouristFishingEnabled } from '@/features/client';
 
 type Props = {
   totals: { pm: number; pe: number; fresh: number; death: number; cat: number };
@@ -10,6 +11,7 @@ type Props = {
 
 /** Month footer — Σ per column, anchored with a heavier top rule. */
 export function TotalsRow({ totals }: Props) {
+  const leaves = visibleLedgerLeaves(useTouristFishingEnabled());
   const { t: tx } = useTranslation();
   const { t, mode } = useTheme();
   return (
@@ -30,7 +32,7 @@ export function TotalsRow({ totals }: Props) {
           {tx('daily.total')}
         </Text>
       </View>
-      {LEDGER_LEAVES.map((l) => (
+      {leaves.map((l) => (
         <View
           key={l.key}
           style={{

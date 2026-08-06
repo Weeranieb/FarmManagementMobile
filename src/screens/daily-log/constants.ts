@@ -71,14 +71,18 @@ export function numpadSheetHeight(insetBottom: number): number {
 export type ColKey = 'pm' | 'pe' | 'fresh' | 'death' | 'cat';
 export type GroupKey = 'pellet' | 'fresh' | 'death' | 'catch';
 
-export const COLS: readonly {
+export type ColSpec = {
   key: ColKey;
   group: GroupKey;
   /** Localized sub-label under the pellet group; '' where the group label
    *  already says it. Read through i18next so a language switch applies. */
   readonly leaf: string;
   integer?: boolean;
-}[] = [
+};
+
+/** Every column the daily log can render. Screens take the subset that applies
+ *  to the current client — see `visibleCols`; don't render this directly. */
+export const ALL_COLS: readonly ColSpec[] = [
   {
     key: 'pm',
     group: 'pellet',
@@ -98,6 +102,18 @@ export const COLS: readonly {
   { key: 'cat', group: 'catch', leaf: '', integer: true },
 ];
 
+/**
+ * Columns to render for this client. ตกปลา is a per-client activity
+ * (`Client.isTouristFishingEnabled`, toggled by an admin in the web
+ * master-data screen); clients who don't run it shouldn't be asked to log it.
+ *
+ * Dropping it leaves four columns, which the flex layout simply makes wider —
+ * the header bands, rows, locked rows and skeleton all derive from this list,
+ * so there is no second place to keep in sync.
+ */
+export function visibleCols(touristFishingEnabled: boolean): readonly ColSpec[] {
+  return touristFishingEnabled ? ALL_COLS : ALL_COLS.filter((c) => c.key !== 'cat');
+}
 
 export type GroupMeta = {
   title: string;

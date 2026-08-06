@@ -8,7 +8,6 @@ import { Tappable } from '@/components/ui';
 import {
   CELL_HIGHLIGHT,
   CELL_PAD_H,
-  COLS,
   MAINT,
   NAME_W,
   ROW_H,
@@ -17,11 +16,14 @@ import {
   fmtTh,
   isCellValueInvalid,
   type ColKey,
+  type ColSpec,
 } from '../constants';
 import type { ActiveCell, PondRow } from '../hook';
 
 type Props = {
   pond: PondRow;
+  /** Visible columns for this client — see `UseDailyLogV6['cols']`. */
+  cols: readonly ColSpec[];
   idx: number;
   activeCell: ActiveCell;
   /** Live numpad buffer for this row's active cell — `undefined` for every
@@ -36,19 +38,20 @@ type Props = {
   onActiveMeasure?: (pageY: number, height: number) => void;
 };
 
-function TableRowImpl({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
+function TableRowImpl({ pond, cols, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
   // Any locked row — whether `status === 'maintenance'` or `notYetActive`
   // (cycle hasn't started yet on the selected day) — uses the same striped
   // + central-lock visual so the table reads as a single "can't enter data
   // here" pattern. The pill text below the pond code distinguishes them
   // ("ซ่อมบำรุง" vs "ปิดบ่อ").
   if (pond.disabled) {
-    return <LockedRow pond={pond} />;
+    return <LockedRow pond={pond} cols={cols} />;
   }
 
   return (
     <ActiveRow
       pond={pond}
+      cols={cols}
       idx={idx}
       activeCell={activeCell}
       liveValue={liveValue}
@@ -58,7 +61,7 @@ function TableRowImpl({ pond, idx, activeCell, liveValue, onCellTap, onActiveMea
   );
 }
 
-function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
+function ActiveRow({ pond, cols, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
   const rowRef = useRef<View>(null);
@@ -93,7 +96,7 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
   // whenever it carries any out-of-range cell — not only on the active
   // row — so a scrolled-away dirty row with `25,000` still pulls the
   // user's eye via the red label.
-  const hasInvalidCell = COLS.some((c) => isCellValueInvalid(pond.v[c.key]));
+  const hasInvalidCell = cols.some((c) => isCellValueInvalid(pond.v[c.key]));
   const isErrorRow = hasInvalidCell;
   const stripeColor = isErrorRow
     ? CELL_HIGHLIGHT.errorBorder
@@ -195,11 +198,11 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
         </View>
       </View>
 
-      {COLS.map((c, ci) => {
+      {cols.map((c, ci) => {
         // Hairline only at column-GROUP boundaries (not between the pellet
         // เช้า/เย็น sub-cells) — enough structure to keep columns legible
         // without the full spreadsheet gridlines.
-        const isGroupEnd = ci < COLS.length - 1 && COLS[ci + 1]?.group !== c.group;
+        const isGroupEnd = ci < cols.length - 1 && cols[ci + 1]?.group !== c.group;
         const cellDisabled =
           (c.group === 'pellet' && !pond.hasPellet) || (c.group === 'fresh' && !pond.hasFresh);
         const isActive = activeCell?.pondKey === pond.key && activeCell?.col === c.key;
@@ -397,7 +400,7 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
 // glyph differ by reason: maintenance shows a wrench + "ซ่อมบำรุง",
 // pre-start ponds show a lock + "ปิดบ่อ".
 // ────────────────────────────────────────────────────────────
-function LockedRow({ pond }: { pond: PondRow }) {
+function LockedRow({ pond, cols }: { pond: PondRow; cols: readonly ColSpec[] }) {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
   const PillIcon = pond.maintenance ? Icon.wrench : Icon.lock;
@@ -488,7 +491,7 @@ function LockedRow({ pond }: { pond: PondRow }) {
       </View>
 
       <View style={{ flex: 1, flexDirection: 'row', position: 'relative' }}>
-        {COLS.map((c) => (
+        {cols.map((c) => (
           <View
             key={c.key}
             style={{

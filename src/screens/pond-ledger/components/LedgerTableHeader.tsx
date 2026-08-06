@@ -3,7 +3,8 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/tokens';
 import { useTranslation } from 'react-i18next';
-import { DAY_W, LEDGER_GROUPS, LEDGER_LEAVES, groupTone } from '../ui';
+import { DAY_W, groupTone, visibleLedgerGroups, visibleLedgerLeaves } from '../ui';
+import { useTouristFishingEnabled } from '@/features/client';
 
 const GROUP_H = 28;
 
@@ -19,6 +20,12 @@ const GROUP_H = 28;
  * centered group labels over their spans.
  */
 export const LedgerTableHeader = memo(function LedgerTableHeader() {
+  // Ambient per-client config, same as theme/locale — read here rather than
+  // drilled through the view. React Query serves every caller from one cache
+  // entry, so this costs no extra request.
+  const touristFishing = useTouristFishingEnabled();
+  const groups = visibleLedgerGroups(touristFishing);
+  const leaves = visibleLedgerLeaves(touristFishing);
   const { t, mode } = useTheme();
   const { t: tx } = useTranslation();
   return (
@@ -34,12 +41,12 @@ export const LedgerTableHeader = memo(function LedgerTableHeader() {
       <View style={{ height: GROUP_H }}>
         <View style={{ flexDirection: 'row', height: GROUP_H }}>
           <View style={{ width: DAY_W, backgroundColor: t.surfaceAlt }} />
-          {LEDGER_LEAVES.map((l, i) => {
+          {leaves.map((l, i) => {
             const tone = groupTone(l.group, t, mode);
             // Hide the divider inside a multi-column group (the เช้า|เย็น line),
             // keep it at group boundaries — while still occupying 1px so the
             // grid stays aligned with the rows below.
-            const internal = i > 0 && LEDGER_LEAVES[i - 1]?.group === l.group;
+            const internal = i > 0 && leaves[i - 1]?.group === l.group;
             return (
               <View
                 key={l.key}
@@ -58,7 +65,7 @@ export const LedgerTableHeader = memo(function LedgerTableHeader() {
           pointerEvents="none"
         >
           <View style={{ width: DAY_W }} />
-          {LEDGER_GROUPS.map((g) => {
+          {groups.map((g) => {
             const tone = groupTone(g.group, t, mode);
             return (
               <View
@@ -92,7 +99,7 @@ export const LedgerTableHeader = memo(function LedgerTableHeader() {
             {tx('daily.dateCol')}
           </Text>
         </View>
-        {LEDGER_LEAVES.map((l) => (
+        {leaves.map((l) => (
           <View
             key={l.key}
             style={{

@@ -68,6 +68,20 @@ export const LEDGER_GROUPS: {
   { group: 'catch', titleKey: 'daily.catchShort', unitKey: 'unit.fish', span: 1 },
 ];
 
+/**
+ * Both lists above describe every column the ledger can show. Filter them for
+ * the current client before rendering — ตกปลา is a per-client activity
+ * (`Client.isTouristFishingEnabled`), and hiding it in the daily log while the
+ * ledger still shows it would just move the inconsistency rather than fix it.
+ */
+export function visibleLedgerGroups(touristFishingEnabled: boolean): typeof LEDGER_GROUPS {
+  return touristFishingEnabled ? LEDGER_GROUPS : LEDGER_GROUPS.filter((g) => g.group !== 'catch');
+}
+
+export function visibleLedgerLeaves(touristFishingEnabled: boolean): typeof LEDGER_LEAVES {
+  return touristFishingEnabled ? LEDGER_LEAVES : LEDGER_LEAVES.filter((l) => l.key !== 'cat');
+}
+
 /** Leaf columns in table order, with the sub-label shown under pellet. */
 export const LEDGER_LEAVES: { key: ColKey; group: GroupKey; leafKey: string | null }[] = [
   { key: 'pm', group: 'pellet', leafKey: 'daily.morning' },

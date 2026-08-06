@@ -14,7 +14,7 @@ import { useAuthStore } from '@/features/auth';
 import { apiErrorStatus } from '@/shared/http';
 import i18n from '@/locale/i18n';
 import { usePondData, usePondActivitiesData, type PondActivityModel } from '@/features/pond';
-import { COLS, isCellValueInvalid, type ColKey } from '@/screens/daily-log/constants';
+import { ALL_COLS, isCellValueInvalid, type ColKey } from '@/screens/daily-log/constants';
 import type { MonthSummary } from '@/screens/daily-log/hook';
 
 /** One editable day's five values, empty string = untouched/absent. */
@@ -246,7 +246,7 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
         return { ...prev, [ym]: { ...cur, [day]: next } };
       });
       if (feedId != null) {
-        const group = COLS.find((c) => c.key === col)?.group;
+        const group = ALL_COLS.find((c) => c.key === col)?.group;
         if (group === 'pellet') setFeedPick((p) => ({ ...p, pellet: feedId }));
         else if (group === 'fresh') setFeedPick((p) => ({ ...p, fresh: feedId }));
       }
@@ -293,7 +293,7 @@ export function usePondLedgerScreen(pondId: number, ymProp?: string) {
 
   const lastUsedFeedId = useMemo<number | null>(() => {
     if (!editing) return null;
-    const group = COLS.find((c) => c.key === editing.col)?.group;
+    const group = ALL_COLS.find((c) => c.key === editing.col)?.group;
     if (group === 'pellet') return feedPick.pellet ?? log?.pelletFeedCollectionId ?? null;
     if (group === 'fresh') return feedPick.fresh ?? log?.freshFeedCollectionId ?? null;
     return null;

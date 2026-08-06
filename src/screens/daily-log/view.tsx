@@ -25,12 +25,14 @@ import { UnsavedChangesDialog } from './components/UnsavedChangesDialog';
 import {
   CHROME,
   CHROME_SCROLL,
-  COLS,
+  ALL_COLS,
   NAME_W,
   ROW_H,
   VIBRANT_BRAND,
   numpadSheetHeight,
   thMonthAbbr,
+  type ColKey,
+  type ColSpec,
 } from './constants';
 import type { SaveResult, UseDailyLogV6 } from './hook';
 import i18n from '@/locale/i18n';
@@ -95,6 +97,7 @@ export function DailyLogView({
 
   const {
     ponds,
+    cols,
     loading,
     selectedDate,
     setSelectedDate,
@@ -141,7 +144,7 @@ export function DailyLogView({
   const rememberFeedPick = useCallback(
     (cell: NonNullable<typeof activeCell>, feedId: number | null) => {
       if (feedId == null) return;
-      const group = COLS.find((c) => c.key === cell.col)?.group;
+      const group = ALL_COLS.find((c) => c.key === cell.col)?.group;
       if (group === 'pellet' || group === 'fresh') {
         setFeedSelection(cell.pondKey, group, feedId);
       }
@@ -218,7 +221,7 @@ export function DailyLogView({
   }, []);
 
   const handleCellTap = useCallback(
-    (pondKey: string, col: (typeof COLS)[number]['key']) => {
+    (pondKey: string, col: ColKey) => {
       const cur = activeCellRef.current;
       // Second tap on the already-open cell toggles the keypad shut, keeping the
       // typed amount (same commit path as advancing to another cell) so the
@@ -608,7 +611,7 @@ export function DailyLogView({
               elevation: 3,
             }}
           >
-            <TableHeader />
+            <TableHeader cols={cols} />
           </View>
 
           {/* No horizontal ScrollView: the table sizes itself to the viewport
@@ -617,12 +620,13 @@ export function DailyLogView({
               to compete with a horizontal pan gesture for the same touch. */}
           <View>
             {loading || !contentReady ? (
-              <TableSkeleton />
+              <TableSkeleton cols={cols} />
             ) : (
               ponds.map((pond, i) => (
                 <TableRow
                   key={pond.key}
                   pond={pond}
+                  cols={cols}
                   idx={i}
                   activeCell={activeCell}
                   // `undefined` for every non-active row keeps that prop
@@ -727,7 +731,7 @@ const SKELETON_ROWS = 6;
  * took over. Mirrors TableRow's name-column + per-column layout so the swap to
  * real rows is visually stable; rows fade down so it reads as a placeholder.
  */
-function TableSkeleton() {
+function TableSkeleton({ cols }: { cols: readonly ColSpec[] }) {
   const { t } = useTheme();
   const bar = t.surfaceSunk;
   return (
@@ -762,7 +766,7 @@ function TableSkeleton() {
               <View style={{ width: '45%', height: 9, borderRadius: 4, backgroundColor: bar }} />
             </View>
           </View>
-          {COLS.map((c) => (
+          {cols.map((c) => (
             <View
               key={c.key}
               style={{ flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center' }}

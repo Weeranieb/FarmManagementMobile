@@ -1,0 +1,1 @@
+export { useTouristFishingEnabled } from './queries';
