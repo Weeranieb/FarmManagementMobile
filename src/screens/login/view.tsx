@@ -149,7 +149,7 @@ export function LoginView({
             </View>
             <View style={{ gap: 6 }}>
               <Text style={{ fontSize: 12, fontFamily: type.familyMedium, color: t.inkSoft }}>
-                {tx('auth.password')}
+                {tx('auth.password.label')}
               </Text>
               <Input
                 ref={passwordRef}

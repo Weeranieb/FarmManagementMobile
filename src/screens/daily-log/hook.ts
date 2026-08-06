@@ -10,10 +10,11 @@ import {
   type DailyLogEntry,
   type DailyLogResponse,
 } from '@/features/daily-log';
+import { useTouristFishingEnabled } from '@/features/client';
 import { adaptPond, usePonds, type PondModel } from '@/features/pond';
 import { apiErrorStatus } from '@/shared/http';
 import { toIsoDate, toMonthKey } from '@/shared/time';
-import { COLS, isCellValueInvalid, type ColKey } from './constants';
+import { ALL_COLS, isCellValueInvalid, visibleCols, type ColKey, type ColSpec } from './constants';
 
 export type CellState = 'saved' | 'dirty' | 'empty';
 
@@ -53,6 +54,10 @@ export type ActiveCell = { pondKey: string; col: ColKey } | null;
 
 export type UseDailyLogV6 = {
   ponds: PondRow[];
+  /** Columns to render, already filtered for this client's enabled features
+   *  (ตกปลา is per-client). The table header, rows, locked rows and skeleton
+   *  all take this list so they can never disagree about the column count. */
+  cols: readonly ColSpec[];
   /** No pond list to render yet — the farm is resolving or the scoped pond
    *  query is fetching cold. The view shows a table skeleton instead of an
    *  empty grid. */
@@ -156,17 +161,20 @@ type OverrideMap = Record<string, Record<string, LocalOverride>>;
 
 const CELL_KEYS: readonly (keyof CellValues)[] = ['pm', 'pe', 'fresh', 'death', 'cat'];
 
-// All columns, in table order — "ถัดไป" auto-advances through every one
-// (เช้า → เย็น → เหยื่อสด → ปลาตาย → ตกปลา) so the whole grid can be filled
-// from the keypad without tapping each death / catch cell by hand.
-const SNAKE_COLS: readonly ColKey[] = COLS.map((c) => c.key);
-
-// Column-major snake across all columns: the next fillable pond down the
-// current column, then the first fillable pond at the top of the next column.
-// Returns null only at the very end (bottom of the last column) — which the
-// caller treats as "finish, close the numpad".
-function nextSnakeCell(cur: NonNullable<ActiveCell>, ponds: PondRow[]): ActiveCell {
-  const colIdx = SNAKE_COLS.indexOf(cur.col);
+// Column-major snake across the *visible* columns ("ถัดไป" auto-advances
+// through every one — เช้า → เย็น → เหยื่อสด → ปลาตาย → ตกปลา — so the whole
+// grid can be filled from the keypad without tapping each cell by hand): the
+// next fillable pond down the current column, then the first fillable pond at
+// the top of the next column. `cols` is passed in rather than read from a
+// module constant so a client without ตกปลา never advances into a column that
+// isn't on screen. Returns null only at the very end (bottom of the last
+// column) — which the caller treats as "finish, close the numpad".
+function nextSnakeCell(
+  cur: NonNullable<ActiveCell>,
+  ponds: PondRow[],
+  cols: readonly ColSpec[],
+): ActiveCell {
+  const colIdx = cols.findIndex((c) => c.key === cur.col);
   if (colIdx < 0) return null;
   const pondIdx = ponds.findIndex((p) => p.key === cur.pondKey);
   if (pondIdx < 0) return null;
@@ -176,7 +184,7 @@ function nextSnakeCell(cur: NonNullable<ActiveCell>, ponds: PondRow[]): ActiveCe
     if (p && !p.disabled) return { pondKey: p.key, col: cur.col };
   }
   // End of column — wrap to the first fillable pond of the next column.
-  const nextCol = SNAKE_COLS[colIdx + 1];
+  const nextCol = cols[colIdx + 1]?.key;
   if (nextCol == null) return null;
   for (let i = 0; i < ponds.length; i++) {
     const p = ponds[i];
@@ -239,6 +247,11 @@ export function useDailyLogV6(
 ): UseDailyLogV6 {
   const initialPondId = options?.initialPondId;
   const farmsLoading = options?.farmsLoading ?? false;
+  // Per-client feature switch. Defaults to enabled while the client record
+  // loads, so the column is only removed on a confirmed `false` — see
+  // `useTouristFishingEnabled`.
+  const touristFishingEnabled = useTouristFishingEnabled();
+  const cols = useMemo(() => visibleCols(touristFishingEnabled), [touristFishingEnabled]);
   const initialFocusDone = useRef(false);
   // Call the low-level React Query hook directly. `usePondsData` would adapt
   // on every render, returning a fresh `raw.map(...)` array — that thrashes
@@ -416,7 +429,7 @@ export function useDailyLogV6(
 
   const lastUsedFeedIdForActiveCell = useMemo<number | null>(() => {
     if (!activeCell || activePondId == null) return null;
-    const group = COLS.find((c) => c.key === activeCell.col)?.group;
+    const group = ALL_COLS.find((c) => c.key === activeCell.col)?.group;
     if (group !== 'pellet' && group !== 'fresh') return null;
     // The backend tracks feed at the pond level (not per-entry), so the
     // ID on the monthly GET response *is* the feed used in the latest entry
@@ -556,14 +569,14 @@ export function useDailyLogV6(
 
   const advanceActive = useCallback(() => {
     // Snake through every column; null closes the numpad (finish).
-    setActiveCell((cur) => (cur ? nextSnakeCell(cur, ponds) : null));
-  }, [ponds]);
+    setActiveCell((cur) => (cur ? nextSnakeCell(cur, ponds, cols) : null));
+  }, [ponds, cols]);
 
   // True when there's nowhere left to advance — the numpad's primary button
   // should read "เสร็จสิ้น" and commit-then-close instead of "ถัดไป".
   const activeCellIsLast = useMemo(
-    () => (activeCell ? nextSnakeCell(activeCell, ponds) == null : false),
-    [activeCell, ponds],
+    () => (activeCell ? nextSnakeCell(activeCell, ponds, cols) == null : false),
+    [activeCell, ponds, cols],
   );
 
   const saveAll = useCallback(async (): Promise<SaveResult> => {
@@ -759,8 +772,8 @@ export function useDailyLogV6(
   // render their historical values read-only and can't be touched anyway.
   const invalidCount = useMemo(
     () =>
-      ponds.filter((p) => !p.disabled && COLS.some((c) => isCellValueInvalid(p.v[c.key]))).length,
-    [ponds],
+      ponds.filter((p) => !p.disabled && cols.some((c) => isCellValueInvalid(p.v[c.key]))).length,
+    [ponds, cols],
   );
   // Walk every date with overrides. Any non-empty bucket means dirty (we
   // drop overrides on save / revert). Keys are the dKey form "YYYY-MM-DD"
@@ -814,7 +827,7 @@ export function useDailyLogV6(
         editsCount += 1;
         days.add(dk);
         pondSet.add(pondKey);
-        if (COLS.some((c) => isCellValueInvalid(ovr.v[c.key]))) invalidCount += 1;
+        if (cols.some((c) => isCellValueInvalid(ovr.v[c.key]))) invalidCount += 1;
         const pellet = num(ovr.v.pm) + num(ovr.v.pe);
         const fresh = num(ovr.v.fresh);
         const death = num(ovr.v.death);
@@ -842,7 +855,7 @@ export function useDailyLogV6(
       death: { total: deathTotal, days: deathDays.size },
     };
     return { editsCount, daysCount: days.size, pondCount: pondSet.size, invalidCount, summary };
-  }, [overrides, month]);
+  }, [overrides, month, cols]);
   const monthEditsCount = monthPending.editsCount;
   const monthDaysCount = monthPending.daysCount;
   const monthPondCount = monthPending.pondCount;
@@ -851,6 +864,7 @@ export function useDailyLogV6(
 
   return {
     ponds,
+    cols,
     loading,
     selectedDate,
     setSelectedDate,

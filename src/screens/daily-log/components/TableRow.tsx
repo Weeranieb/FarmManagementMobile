@@ -7,21 +7,23 @@ import { Icon } from '@/components/icons';
 import { Tappable } from '@/components/ui';
 import {
   CELL_HIGHLIGHT,
-  COLS,
+  CELL_PAD_H,
   MAINT,
   NAME_W,
   ROW_H,
   TABLE_SURFACE,
   VIBRANT_BRAND,
-  colW,
   fmtTh,
   isCellValueInvalid,
   type ColKey,
+  type ColSpec,
 } from '../constants';
 import type { ActiveCell, PondRow } from '../hook';
 
 type Props = {
   pond: PondRow;
+  /** Visible columns for this client — see `UseDailyLogV6['cols']`. */
+  cols: readonly ColSpec[];
   idx: number;
   activeCell: ActiveCell;
   /** Live numpad buffer for this row's active cell — `undefined` for every
@@ -36,19 +38,20 @@ type Props = {
   onActiveMeasure?: (pageY: number, height: number) => void;
 };
 
-function TableRowImpl({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
+function TableRowImpl({ pond, cols, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
   // Any locked row — whether `status === 'maintenance'` or `notYetActive`
   // (cycle hasn't started yet on the selected day) — uses the same striped
   // + central-lock visual so the table reads as a single "can't enter data
   // here" pattern. The pill text below the pond code distinguishes them
   // ("ซ่อมบำรุง" vs "ปิดบ่อ").
   if (pond.disabled) {
-    return <LockedRow pond={pond} />;
+    return <LockedRow pond={pond} cols={cols} />;
   }
 
   return (
     <ActiveRow
       pond={pond}
+      cols={cols}
       idx={idx}
       activeCell={activeCell}
       liveValue={liveValue}
@@ -58,7 +61,7 @@ function TableRowImpl({ pond, idx, activeCell, liveValue, onCellTap, onActiveMea
   );
 }
 
-function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
+function ActiveRow({ pond, cols, idx, activeCell, liveValue, onCellTap, onActiveMeasure }: Props) {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
   const rowRef = useRef<View>(null);
@@ -93,7 +96,7 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
   // whenever it carries any out-of-range cell — not only on the active
   // row — so a scrolled-away dirty row with `25,000` still pulls the
   // user's eye via the red label.
-  const hasInvalidCell = COLS.some((c) => isCellValueInvalid(pond.v[c.key]));
+  const hasInvalidCell = cols.some((c) => isCellValueInvalid(pond.v[c.key]));
   const isErrorRow = hasInvalidCell;
   const stripeColor = isErrorRow
     ? CELL_HIGHLIGHT.errorBorder
@@ -119,11 +122,12 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
         style={{
           width: NAME_W,
           backgroundColor: rowBg,
-          paddingHorizontal: 8,
+          paddingLeft: 8,
+          paddingRight: 6,
           paddingVertical: 6,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: 7,
           borderRightWidth: 1,
           borderRightColor: t.borderStrong,
         }}
@@ -163,6 +167,11 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
           <Text
             style={{
               fontSize: 14,
+              // 1.5× — pond names are free text, and a low vowel plus a stacked
+              // upper mark in the same name ("บ่อกุ้งขาวที่ 3") inks 19.5px, so
+              // anything under 20 clips the tone mark. Content height stays
+              // 21+1+16+12 = 50 ≤ ROW_H, so the row does not grow.
+              lineHeight: 21,
               fontFamily: type.familyBold,
               color: t.ink,
               // 700 is the heaviest IBM Plex weight available — bump the
@@ -177,6 +186,7 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
           <Text
             style={{
               fontSize: 11,
+              lineHeight: 16,
               fontFamily: type.familyNum,
               color: t.inkSoft,
               marginTop: 1,
@@ -188,11 +198,11 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
         </View>
       </View>
 
-      {COLS.map((c, ci) => {
+      {cols.map((c, ci) => {
         // Hairline only at column-GROUP boundaries (not between the pellet
         // เช้า/เย็น sub-cells) — enough structure to keep columns legible
         // without the full spreadsheet gridlines.
-        const isGroupEnd = ci < COLS.length - 1 && COLS[ci + 1]?.group !== c.group;
+        const isGroupEnd = ci < cols.length - 1 && cols[ci + 1]?.group !== c.group;
         const cellDisabled =
           (c.group === 'pellet' && !pond.hasPellet) || (c.group === 'fresh' && !pond.hasFresh);
         const isActive = activeCell?.pondKey === pond.key && activeCell?.col === c.key;
@@ -237,10 +247,16 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
             disabled={cellDisabled}
             onPress={() => !cellDisabled && onCellTap(pond.key, c.key)}
             style={{
-              width: colW(c.key),
+              // Data columns share the row's remaining width evenly, so the
+              // table always fits the viewport — no horizontal pan.
+              flex: 1,
+              minWidth: 0,
               backgroundColor: bg,
-              paddingHorizontal: 8,
-              alignItems: 'flex-end',
+              paddingHorizontal: CELL_PAD_H,
+              // Centered rather than right-aligned: at ~56px the pill overlay
+              // is only 6px narrower than the cell, and centering keeps the
+              // value clear of both the pill border and the corner badges.
+              alignItems: 'center',
               justifyContent: 'center',
               position: 'relative',
               borderRightWidth: isGroupEnd ? 1 : 0,
@@ -384,7 +400,7 @@ function ActiveRow({ pond, idx, activeCell, liveValue, onCellTap, onActiveMeasur
 // glyph differ by reason: maintenance shows a wrench + "ซ่อมบำรุง",
 // pre-start ponds show a lock + "ปิดบ่อ".
 // ────────────────────────────────────────────────────────────
-function LockedRow({ pond }: { pond: PondRow }) {
+function LockedRow({ pond, cols }: { pond: PondRow; cols: readonly ColSpec[] }) {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
   const PillIcon = pond.maintenance ? Icon.wrench : Icon.lock;
@@ -403,11 +419,15 @@ function LockedRow({ pond }: { pond: PondRow }) {
         style={{
           width: NAME_W,
           backgroundColor: MAINT.bg,
-          paddingHorizontal: 8,
-          paddingVertical: 6,
+          paddingLeft: 8,
+          paddingRight: 6,
+          // Tighter than ActiveRow's 6: the locked row stacks name + status pill
+          // (21 + 3 + 18 = 42), so 6 would put it exactly at ROW_H with no slack
+          // and any growth would make this row taller than its neighbours.
+          paddingVertical: 4,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: 7,
           borderRightWidth: 1,
           borderRightColor: t.borderStrong,
         }}
@@ -424,6 +444,8 @@ function LockedRow({ pond }: { pond: PondRow }) {
           <Text
             style={{
               fontSize: 14,
+              // Same mark clearance as ActiveRow's pond name.
+              lineHeight: 21,
               fontFamily: type.familyBold,
               color: MAINT.ink,
               opacity: 0.7,
@@ -453,6 +475,9 @@ function LockedRow({ pond }: { pond: PondRow }) {
             <Text
               style={{
                 fontSize: 9.5,
+                // "ซ่อมบำรุง" stacks ◌่ over ซ and drops ◌ุ under ร — inks
+                // 11.6px, so the default line box is too tight to trust.
+                lineHeight: 14,
                 fontFamily: type.familyBold,
                 color: MAINT.ink,
                 letterSpacing: 0.1,
@@ -466,11 +491,12 @@ function LockedRow({ pond }: { pond: PondRow }) {
       </View>
 
       <View style={{ flex: 1, flexDirection: 'row', position: 'relative' }}>
-        {COLS.map((c) => (
+        {cols.map((c) => (
           <View
             key={c.key}
             style={{
-              width: colW(c.key),
+              flex: 1,
+              minWidth: 0,
               borderRightWidth: 1,
               borderRightColor: MAINT.stroke,
               overflow: 'hidden',

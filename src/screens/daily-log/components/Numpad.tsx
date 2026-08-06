@@ -19,7 +19,7 @@ import { Tappable } from '@/components/ui';
 import {
   CELL_HIGHLIGHT,
   CELL_MAX_VALUE,
-  COLS,
+  ALL_COLS,
   GROUP_LIGHT,
   NUMPAD_KEY_ROW_GAP,
   NUMPAD_KEY_ROW_H,
@@ -183,7 +183,7 @@ export function Numpad({
 }: Props) {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
-  const meta = COLS.find((c) => c.key === col);
+  const meta = ALL_COLS.find((c) => c.key === col);
   const group: GroupKey = (meta?.group ?? 'pellet') as GroupKey;
   const integerOnly = meta?.integer === true;
   const g = GROUP_LIGHT[group];

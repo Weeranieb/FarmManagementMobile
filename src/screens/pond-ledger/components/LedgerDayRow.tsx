@@ -6,9 +6,10 @@ import { type } from '@/theme/tokens';
 import { warnInk } from '@/theme/ink';
 import { thaiDate } from '@/locale/thaiDate';
 import { Tappable } from '@/components/ui';
-import { DAY_W, ROW_H, LEDGER_LEAVES, colWash, fmtCell } from '../ui';
+import { DAY_W, ROW_H, colWash, fmtCell, visibleLedgerLeaves } from '../ui';
 import type { CellValues } from '../hook';
 import type { ColKey } from '@/screens/daily-log/constants';
+import { useTouristFishingEnabled } from '@/features/client';
 
 type Props = {
   day: number;
@@ -36,12 +37,13 @@ export const LedgerDayRow = memo(function LedgerDayRow({
   hasEvent,
   onCell,
 }: Props) {
+  const leaves = visibleLedgerLeaves(useTouristFishingEnabled());
   const { t: tx } = useTranslation();
   const { t, mode } = useTheme();
   // "Logged" drives the emphasized treatment (bold day number, size-15 values).
   // Key it off what actually renders — fmtCell hides zeros — so an all-zero day
   // recedes like an empty one instead of looking emphasized-but-blank.
-  const logged = LEDGER_LEAVES.some((l) => fmtCell(values[l.key]) != null);
+  const logged = leaves.some((l) => fmtCell(values[l.key]) != null);
 
   return (
     <View style={{ borderBottomWidth: 1, borderBottomColor: t.border, opacity: isFuture ? 0.55 : 1 }}>
@@ -84,7 +86,7 @@ export const LedgerDayRow = memo(function LedgerDayRow({
           ) : null}
         </Tappable>
 
-        {LEDGER_LEAVES.map((l) => {
+        {leaves.map((l) => {
           const active = editingCol === l.key;
           const raw = values[l.key];
           const disp = isFuture ? null : fmtCell(raw);

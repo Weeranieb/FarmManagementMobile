@@ -25,14 +25,14 @@ import { UnsavedChangesDialog } from './components/UnsavedChangesDialog';
 import {
   CHROME,
   CHROME_SCROLL,
-  COLS,
+  ALL_COLS,
   NAME_W,
   ROW_H,
-  TABLE_W,
   VIBRANT_BRAND,
-  colW,
   numpadSheetHeight,
   thMonthAbbr,
+  type ColKey,
+  type ColSpec,
 } from './constants';
 import type { SaveResult, UseDailyLogV6 } from './hook';
 import i18n from '@/locale/i18n';
@@ -97,6 +97,7 @@ export function DailyLogView({
 
   const {
     ponds,
+    cols,
     loading,
     selectedDate,
     setSelectedDate,
@@ -123,7 +124,6 @@ export function DailyLogView({
   } = state;
 
   const verticalRef = useRef<ScrollView>(null);
-  const headerHRef = useRef<ScrollView>(null);
   // Live vertical scroll offset, used to turn a measured row position into an
   // absolute scrollTo target when the numpad covers the active row.
   const scrollYRef = useRef(0);
@@ -144,7 +144,7 @@ export function DailyLogView({
   const rememberFeedPick = useCallback(
     (cell: NonNullable<typeof activeCell>, feedId: number | null) => {
       if (feedId == null) return;
-      const group = COLS.find((c) => c.key === cell.col)?.group;
+      const group = ALL_COLS.find((c) => c.key === cell.col)?.group;
       if (group === 'pellet' || group === 'fresh') {
         setFeedSelection(cell.pondKey, group, feedId);
       }
@@ -161,13 +161,6 @@ export function DailyLogView({
     },
     [rememberFeedPick, setCellValue],
   );
-
-  const tableWidth = TABLE_W;
-
-  const onRowsHorizontalScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = e.nativeEvent.contentOffset.x;
-    headerHRef.current?.scrollTo({ x, animated: false });
-  }, []);
 
   // scrollT ∈ [0, 1] — collapse progress driven by JS-thread onScroll.
   // Plain useState (not Reanimated SharedValue) so the chrome animates
@@ -228,7 +221,7 @@ export function DailyLogView({
   }, []);
 
   const handleCellTap = useCallback(
-    (pondKey: string, col: (typeof COLS)[number]['key']) => {
+    (pondKey: string, col: ColKey) => {
       const cur = activeCellRef.current;
       // Second tap on the already-open cell toggles the keypad shut, keeping the
       // typed amount (same commit path as advancing to another cell) so the
@@ -618,48 +611,34 @@ export function DailyLogView({
               elevation: 3,
             }}
           >
-            <ScrollView
-              delaysContentTouches={false}
-              ref={headerHRef}
-              horizontal
-              scrollEnabled={false}
-              showsHorizontalScrollIndicator={false}
-            >
-              <View style={{ width: tableWidth }}>
-                <TableHeader />
-              </View>
-            </ScrollView>
+            <TableHeader cols={cols} />
           </View>
 
-          <ScrollView
-            delaysContentTouches={false}
-            horizontal
-            onScroll={onRowsHorizontalScroll}
-            scrollEventThrottle={16}
-            showsHorizontalScrollIndicator={false}
-            bounces={false}
-          >
-            <View style={{ width: tableWidth }}>
-              {loading || !contentReady ? (
-                <TableSkeleton />
-              ) : (
-                ponds.map((pond, i) => (
-                  <TableRow
-                    key={pond.key}
-                    pond={pond}
-                    idx={i}
-                    activeCell={activeCell}
-                    // `undefined` for every non-active row keeps that prop
-                    // reference-stable across keystrokes so React.memo skips
-                    // re-rendering rows the user isn't typing into.
-                    liveValue={pond.key === activeCell?.pondKey ? liveValue : undefined}
-                    onCellTap={handleCellTap}
-                    onActiveMeasure={onActiveRowMeasure}
-                  />
-                ))
-              )}
-            </View>
-          </ScrollView>
+          {/* No horizontal ScrollView: the table sizes itself to the viewport
+              (fixed pond column + flex data columns), so every input cell is
+              reachable without panning — and the vertical scroll no longer has
+              to compete with a horizontal pan gesture for the same touch. */}
+          <View>
+            {loading || !contentReady ? (
+              <TableSkeleton cols={cols} />
+            ) : (
+              ponds.map((pond, i) => (
+                <TableRow
+                  key={pond.key}
+                  pond={pond}
+                  cols={cols}
+                  idx={i}
+                  activeCell={activeCell}
+                  // `undefined` for every non-active row keeps that prop
+                  // reference-stable across keystrokes so React.memo skips
+                  // re-rendering rows the user isn't typing into.
+                  liveValue={pond.key === activeCell?.pondKey ? liveValue : undefined}
+                  onCellTap={handleCellTap}
+                  onActiveMeasure={onActiveRowMeasure}
+                />
+              ))
+            )}
+          </View>
         </ScrollView>
 
         {saveToast ? (
@@ -752,7 +731,7 @@ const SKELETON_ROWS = 6;
  * took over. Mirrors TableRow's name-column + per-column layout so the swap to
  * real rows is visually stable; rows fade down so it reads as a placeholder.
  */
-function TableSkeleton() {
+function TableSkeleton({ cols }: { cols: readonly ColSpec[] }) {
   const { t } = useTheme();
   const bar = t.surfaceSunk;
   return (
@@ -771,11 +750,12 @@ function TableSkeleton() {
           <View
             style={{
               width: NAME_W,
-              paddingHorizontal: 8,
+              paddingLeft: 8,
+              paddingRight: 6,
               paddingVertical: 6,
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 8,
+              gap: 7,
               borderRightWidth: 1,
               borderRightColor: t.borderStrong,
             }}
@@ -786,10 +766,10 @@ function TableSkeleton() {
               <View style={{ width: '45%', height: 9, borderRadius: 4, backgroundColor: bar }} />
             </View>
           </View>
-          {COLS.map((c) => (
+          {cols.map((c) => (
             <View
               key={c.key}
-              style={{ width: colW(c.key), alignItems: 'center', justifyContent: 'center' }}
+              style={{ flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center' }}
             >
               <View style={{ width: 22, height: 12, borderRadius: 4, backgroundColor: bar }} />
             </View>
