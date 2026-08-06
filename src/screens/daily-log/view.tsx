@@ -28,9 +28,7 @@ import {
   COLS,
   NAME_W,
   ROW_H,
-  TABLE_W,
   VIBRANT_BRAND,
-  colW,
   numpadSheetHeight,
   thMonthAbbr,
 } from './constants';
@@ -123,7 +121,6 @@ export function DailyLogView({
   } = state;
 
   const verticalRef = useRef<ScrollView>(null);
-  const headerHRef = useRef<ScrollView>(null);
   // Live vertical scroll offset, used to turn a measured row position into an
   // absolute scrollTo target when the numpad covers the active row.
   const scrollYRef = useRef(0);
@@ -161,13 +158,6 @@ export function DailyLogView({
     },
     [rememberFeedPick, setCellValue],
   );
-
-  const tableWidth = TABLE_W;
-
-  const onRowsHorizontalScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = e.nativeEvent.contentOffset.x;
-    headerHRef.current?.scrollTo({ x, animated: false });
-  }, []);
 
   // scrollT ∈ [0, 1] — collapse progress driven by JS-thread onScroll.
   // Plain useState (not Reanimated SharedValue) so the chrome animates
@@ -618,48 +608,33 @@ export function DailyLogView({
               elevation: 3,
             }}
           >
-            <ScrollView
-              delaysContentTouches={false}
-              ref={headerHRef}
-              horizontal
-              scrollEnabled={false}
-              showsHorizontalScrollIndicator={false}
-            >
-              <View style={{ width: tableWidth }}>
-                <TableHeader />
-              </View>
-            </ScrollView>
+            <TableHeader />
           </View>
 
-          <ScrollView
-            delaysContentTouches={false}
-            horizontal
-            onScroll={onRowsHorizontalScroll}
-            scrollEventThrottle={16}
-            showsHorizontalScrollIndicator={false}
-            bounces={false}
-          >
-            <View style={{ width: tableWidth }}>
-              {loading || !contentReady ? (
-                <TableSkeleton />
-              ) : (
-                ponds.map((pond, i) => (
-                  <TableRow
-                    key={pond.key}
-                    pond={pond}
-                    idx={i}
-                    activeCell={activeCell}
-                    // `undefined` for every non-active row keeps that prop
-                    // reference-stable across keystrokes so React.memo skips
-                    // re-rendering rows the user isn't typing into.
-                    liveValue={pond.key === activeCell?.pondKey ? liveValue : undefined}
-                    onCellTap={handleCellTap}
-                    onActiveMeasure={onActiveRowMeasure}
-                  />
-                ))
-              )}
-            </View>
-          </ScrollView>
+          {/* No horizontal ScrollView: the table sizes itself to the viewport
+              (fixed pond column + flex data columns), so every input cell is
+              reachable without panning — and the vertical scroll no longer has
+              to compete with a horizontal pan gesture for the same touch. */}
+          <View>
+            {loading || !contentReady ? (
+              <TableSkeleton />
+            ) : (
+              ponds.map((pond, i) => (
+                <TableRow
+                  key={pond.key}
+                  pond={pond}
+                  idx={i}
+                  activeCell={activeCell}
+                  // `undefined` for every non-active row keeps that prop
+                  // reference-stable across keystrokes so React.memo skips
+                  // re-rendering rows the user isn't typing into.
+                  liveValue={pond.key === activeCell?.pondKey ? liveValue : undefined}
+                  onCellTap={handleCellTap}
+                  onActiveMeasure={onActiveRowMeasure}
+                />
+              ))
+            )}
+          </View>
         </ScrollView>
 
         {saveToast ? (
@@ -771,11 +746,12 @@ function TableSkeleton() {
           <View
             style={{
               width: NAME_W,
-              paddingHorizontal: 8,
+              paddingLeft: 8,
+              paddingRight: 6,
               paddingVertical: 6,
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 8,
+              gap: 7,
               borderRightWidth: 1,
               borderRightColor: t.borderStrong,
             }}
@@ -789,7 +765,7 @@ function TableSkeleton() {
           {COLS.map((c) => (
             <View
               key={c.key}
-              style={{ width: colW(c.key), alignItems: 'center', justifyContent: 'center' }}
+              style={{ flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center' }}
             >
               <View style={{ width: 22, height: 12, borderRadius: 4, backgroundColor: bar }} />
             </View>

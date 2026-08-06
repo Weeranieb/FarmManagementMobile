@@ -4,15 +4,27 @@
 import { TH_MONTH_NAMES_FULL, TH_MONTH_NAMES_SHORT, TH_WEEKDAYS_SHORT } from '@/locale/thaiDate';
 import i18n from '@/locale/i18n';
 
-// Design widths derived from the v6 prototype. Pellet sub-cells (morning /
-// evening) hold short numeric values like "14.5" and can be narrower than the
-// fresh / death / catch columns; the user explicitly asked for them tightened.
-//   NAME_W + 2 * PELLET_CELL_W + 3 * CELL_W = 86 + 132 + 264 = 482
-// Still wider than the phone viewport, so the table pans horizontally.
-export const NAME_W = 86;
-export const CELL_W = 88;
-export const PELLET_CELL_W = 66;
+// The table fits the viewport — no horizontal pan. Only the pond-identity
+// column is a fixed width; the five data columns share whatever is left via
+// `flex: 1`, so the grid is correct on a 360pt Android, a 375pt SE, and inside
+// the tablet's narrower pane without any per-device math.
+//
+// Sizing sanity check (the reason nothing needs to be squeezed): every cell is
+// capped at `CELL_MAX_VALUE` with ≤2 decimals, so the widest string the grid can
+// ever render is "14.25" — ~40px at the 16px numeric face. The narrowest column
+// this layout produces is (360 − NAME_W) / 5 ≈ 56px, leaving ~48px of usable
+// width after padding. Values keep their full size; they are not shrunk to fit.
+export const NAME_W = 78;
+/** Horizontal padding inside a data cell. Kept small because values are
+ *  centered — the pill overlay (TableRow) provides the visual inset. */
+export const CELL_PAD_H = 4;
 export const ROW_H = 54;
+
+/** Header band-row height. Sized for an 11.5px Thai label at lineHeight 18 —
+ *  "เหยื่อสด" stacks two marks over the same base and needs the headroom. */
+export const HEADER_BAND_H = 32;
+/** Header leaf-row height (sub-label / unit line). */
+export const HEADER_LEAF_H = 24;
 
 /** Day-strip pill height — keep in sync with DayStripRow Pressable. */
 export const DAY_PILL_H = 52;
@@ -86,11 +98,6 @@ export const COLS: readonly {
   { key: 'cat', group: 'catch', leaf: '', integer: true },
 ];
 
-export function colW(key: ColKey): number {
-  return key === 'pm' || key === 'pe' ? PELLET_CELL_W : CELL_W;
-}
-
-export const TABLE_W = NAME_W + COLS.reduce((acc, c) => acc + colW(c.key), 0);
 
 export type GroupMeta = {
   title: string;
