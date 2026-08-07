@@ -14,7 +14,9 @@ import type { CreatePondItem } from '@/features/pond';
 export const POND_NAME_MAX = 100;
 
 /** Rows area cap — beyond this the list scrolls instead of pushing the submit
- *  button off a tall sheet. */
+ *  button off a tall sheet. The row area also shrinks below this cap when the
+ *  sheet itself runs out of room (keyboard up), which is why it is the one
+ *  section marked `flexShrink` — everything else stays legible at full size. */
 const ROWS_MAX_HEIGHT = 300;
 
 /** The server trims the "บ่อ" display prefix before storing, so "บ่อ 1" and "1"
@@ -181,7 +183,7 @@ export function SheetPondsForm({ visible, farmName, saving = false, onClose, onS
       </Row>
 
       <ScrollView
-        style={{ maxHeight: ROWS_MAX_HEIGHT }}
+        style={{ maxHeight: ROWS_MAX_HEIGHT, flexShrink: 1 }}
         contentContainerStyle={{ paddingHorizontal: space[5], gap: space[2] + 2 }}
         keyboardShouldPersistTaps="handled"
       >
