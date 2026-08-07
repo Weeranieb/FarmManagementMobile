@@ -9,6 +9,13 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.22](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.21...v0.2.22) (2026-08-07)
+
+
+### Bug Fixes
+
+* **sheet:** lift bottom sheets clear of the keyboard ([#58](https://github.com/Weeranieb/FarmManagementMobile/issues/58)) ([04dbbbc](https://github.com/Weeranieb/FarmManagementMobile/commit/04dbbbc3a565aceb91c90c3ef208971a733ae934))
+
 ## [0.2.21](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.20...v0.2.21) (2026-08-06)
 
 
