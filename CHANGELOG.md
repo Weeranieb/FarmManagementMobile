@@ -9,6 +9,13 @@ Linear issue references use the `FAR-N` format and link to https://linear.app/fa
 
 ---
 
+## [0.2.21](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.20...v0.2.21) (2026-08-06)
+
+
+### Features
+
+* **daily-log:** fit the table to the viewport, hide ตกปลา per client ([#56](https://github.com/Weeranieb/FarmManagementMobile/issues/56)) ([9df22c7](https://github.com/Weeranieb/FarmManagementMobile/commit/9df22c71004a1dab4eb5810e9d1ac953b452631a))
+
 ## [0.2.20](https://github.com/Weeranieb/FarmManagementMobile/compare/v0.2.19...v0.2.20) (2026-08-05)
 
 
