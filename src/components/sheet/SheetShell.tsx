@@ -1,20 +1,11 @@
-import {
-  Dimensions,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type ViewStyle,
-} from 'react-native';
+import { Dimensions, Modal, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radii, space, type } from '@/theme/tokens';
 import { Icon } from '@/components/icons';
 import { useSheetSlideIn } from '@/screens/daily-log/components/useSheetSlideIn';
+import { useKeyboardHeight } from './useKeyboardHeight';
 
 type Props = {
   visible: boolean;
@@ -44,17 +35,34 @@ export function SheetShell({
   const insets = useSafeAreaInsets();
   const screenH = Dimensions.get('window').height;
   const sheetAnim = useSheetSlideIn(screenH, visible);
+  const keyboardH = useKeyboardHeight(visible);
+
+  // Tallest the sheet may be once the keyboard has taken its share. The margin
+  // below lifts the sheet clear of the keyboard; this cap keeps it from growing
+  // back under it — uncapped, a fit-content sheet is simply clipped at the
+  // bottom and loses its submit button. The 56 keeps a strip of the screen
+  // behind the sheet visible, so it still reads as a sheet and not a page.
+  const maxSheetH = Math.max(Math.min(screenH * 0.9, screenH - keyboardH - 56), 240);
 
   const sheetStyle: ViewStyle = {
-    ...(fitContent ? { maxHeight: screenH * 0.9 } : { height: screenH * heightPct }),
+    ...(fitContent
+      ? { maxHeight: maxSheetH }
+      : { height: Math.min(screenH * heightPct, maxSheetH) }),
+    // Lift via layout, not a transform: a transformed sheet renders in the
+    // right place but keeps its old hit box, so every tap on the raised sheet
+    // falls through to the backdrop and dismisses it.
+    marginBottom: keyboardH,
     backgroundColor: t.bg,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
     overflow: 'hidden',
     // Inside a RN Modal the safe-area context can resolve to 0 (the Modal
     // renders outside the provider tree), so floor the fit-content bottom pad
-    // to keep the sheet clear of the home indicator either way.
-    paddingBottom: fitContent ? Math.max(insets.bottom, space[4]) : Math.max(insets.bottom, 0),
+    // to keep the sheet clear of the home indicator either way. With the
+    // keyboard up there is no home indicator to clear — it sits on the
+    // keyboard, and on iOS the reported height already covers that inset.
+    paddingBottom:
+      keyboardH > 0 ? space[3] : fitContent ? Math.max(insets.bottom, space[4]) : insets.bottom,
     ...shadowLg,
   };
 
@@ -72,73 +80,67 @@ export function SheetShell({
         </Animated.View>
 
         <Animated.View style={sheetAnim}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <View style={sheetStyle}>
-              <View style={{ paddingTop: 10, paddingBottom: 6 }}>
-                <View
+          <View style={sheetStyle}>
+            <View style={{ paddingTop: 10, paddingBottom: 6 }}>
+              <View
+                style={{
+                  alignSelf: 'center',
+                  width: 40,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: t.border,
+                }}
+              />
+              {showClose && !title ? (
+                <Pressable
+                  onPress={onClose}
+                  accessibilityRole="button"
+                  accessibilityLabel="ปิด"
+                  hitSlop={8}
                   style={{
-                    alignSelf: 'center',
-                    width: 40,
-                    height: 4,
-                    borderRadius: 2,
-                    backgroundColor: t.border,
+                    position: 'absolute',
+                    right: space[3],
+                    top: space[2],
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: t.surfaceAlt,
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
-                />
-                {showClose && !title ? (
+                >
+                  <Icon.x size={16} color={t.inkSoft} />
+                </Pressable>
+              ) : null}
+            </View>
+            {title ? (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingHorizontal: 20,
+                  marginBottom: 12,
+                }}
+              >
+                <Text style={{ fontSize: 16, fontFamily: type.familyBold, color: t.ink }}>
+                  {title}
+                </Text>
+                {showTitleClose ? (
                   <Pressable
                     onPress={onClose}
+                    hitSlop={10}
+                    style={{ padding: 4 }}
                     accessibilityRole="button"
                     accessibilityLabel="ปิด"
-                    hitSlop={8}
-                    style={{
-                      position: 'absolute',
-                      right: space[3],
-                      top: space[2],
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      backgroundColor: t.surfaceAlt,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
                   >
-                    <Icon.x size={16} color={t.inkSoft} />
+                    <Icon.x size={18} color={t.inkMute} />
                   </Pressable>
                 ) : null}
               </View>
-              {title ? (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingHorizontal: 20,
-                    marginBottom: 12,
-                  }}
-                >
-                  <Text style={{ fontSize: 16, fontFamily: type.familyBold, color: t.ink }}>
-                    {title}
-                  </Text>
-                  {showTitleClose ? (
-                    <Pressable
-                      onPress={onClose}
-                      hitSlop={10}
-                      style={{ padding: 4 }}
-                      accessibilityRole="button"
-                      accessibilityLabel="ปิด"
-                    >
-                      <Icon.x size={18} color={t.inkMute} />
-                    </Pressable>
-                  ) : null}
-                </View>
-              ) : null}
-              {title ? (
-                <View style={{ flex: 1, paddingHorizontal: 20 }}>{children}</View>
-              ) : (
-                children
-              )}
-            </View>
-          </KeyboardAvoidingView>
+            ) : null}
+            {title ? <View style={{ flex: 1, paddingHorizontal: 20 }}>{children}</View> : children}
+          </View>
         </Animated.View>
       </View>
     </Modal>
