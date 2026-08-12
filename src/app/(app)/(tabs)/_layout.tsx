@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Icon } from '@/components/icons';
 import { type } from '@/theme/tokens';
@@ -8,6 +9,11 @@ import { isClientAdmin, useAuthStore } from '@/features/auth';
 export default function TabsLayout() {
   const { t } = useTheme();
   const { t: tx } = useTranslation();
+  // Reserve room for the system nav bar (Android gesture/3-button bar, iOS
+  // home indicator). A fixed `height` overrides React Navigation's built-in
+  // safe-area handling, so add the bottom inset back in ourselves — otherwise
+  // the tab bar collides with the Android navigation buttons.
+  const insets = useSafeAreaInsets();
   /** Client-admin and above. The master-data endpoints behind the จัดการ tab are
    *  client-admin-only server-side, and every tool inside it already gates its
    *  write affordances on the same predicate — so the tab itself follows. */
@@ -28,8 +34,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: t.surface,
           borderTopColor: t.border,
-          height: 64,
-          paddingBottom: 10,
+          height: 64 + insets.bottom,
+          paddingBottom: 10 + insets.bottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
