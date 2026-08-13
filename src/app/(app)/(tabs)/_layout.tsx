@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Icon } from '@/components/icons';
 import { type } from '@/theme/tokens';
@@ -10,6 +11,11 @@ export default function TabsLayout() {
   const { t: tx } = useTranslation();
   /** Anyone signed in is the farm owner/admin in the current data model. */
   const isAdmin = useAuthStore((s) => s.user != null);
+  // Reserve room for the system nav bar (Android gesture/3-button bar, iOS
+  // home indicator). A fixed `height` overrides React Navigation's built-in
+  // safe-area handling, so add the bottom inset back in ourselves — otherwise
+  // the tab bar collides with the Android navigation buttons.
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -26,8 +32,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: t.surface,
           borderTopColor: t.border,
-          height: 64,
-          paddingBottom: 10,
+          height: 64 + insets.bottom,
+          paddingBottom: 10 + insets.bottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
